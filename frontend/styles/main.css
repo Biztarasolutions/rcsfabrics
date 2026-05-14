@@ -1,0 +1,258 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* ── Root variables ─────────────────────────────────────────────────── */
+:root {
+  --gold: #d4af37;
+  --gold-light: #e8cc6a;
+  --rose: #c9a884;
+  --dark: #1a1a1a;
+  --radius: 0.75rem;
+}
+
+/* ── Base ───────────────────────────────────────────────────────────── */
+* { @apply box-border; }
+
+html { @apply scroll-smooth; }
+
+body {
+  @apply bg-white text-dark-900 antialiased;
+  font-family: 'Inter', system-ui, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.dark body { @apply bg-dark-950 text-white; }
+
+/* ── Layout ─────────────────────────────────────────────────────────── */
+.container-main {
+  @apply mx-auto max-w-7xl px-4 sm:px-6 lg:px-8;
+}
+
+/* ── Typography ─────────────────────────────────────────────────────── */
+.font-display { font-family: 'Playfair Display', Georgia, serif; }
+
+.text-gradient {
+  background: linear-gradient(135deg, #d4af37 0%, #c9a884 50%, #b8926b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-dark {
+  background: linear-gradient(135deg, #e8cc6a 0%, #d4af37 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────── */
+.button-base {
+  @apply inline-flex items-center justify-center rounded-lg font-semibold tracking-wide transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+}
+
+.button-primary {
+  @apply button-base bg-gradient-to-r from-primary-600 to-primary-700 text-white
+         hover:from-primary-500 hover:to-primary-600
+         focus:ring-primary-500
+         shadow-md hover:shadow-luxury
+         active:scale-95;
+}
+
+.button-secondary {
+  @apply button-base border-2 border-primary-600 text-primary-700
+         hover:bg-primary-50 dark:border-primary-400 dark:text-primary-300
+         dark:hover:bg-primary-950 focus:ring-primary-500;
+}
+
+.button-ghost {
+  @apply button-base text-gray-700 hover:bg-gray-100
+         dark:text-gray-300 dark:hover:bg-dark-800;
+}
+
+.button-luxury {
+  @apply button-base text-white relative overflow-hidden;
+  background: linear-gradient(135deg, #d4af37 0%, #b8926b 100%);
+  box-shadow: 0 4px 20px rgba(212, 175, 55, 0.3);
+}
+.button-luxury:hover {
+  box-shadow: 0 8px 30px rgba(212, 175, 55, 0.5);
+  transform: translateY(-1px);
+}
+.button-luxury:active { transform: translateY(0); }
+
+/* ── Cards ───────────────────────────────────────────────────────────── */
+.card {
+  @apply rounded-2xl border border-gray-100 bg-white shadow-sm
+         dark:border-dark-700 dark:bg-dark-800;
+}
+
+.card-hover {
+  @apply card transition-all duration-300 hover:-translate-y-1 hover:shadow-xl
+         dark:hover:shadow-dark-900/50;
+}
+
+/* ── Glass ───────────────────────────────────────────────────────────── */
+.glass {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.glass-dark {
+  background: rgba(26, 26, 26, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ── Shadows ─────────────────────────────────────────────────────────── */
+.shadow-luxury {
+  box-shadow: 0 20px 60px -10px rgba(212, 175, 55, 0.2);
+}
+
+.shadow-product {
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.15);
+}
+
+/* ── Section headings ────────────────────────────────────────────────── */
+.section-tag {
+  @apply inline-flex items-center gap-2 rounded-full border border-primary-200
+         bg-primary-50 px-4 py-1.5 text-sm font-semibold text-primary-700
+         dark:border-primary-800 dark:bg-primary-950/50 dark:text-primary-400;
+}
+
+.section-title {
+  font-family: 'Playfair Display', serif;
+  @apply text-4xl font-bold tracking-tight text-gray-900 dark:text-white lg:text-5xl;
+}
+
+.section-subtitle {
+  @apply mt-4 text-lg text-gray-500 dark:text-gray-400;
+}
+
+/* ── Divider ─────────────────────────────────────────────────────────── */
+.divider-luxury {
+  @apply flex items-center gap-4;
+}
+.divider-luxury::before,
+.divider-luxury::after {
+  content: '';
+  @apply flex-1 border-t border-gray-200 dark:border-dark-700;
+}
+
+/* ── Input ───────────────────────────────────────────────────────────── */
+.input-field {
+  @apply w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-gray-900
+         placeholder-gray-400 transition-all duration-200
+         focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20
+         dark:border-dark-600 dark:bg-dark-800 dark:text-white dark:placeholder-gray-500
+         dark:focus:border-primary-400;
+}
+
+/* ── Badge ───────────────────────────────────────────────────────────── */
+.badge {
+  @apply inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold;
+}
+.badge-new { @apply badge bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400; }
+.badge-sale { @apply badge bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400; }
+.badge-featured { @apply badge bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400; }
+
+/* ── Skeleton ────────────────────────────────────────────────────────── */
+.skeleton {
+  @apply animate-pulse rounded-lg bg-gray-100 dark:bg-dark-700;
+}
+.skeleton-shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+.dark .skeleton-shimmer {
+  background: linear-gradient(90deg, #2d2d2d 25%, #3a3a3a 50%, #2d2d2d 75%);
+  background-size: 200% 100%;
+}
+
+/* ── Scrollbar ───────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: #d4af37;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover { background: #b8926b; }
+
+/* ── Animations ──────────────────────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-20px); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0.95); opacity: 0; }
+  to   { transform: scale(1);    opacity: 1; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-8px); }
+}
+
+.animate-fadeIn   { animation: fadeIn 0.5s ease-in-out; }
+.animate-slideUp  { animation: slideUp 0.5s ease-out; }
+.animate-scaleIn  { animation: scaleIn 0.3s ease-out; }
+.animate-float    { animation: float 4s ease-in-out infinite; }
+
+/* ── Page transitions ────────────────────────────────────────────────── */
+.page-enter {
+  animation: fadeIn 0.4s ease-out;
+}
+
+/* ── Selection ───────────────────────────────────────────────────────── */
+::selection {
+  background: rgba(212, 175, 55, 0.3);
+  color: #6a543d;
+}
+
+/* ── Fabric texture overlay ──────────────────────────────────────────── */
+.texture-overlay {
+  position: relative;
+}
+.texture-overlay::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg width='6' height='6' viewBox='0 0 6 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23d4af37' fill-opacity='0.03'%3E%3Cpath d='M5 0h1L0 6V5zM6 5v1H5z'/%3E%3C/g%3E%3C/svg%3E");
+  pointer-events: none;
+}
+
+/* ── Product zoom ────────────────────────────────────────────────────── */
+.img-zoom-container { overflow: hidden; }
+.img-zoom-container img {
+  transition: transform 0.4s ease;
+}
+.img-zoom-container:hover img {
+  transform: scale(1.08);
+}
+
+/* ── Star rating ─────────────────────────────────────────────────────── */
+.stars-filled { color: #d4af37; }
+.stars-empty  { color: #d1d5db; }
+.dark .stars-empty { color: #4b5563; }
