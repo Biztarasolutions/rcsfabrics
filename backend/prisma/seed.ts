@@ -12,6 +12,8 @@ const CATEGORIES = [
   { name: 'Linens',    slug: 'linens',    description: 'Natural linen fabrics' },
 ];
 
+const COUPONS = [];
+
 const PRODUCTS = [
   {
     name: 'Royal Banarasi Silk', slug: 'royal-banarasi-silk',
@@ -26,7 +28,6 @@ const PRODUCTS = [
       { url: 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=800&q=90', isMain: true, order: 1 },
       { url: 'https://images.unsplash.com/photo-1584992236310-6edddc08acff?w=800&q=90', isMain: false, order: 2 },
     ],
-    tags: ['silk', 'banarasi', 'bridal', 'zari', 'brocade'],
     rating: 4.8, ratingCount: 124,
   },
   {
@@ -41,7 +42,6 @@ const PRODUCTS = [
     images: [
       { url: 'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=800&q=90', isMain: true, order: 1 },
     ],
-    tags: ['cotton', 'egyptian', 'premium', 'breathable'],
     rating: 4.6, ratingCount: 89,
   },
   {
@@ -56,7 +56,6 @@ const PRODUCTS = [
     images: [
       { url: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=90', isMain: true, order: 1 },
     ],
-    tags: ['velvet', 'italian', 'luxury', 'evening'],
     rating: 4.9, ratingCount: 203,
   },
   {
@@ -71,7 +70,6 @@ const PRODUCTS = [
     images: [
       { url: 'https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?w=800&q=90', isMain: true, order: 1 },
     ],
-    tags: ['linen', 'blend', 'summer', 'tailoring'],
     rating: 4.7, ratingCount: 56,
   },
   {
@@ -86,7 +84,6 @@ const PRODUCTS = [
     images: [
       { url: 'https://images.unsplash.com/photo-1584992236310-6edddc08acff?w=800&q=90', isMain: true, order: 1 },
     ],
-    tags: ['silk', 'kanjivaram', 'bridal', 'GI-tagged', 'traditional'],
     rating: 5.0, ratingCount: 234,
   },
   {
@@ -101,20 +98,25 @@ const PRODUCTS = [
     images: [
       { url: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800&q=90', isMain: true, order: 1 },
     ],
-    tags: ['chiffon', 'georgette', 'lightweight', 'dupatta'],
     rating: 4.7, ratingCount: 203,
+  },
+  {
+    name: 'Test Fabric', slug: 'test-fabric',
+    description: 'A sample fabric for testing.',
+    material: 'Cotton', color: 'Blue', gsm: 150, width: 120,
+    basePrice: 100, discountPrice: null,
+    pattern: 'Plain', stretchability: 'Non-Stretch',
+    washCare: 'Machine wash cold', usage: 'Testing purposes',
+    totalStock: 50, minOrderQty: 0.5,
+    isFeatured: false, isNew: true, categorySlug: 'cottons',
+    images: [
+      { url: 'https://via.placeholder.com/150', isMain: true, order: 1 },
+    ],
+    rating: 0, ratingCount: 0,
   },
 ];
 
-const COUPONS = [
-  { code: 'WELCOME10', type: 'PERCENT', value: 10, minOrderAmount: 0, usageLimit: 1000, usedCount: 0, isActive: true, expiresAt: new Date('2025-12-31') },
-  { code: 'SAVE200', type: 'FLAT', value: 200, minOrderAmount: 1500, usageLimit: 500, usedCount: 0, isActive: true, expiresAt: new Date('2025-12-31') },
-  { code: 'FREESHIP', type: 'SHIPPING', value: 0, minOrderAmount: 0, usageLimit: null, usedCount: 0, isActive: true, expiresAt: new Date('2025-12-31') },
-];
-
 async function main() {
-  console.log('🌱 Seeding database...');
-
   // Clear existing data
   await prisma.orderItem.deleteMany();
   await prisma.order.deleteMany();
@@ -134,7 +136,7 @@ async function main() {
   // Seed products
   console.log('🧵 Creating products...');
   for (const product of PRODUCTS) {
-    const { images, categorySlug, ...rest } = product;
+    const { images, categorySlug, tags, ...rest } = product;
     await prisma.product.create({
       data: {
         ...rest,
