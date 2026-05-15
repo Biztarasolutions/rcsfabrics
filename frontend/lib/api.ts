@@ -48,6 +48,7 @@ export const orderApi = {
   verifyPayment: (id: string, data: any) => api.post(`/orders/${id}/verify`, data),
   getUserOrders: (params?: any) => api.get('/orders', { params }),
   getById: (id: string) => api.get(`/orders/${id}`),
+  validateCoupon: (code: string, amount: number) => api.post('/orders/validate-coupon', { code, amount }),
 };
 
 export const adminApi = {

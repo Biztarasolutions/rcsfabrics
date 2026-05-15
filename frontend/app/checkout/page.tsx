@@ -19,7 +19,7 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState<'razorpay' | 'cod'>('razorpay');
   
   const { items, clearCart, totalPrice } = useCartStore();
-  const { user, token } = useAuthStore();
+  const { user } = useAuthStore();
   const router = useRouter();
 
   // Load Razorpay script
@@ -92,7 +92,7 @@ export default function CheckoutPage() {
           order_id: order.razorpayOrderId,
           handler: async (response: any) => {
             try {
-              await orderApi.verifyPayment({
+              await orderApi.verifyPayment(order.id, {
                 orderId: order.id,
                 razorpayOrderId: response.razorpay_order_id,
                 razorpayPaymentId: response.razorpay_payment_id,
