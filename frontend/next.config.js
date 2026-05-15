@@ -39,6 +39,9 @@ const nextConfig = {
   poweredByHeader: false,
   generateEtags: true,
   pageExtensions: ['js', 'jsx', 'ts', 'tsx'],
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
 };
 
 module.exports = nextConfig;

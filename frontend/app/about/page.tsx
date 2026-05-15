@@ -21,7 +21,7 @@ export default function AboutPage() {
             <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
               <span className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-4 py-1.5 text-sm font-semibold text-white backdrop-blur-sm">🏅 Since 2000</span>
               <h1 className="mt-4 font-display text-5xl font-bold text-white lg:text-6xl">Our Story</h1>
-              <p className="mt-4 max-w-lg text-lg text-white/80">25 years of bringing premium fabrics from the world's finest mills to your doorstep.</p>
+              <p className="mt-4 max-w-lg text-lg text-white/80">25 years of bringing premium fabrics from the world&apos;s finest mills to your doorstep.</p>
             </motion.div>
           </div>
         </div>
@@ -32,9 +32,9 @@ export default function AboutPage() {
         <div className="container-main grid gap-12 lg:grid-cols-2 items-center">
           <div>
             <span className="section-tag">🧵 Our Heritage</span>
-            <h2 className="section-title mt-3 font-display">Born in the Heart of India's Textile Capital</h2>
+            <h2 className="section-title mt-3 font-display">Born in the Heart of India&apos;s Textile Capital</h2>
             <p className="mt-5 text-gray-600 dark:text-gray-400 leading-relaxed">
-              RCS Fabrics was founded in 2000 by Rajesh Choudhary in Surat, Gujarat — the fabric capital of India. What began as a small fabric trading business has grown into one of India's most trusted premium fabric platforms.
+              RCS Fabrics was founded in 2000 by Rajesh Choudhary in Surat, Gujarat — the fabric capital of India. What began as a small fabric trading business has grown into one of India&apos;s most trusted premium fabric platforms.
             </p>
             <p className="mt-4 text-gray-600 dark:text-gray-400 leading-relaxed">
               We work directly with master weavers in Varanasi, Kanchipuram, Mysore, and with international mills across Europe and Asia, eliminating middlemen to bring you authentic premium fabrics at fair prices.
