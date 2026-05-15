@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
 import Providers from '@/components/common/Providers';
 import Header from '@/components/common/Header';
 import Footer from '@/components/common/Footer';
