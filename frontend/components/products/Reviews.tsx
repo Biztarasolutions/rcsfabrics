@@ -2,7 +2,12 @@
 
 import React from 'react';
 
-export default function Reviews({ productId }: { productId: string }) {
+export default function Reviews({
+  // productId is commented out for future use
+  // productId
+}: {
+  productId: string;
+}) {
   const sampleReviews = [
     {
       author: 'Customer 1',
