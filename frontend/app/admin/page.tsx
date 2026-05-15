@@ -16,7 +16,7 @@ const STATUS_COLORS: Record<string, string> = {
 export default function AdminDashboard() {
   const { data: stats = null, isLoading: statsLoading } = useQuery({
     queryKey: ['admin-stats'],
-    queryFn: () => adminApi.getDashboardStats().then(res => res.data),
+    queryFn: () => adminApi.getStats().then(res => res.data),
   });
 
   const { data: ordersData = { orders: [] }, isLoading: ordersLoading } = useQuery({
