@@ -1,9 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import { authApi } from '@/lib/api';
+import { useAuthStore } from '@/lib/store';
 
 export default function LoginForm() {
+  const router = useRouter();
+  const { setUser, setToken } = useAuthStore();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -15,10 +20,28 @@ export default function LoginForm() {
     setIsLoading(true);
 
     try {
-      // API call would go here
-      toast.success('Logged in successfully!');
-    } catch (error) {
-      toast.error('Login failed. Please try again.');
+      const res = await authApi.login(formData);
+      const { user, token } = res.data;
+      
+      // Update global state
+      setUser(user);
+      setToken(token);
+      
+      // Store token in localStorage for the api interceptor
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('authToken', token);
+      }
+      
+      toast.success(`Welcome back, ${user.firstName}!`);
+      
+      // Redirect to home or dashboard
+      if (user.role === 'ADMIN') {
+        router.push('/admin');
+      } else {
+        router.push('/');
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Login failed. Please check your credentials.');
     } finally {
       setIsLoading(false);
     }
@@ -36,7 +59,7 @@ export default function LoginForm() {
           onChange={(e) =>
             setFormData({ ...formData, email: e.target.value })
           }
-          className="mt-2 w-full rounded-lg border border-gray-300 bg-white px-4 py-2 dark:border-dark-700 dark:bg-dark-800 dark:text-white"
+          className="mt-2 w-full rounded-lg border border-gray-300 bg-white px-4 py-2 dark:border-dark-700 dark:bg-dark-800 dark:text-white focus:ring-2 focus:ring-primary-500/20 outline-none"
           required
         />
       </div>
@@ -51,7 +74,7 @@ export default function LoginForm() {
           onChange={(e) =>
             setFormData({ ...formData, password: e.target.value })
           }
-          className="mt-2 w-full rounded-lg border border-gray-300 bg-white px-4 py-2 dark:border-dark-700 dark:bg-dark-800 dark:text-white"
+          className="mt-2 w-full rounded-lg border border-gray-300 bg-white px-4 py-2 dark:border-dark-700 dark:bg-dark-800 dark:text-white focus:ring-2 focus:ring-primary-500/20 outline-none"
           required
         />
       </div>
@@ -59,7 +82,7 @@ export default function LoginForm() {
       <button
         type="submit"
         disabled={isLoading}
-        className="button-primary w-full py-2 mt-6"
+        className="button-primary w-full py-2.5 mt-6 font-semibold"
       >
         {isLoading ? 'Logging in...' : 'Login'}
       </button>
@@ -77,7 +100,7 @@ export default function LoginForm() {
 
       <button
         type="button"
-        className="button-secondary w-full py-2"
+        className="button-secondary w-full py-2.5 font-semibold"
       >
         Google
       </button>

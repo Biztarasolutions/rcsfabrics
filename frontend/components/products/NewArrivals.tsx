@@ -3,18 +3,16 @@
 import React, { useRef } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
+import { productApi } from '@/lib/api';
 import ProductCard from './ProductCard';
-
-const NEW_ARRIVALS = [
-  { id: 'n1', name: 'Mysore Crepe Silk', slug: 'mysore-crepe-silk', basePrice: 1650, material: 'Silk', color: 'Rose Gold', stretchability: 'Slight Stretch', totalStock: 60, minOrderQty: 0.5, rating: 4.7, ratingCount: 12, isFeatured: false, isNew: true, isActive: true, createdAt: '', category: { name: 'Silks', slug: 'silks' }, images: [{ id: 'n1i', url: 'https://images.unsplash.com/photo-1519659528534-7fd733a832a0?w=600&q=80', isMain: true, order: 1 }] },
-  { id: 'n2', name: 'Handloom Khadi', slug: 'handloom-khadi', basePrice: 450, material: 'Khadi', color: 'Off White', stretchability: 'Non-Stretch', totalStock: 300, minOrderQty: 1, rating: 4.5, ratingCount: 8, isFeatured: false, isNew: true, isActive: true, createdAt: '', category: { name: 'Cottons', slug: 'cottons' }, images: [{ id: 'n2i', url: 'https://images.unsplash.com/photo-1584992236310-6edddc08acff?w=600&q=80', isMain: true, order: 1 }] },
-  { id: 'n3', name: 'Organza Sheer', slug: 'organza-sheer', basePrice: 890, discountPrice: 749, material: 'Organza', color: 'Champagne', stretchability: 'Non-Stretch', totalStock: 90, minOrderQty: 0.5, rating: 4.6, ratingCount: 21, isFeatured: false, isNew: true, isActive: true, createdAt: '', category: { name: 'Sheers', slug: 'sheers' }, images: [{ id: 'n3i', url: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=600&q=80', isMain: true, order: 1 }] },
-  { id: 'n4', name: 'Wool Tweed Blend', slug: 'wool-tweed-blend', basePrice: 1980, material: 'Wool', color: 'Charcoal Grey', stretchability: 'Non-Stretch', totalStock: 40, minOrderQty: 0.5, rating: 4.8, ratingCount: 15, isFeatured: false, isNew: true, isActive: true, createdAt: '', category: { name: 'Woolens', slug: 'woolens' }, images: [{ id: 'n4i', url: 'https://images.unsplash.com/photo-1598532163257-ae3c6b2524b6?w=600&q=80', isMain: true, order: 1 }] },
-  { id: 'n5', name: 'Chanderi Silk Cotton', slug: 'chanderi-silk-cotton', basePrice: 780, material: 'Chanderi', color: 'Pastel Pink', stretchability: 'Slight Stretch', totalStock: 120, minOrderQty: 0.5, rating: 4.4, ratingCount: 9, isFeatured: false, isNew: true, isActive: true, createdAt: '', category: { name: 'Blends', slug: 'blends' }, images: [{ id: 'n5i', url: 'https://images.unsplash.com/photo-1603251579431-8041402bdeda?w=600&q=80', isMain: true, order: 1 }] },
-];
 
 export default function NewArrivals() {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { data: products = [], isLoading } = useQuery({
+    queryKey: ['new-arrivals'],
+    queryFn: () => productApi.getNewArrivals().then(res => res.data),
+  });
 
   const scroll = (dir: 'left' | 'right') => {
     if (scrollRef.current) {
@@ -48,14 +46,20 @@ export default function NewArrivals() {
         <div ref={scrollRef}
           className="mt-8 flex gap-5 overflow-x-auto pb-4 scrollbar-hide"
           style={{ scrollSnapType: 'x mandatory' }}>
-          {NEW_ARRIVALS.map((product, i) => (
-            <motion.div key={product.id}
-              initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }} transition={{ delay: i * 0.08 }}
-              className="shrink-0 w-64" style={{ scrollSnapAlign: 'start' }}>
-              <ProductCard product={product as any} />
-            </motion.div>
-          ))}
+          {isLoading ? (
+            [...Array(5)].map((_, i) => (
+              <div key={i} className="shrink-0 w-64 aspect-[4/5] animate-pulse rounded-2xl bg-gray-100 dark:bg-dark-800" />
+            ))
+          ) : (
+            products.map((product: any, i: number) => (
+              <motion.div key={product.id}
+                initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }} transition={{ delay: i * 0.08 }}
+                className="shrink-0 w-64" style={{ scrollSnapAlign: 'start' }}>
+                <ProductCard product={product} />
+              </motion.div>
+            ))
+          )}
         </div>
 
         <div className="mt-8 text-center">

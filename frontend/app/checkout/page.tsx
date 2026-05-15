@@ -1,9 +1,10 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { useCartStore } from '@/lib/store';
+import { useCartStore, useAuthStore } from '@/lib/store';
+import { orderApi } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
@@ -13,34 +14,123 @@ export default function CheckoutPage() {
   const [step, setStep] = useState(0);
   const [address, setAddress] = useState({ firstName: '', lastName: '', email: '', phone: '', street: '', city: '', state: '', postalCode: '', country: 'India' });
   const [coupon, setCoupon] = useState('');
-  const [couponApplied, setCouponApplied] = useState(false);
+  const [couponData, setCouponData] = useState<any>(null);
   const [placing, setPlacing] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'razorpay' | 'cod'>('razorpay');
+  
   const { items, clearCart, totalPrice } = useCartStore();
+  const { user, token } = useAuthStore();
   const router = useRouter();
+
+  // Load Razorpay script
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    document.body.appendChild(script);
+    return () => { document.body.removeChild(script); };
+  }, []);
+
+  // Sync user info if logged in
+  useEffect(() => {
+    if (user) {
+      setAddress(prev => ({
+        ...prev,
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        email: user.email || '',
+      }));
+    }
+  }, [user]);
 
   const subtotal = totalPrice();
   const shipping = subtotal >= 2000 ? 0 : 150;
-  const discount = couponApplied ? Math.round(subtotal * 0.1) : 0;
+  const discount = couponData ? (couponData.type === 'PERCENT' ? Math.round(subtotal * (couponData.value / 100)) : couponData.value) : 0;
   const total = subtotal + shipping - discount;
 
-  const handleCoupon = () => {
-    if (coupon.toUpperCase() === 'RCS10') { setCouponApplied(true); toast.success('10% discount applied!'); }
-    else toast.error('Invalid coupon code');
+  const handleCoupon = async () => {
+    if (!coupon) return;
+    try {
+      const res = await orderApi.validateCoupon(coupon, subtotal);
+      setCouponData(res.data);
+      toast.success('Coupon applied successfully!');
+    } catch (error: any) {
+      toast.error(error.message || 'Invalid coupon code');
+    }
   };
 
   const handlePlaceOrder = async () => {
+    if (!user) {
+      toast.error('Please login to place an order');
+      router.push('/login?redirect=/checkout');
+      return;
+    }
+
     setPlacing(true);
-    await new Promise((r) => setTimeout(r, 1500));
-    clearCart();
-    toast.success('🎉 Order placed successfully!');
-    router.push('/account/orders');
-    setPlacing(false);
+    try {
+      const orderPayload = {
+        items: items.map(item => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          price: item.product.discountPrice || item.product.basePrice
+        })),
+        shippingAddress: address,
+        paymentMethod: paymentMethod.toUpperCase(),
+        couponCode: couponData?.code,
+      };
+
+      const res = await orderApi.create(orderPayload);
+      const order = res.data;
+
+      if (paymentMethod === 'razorpay' && order.razorpayOrderId) {
+        const options = {
+          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+          amount: order.totalAmount * 100,
+          currency: 'INR',
+          name: 'RCS Fabrics',
+          description: `Order #${order.id}`,
+          order_id: order.razorpayOrderId,
+          handler: async (response: any) => {
+            try {
+              await orderApi.verifyPayment({
+                orderId: order.id,
+                razorpayOrderId: response.razorpay_order_id,
+                razorpayPaymentId: response.razorpay_payment_id,
+                razorpaySignature: response.razorpay_signature,
+              });
+              clearCart();
+              toast.success('🎉 Payment successful! Order placed.');
+              router.push(`/account/orders/${order.id}`);
+            } catch (err) {
+              toast.error('Payment verification failed. Please contact support.');
+            }
+          },
+          prefill: {
+            name: `${address.firstName} ${address.lastName}`,
+            email: address.email,
+            contact: address.phone
+          },
+          theme: { color: '#000000' }
+        };
+        const rzp = new (window as any).Razorpay(options);
+        rzp.open();
+      } else {
+        // COD flow
+        clearCart();
+        toast.success('🎉 Order placed successfully!');
+        router.push(`/account/orders/${order.id}`);
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to place order. Please try again.');
+    } finally {
+      setPlacing(false);
+    }
   };
 
   const OrderSummary = () => (
     <div className="sticky top-24 rounded-2xl border border-gray-200 bg-gray-50 p-6 dark:border-dark-700 dark:bg-dark-800">
       <h3 className="font-display text-xl font-bold text-gray-900 dark:text-white">Order Summary</h3>
-      <div className="mt-4 max-h-60 space-y-3 overflow-y-auto">
+      <div className="mt-4 max-h-60 space-y-3 overflow-y-auto scrollbar-hide">
         {items.map((item) => (
           <div key={item.id} className="flex items-center gap-3">
             <img src={item.product.images?.[0]?.url || ''} alt={item.product.name} className="h-12 w-12 rounded-lg object-cover"/>
@@ -57,11 +147,10 @@ export default function CheckoutPage() {
       <div className="mt-5 space-y-2 border-t border-gray-200 pt-4 dark:border-dark-700 text-sm">
         <div className="flex justify-between text-gray-600 dark:text-gray-400"><span>Subtotal</span><span>{formatPrice(subtotal)}</span></div>
         <div className="flex justify-between text-gray-600 dark:text-gray-400"><span>Shipping</span><span>{shipping === 0 ? '🎁 Free' : formatPrice(shipping)}</span></div>
-        {couponApplied && <div className="flex justify-between text-green-600"><span>Discount (RCS10)</span><span>-{formatPrice(discount)}</span></div>}
+        {couponData && <div className="flex justify-between text-green-600"><span>Discount ({couponData.code})</span><span>-{formatPrice(discount)}</span></div>}
         <div className="flex justify-between border-t border-gray-200 pt-3 dark:border-dark-700 text-base font-bold text-gray-900 dark:text-white"><span>Total</span><span>{formatPrice(total)}</span></div>
       </div>
-      {/* Coupon */}
-      {!couponApplied && (
+      {!couponData && (
         <div className="mt-4 flex gap-2">
           <input value={coupon} onChange={(e) => setCoupon(e.target.value)} placeholder="Coupon code" className="input-field flex-1 py-2 text-sm"/>
           <button onClick={handleCoupon} className="button-secondary px-4 py-2 text-sm">Apply</button>
@@ -85,7 +174,6 @@ export default function CheckoutPage() {
       <div className="container-main">
         <h1 className="font-display text-3xl font-bold text-gray-900 dark:text-white">Checkout</h1>
 
-        {/* Step indicator */}
         <div className="mt-6 flex items-center gap-4">
           {STEPS.map((s, i) => (
             <React.Fragment key={s}>
@@ -102,7 +190,6 @@ export default function CheckoutPage() {
 
         <div className="mt-8 grid gap-8 lg:grid-cols-3">
           <div className="lg:col-span-2">
-            {/* Step 0: Cart review */}
             {step === 0 && (
               <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-dark-700 dark:bg-dark-800">
                 <h2 className="font-display text-xl font-bold text-gray-900 dark:text-white">Review Your Cart</h2>
@@ -124,7 +211,6 @@ export default function CheckoutPage() {
               </motion.div>
             )}
 
-            {/* Step 1: Address */}
             {step === 1 && (
               <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-dark-700 dark:bg-dark-800">
                 <h2 className="font-display text-xl font-bold text-gray-900 dark:text-white">Shipping Address</h2>
@@ -154,7 +240,6 @@ export default function CheckoutPage() {
               </motion.div>
             )}
 
-            {/* Step 2: Payment */}
             {step === 2 && (
               <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-dark-700 dark:bg-dark-800">
                 <h2 className="font-display text-xl font-bold text-gray-900 dark:text-white">Payment</h2>
@@ -163,8 +248,8 @@ export default function CheckoutPage() {
                     { id: 'razorpay', label: 'Razorpay', sub: 'UPI, Cards, Net Banking, Wallets', icon: '💳' },
                     { id: 'cod', label: 'Cash on Delivery', sub: 'Pay when your order arrives', icon: '💵' },
                   ].map((method) => (
-                    <label key={method.id} className="flex cursor-pointer items-center gap-4 rounded-xl border-2 border-gray-200 p-4 transition-colors hover:border-primary-400 dark:border-dark-700 dark:hover:border-primary-600">
-                      <input type="radio" name="payment" value={method.id} defaultChecked={method.id === 'razorpay'} className="accent-primary-600"/>
+                    <label key={method.id} className={`flex cursor-pointer items-center gap-4 rounded-xl border-2 p-4 transition-colors ${paymentMethod === method.id ? 'border-primary-500 bg-primary-50/30 dark:border-primary-500/50 dark:bg-primary-950/10' : 'border-gray-200 dark:border-dark-700'}`}>
+                      <input type="radio" name="payment" value={method.id} checked={paymentMethod === method.id} onChange={() => setPaymentMethod(method.id as any)} className="accent-primary-600"/>
                       <span className="text-2xl">{method.icon}</span>
                       <div>
                         <p className="font-semibold text-gray-900 dark:text-white">{method.label}</p>
@@ -176,14 +261,12 @@ export default function CheckoutPage() {
                 <div className="mt-6 flex gap-3">
                   <button onClick={() => setStep(1)} className="button-secondary flex-1 py-3">← Back</button>
                   <button onClick={handlePlaceOrder} disabled={placing} className="button-luxury flex-1 py-3 font-semibold">
-                    {placing ? '⏳ Placing Order...' : `🔒 Place Order · ${formatPrice(total)}`}
+                    {placing ? '⏳ Processing...' : `🔒 Place Order · ${formatPrice(total)}`}
                   </button>
                 </div>
               </motion.div>
             )}
           </div>
-
-          {/* Order summary sidebar */}
           <div><OrderSummary /></div>
         </div>
       </div>

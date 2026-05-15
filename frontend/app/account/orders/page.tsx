@@ -1,14 +1,10 @@
 'use client';
 import React from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
+import { orderApi } from '@/lib/api';
+import { formatPrice } from '@/lib/utils';
 import { Suspense } from 'react';
-
-const MOCK_ORDERS = [
-  { id: 'ORD-001', orderNumber: 'RCS-2025-001', status: 'DELIVERED', paymentStatus: 'PAID', total: 4497, createdAt: '2025-04-10', items: [{ productName: 'Royal Banarasi Silk', quantity: 3, pricePerMeter: 1499 }] },
-  { id: 'ORD-002', orderNumber: 'RCS-2025-002', status: 'PROCESSING', paymentStatus: 'PAID', total: 1960, createdAt: '2025-05-01', items: [{ productName: 'French Linen Blend', quantity: 2, pricePerMeter: 980 }] },
-  { id: 'ORD-003', orderNumber: 'RCS-2025-003', status: 'PENDING', paymentStatus: 'PENDING', total: 1360, createdAt: '2025-05-12', items: [{ productName: 'Georgette Chiffon', quantity: 2, pricePerMeter: 680 }] },
-];
 
 const STATUS_COLORS: Record<string, string> = {
   PENDING: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
@@ -18,11 +14,14 @@ const STATUS_COLORS: Record<string, string> = {
   CANCELLED: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
 };
 
-function formatPrice(n: number) {
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 0 }).format(n);
-}
-
 function OrdersContent() {
+  const { data: orders = [], isLoading } = useQuery({
+    queryKey: ['my-orders'],
+    queryFn: () => orderApi.getMyOrders().then(res => res.data),
+  });
+
+  if (isLoading) return <div className="flex min-h-screen items-center justify-center"><div className="h-10 w-10 animate-spin rounded-full border-4 border-primary-600 border-t-transparent"/></div>;
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark-950 py-10">
       <div className="container-main">
@@ -35,17 +34,17 @@ function OrdersContent() {
         </div>
 
         <h1 className="font-display text-3xl font-bold text-gray-900 dark:text-white">My Orders</h1>
-        <p className="mt-1 text-gray-500 dark:text-gray-400">{MOCK_ORDERS.length} orders placed</p>
+        <p className="mt-1 text-gray-500 dark:text-gray-400">{orders.length} orders placed</p>
 
         <div className="mt-8 space-y-4">
-          {MOCK_ORDERS.map((order) => (
+          {orders.map((order: any) => (
             <div key={order.id} className="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-dark-700 dark:bg-dark-800">
               {/* Order header */}
               <div className="flex flex-wrap items-center justify-between gap-3 bg-gray-50 px-5 py-3 dark:bg-dark-700/50">
                 <div className="flex flex-wrap gap-4 text-sm">
                   <div>
                     <p className="text-xs text-gray-500 dark:text-gray-400">Order ID</p>
-                    <p className="font-mono font-semibold text-primary-700 dark:text-primary-400">{order.orderNumber}</p>
+                    <p className="font-mono font-semibold text-primary-700 dark:text-primary-400">#{order.id.slice(-8).toUpperCase()}</p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 dark:text-gray-400">Date</p>
@@ -55,7 +54,7 @@ function OrdersContent() {
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 dark:text-gray-400">Total</p>
-                    <p className="font-bold text-gray-900 dark:text-white">{formatPrice(order.total)}</p>
+                    <p className="font-bold text-gray-900 dark:text-white">{formatPrice(order.totalAmount)}</p>
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -68,21 +67,25 @@ function OrdersContent() {
 
               {/* Items */}
               <div className="divide-y divide-gray-50 dark:divide-dark-700 px-5">
-                {order.items.map((item, i) => (
-                  <div key={i} className="flex items-center justify-between py-4">
+                {order.items.map((item: any) => (
+                  <div key={item.id} className="flex items-center justify-between py-4">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 dark:bg-primary-950/30">
-                        <span className="text-lg">🧵</span>
+                        {item.product?.images?.[0]?.url ? (
+                           <img src={item.product.images[0].url} alt={item.product.name} className="h-full w-full object-cover rounded-xl"/>
+                        ) : (
+                          <span className="text-lg">🧵</span>
+                        )}
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900 dark:text-white">{item.productName}</p>
+                        <p className="font-medium text-gray-900 dark:text-white">{item.product?.name}</p>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {item.quantity}m × {formatPrice(item.pricePerMeter)}/m
+                          {item.quantity}m × {formatPrice(item.priceAtPurchase)}/m
                         </p>
                       </div>
                     </div>
                     <p className="font-bold text-gray-900 dark:text-white">
-                      {formatPrice(item.quantity * item.pricePerMeter)}
+                      {formatPrice(item.quantity * item.priceAtPurchase)}
                     </p>
                   </div>
                 ))}
@@ -97,23 +100,16 @@ function OrdersContent() {
                    order.status === 'PENDING' ? '⏳ Awaiting confirmation' : ''}
                 </p>
                 <div className="flex gap-2">
-                  {order.status === 'DELIVERED' && (
-                    <button className="text-sm font-medium text-primary-600 hover:underline dark:text-primary-400">
-                      Write Review
-                    </button>
-                  )}
-                  {(order.status === 'PENDING' || order.status === 'PROCESSING') && (
-                    <button className="text-sm font-medium text-red-500 hover:underline dark:text-red-400">
-                      Cancel Order
-                    </button>
-                  )}
+                   <Link href={`/account/orders/${order.id}`} className="text-sm font-medium text-primary-600 hover:underline dark:text-primary-400">
+                      View Details
+                   </Link>
                 </div>
               </div>
             </div>
           ))}
         </div>
 
-        {MOCK_ORDERS.length === 0 && (
+        {orders.length === 0 && (
           <div className="py-20 text-center">
             <p className="text-5xl">📦</p>
             <h3 className="mt-4 font-display text-2xl font-bold text-gray-900 dark:text-white">No orders yet</h3>
