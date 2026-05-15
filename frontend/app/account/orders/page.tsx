@@ -17,7 +17,7 @@ const STATUS_COLORS: Record<string, string> = {
 function OrdersContent() {
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ['my-orders'],
-    queryFn: () => orderApi.getMyOrders().then(res => res.data),
+    queryFn: () => orderApi.getUserOrders().then(res => res.data),
   });
 
   if (isLoading) return <div className="flex min-h-screen items-center justify-center"><div className="h-10 w-10 animate-spin rounded-full border-4 border-primary-600 border-t-transparent"/></div>;
