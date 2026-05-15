@@ -2,13 +2,7 @@
 
 import React from 'react';
 
-export default function RelatedProducts({
-  categoryId,
-  currentProductId,
-}: {
-  categoryId: string;
-  currentProductId: string;
-}) {
+export default function RelatedProducts() {
   return (
     <section className="border-t border-gray-200 bg-gray-50 py-16 dark:border-dark-700 dark:bg-dark-800 lg:py-24">
       <div className="container-main">
