@@ -2,7 +2,6 @@
   "name": "rcsfabrics-backend",
   "version": "1.0.0",
   "description": "RCS Fabrics Backend API - Premium Luxury Fabric Ecommerce Platform",
-  "type": "module",
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
@@ -67,8 +66,5 @@
     "tsc-alias": "^1.8.17",
     "tsx": "^4.6.2",
     "typescript": "^6.0.0"
-  },
-  "_moduleAliases": {
-    "@": "dist"
   }
 }
