@@ -16,21 +16,21 @@ const STATUS_COLORS: Record<string, string> = {
 export default function AdminDashboard() {
   const { data: stats = null, isLoading: statsLoading } = useQuery({
     queryKey: ['admin-stats'],
-    queryFn: () => adminApi.getStats().then(res => res.data),
+    queryFn: () => adminApi.getStats().then(res => res.data.data),
   });
 
   const { data: ordersData = { orders: [] }, isLoading: ordersLoading } = useQuery({
     queryKey: ['admin-recent-orders'],
-    queryFn: () => adminApi.getOrders({ limit: 5 }).then(res => res.data),
+    queryFn: () => adminApi.getOrders({ limit: 5 }).then(res => res.data.data),
   });
 
   const STAT_CARDS = stats ? [
-    { label: 'Total Revenue', value: formatPrice(stats.revenue), icon: '💰', sub: 'All time' },
-    { label: 'Total Orders', value: String(stats.ordersCount), icon: '📦', sub: 'All time' },
-    { label: 'Total Customers', value: String(stats.usersCount), icon: '👥', sub: 'Registered users' },
-    { label: 'Products', value: String(stats.productsCount), icon: '🧵', sub: 'In catalog' },
-    { label: 'Avg Order Value', value: formatPrice(stats.revenue / (stats.ordersCount || 1)), icon: '📊', sub: 'Average' },
-    { label: 'Low Stock Items', value: String(stats.lowStockCount || 0), icon: '⚠️', sub: 'Below 10m', warning: stats.lowStockCount > 0 },
+    { label: 'Total Revenue', value: formatPrice(stats.totalRevenue), icon: '💰', sub: 'All time' },
+    { label: 'Total Orders', value: String(stats.totalOrders), icon: '📦', sub: 'All time' },
+    { label: 'Total Customers', value: String(stats.totalCustomers), icon: '👥', sub: 'Registered users' },
+    { label: 'Products', value: String(stats.totalProducts), icon: '🧵', sub: 'In catalog' },
+    { label: 'Avg Order Value', value: formatPrice(stats.totalRevenue / (stats.totalOrders || 1)), icon: '📊', sub: 'Average' },
+    { label: 'Low Stock Items', value: String(stats.lowStockCount || 0), icon: '⚠️', sub: 'Below 10m', warning: (stats.lowStockCount || 0) > 0 },
   ] : [];
 
   return (
