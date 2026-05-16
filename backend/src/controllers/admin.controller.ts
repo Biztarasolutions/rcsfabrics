@@ -549,6 +549,8 @@ export const deleteCategory = async (
     const { id } = req.params;
     await prisma.category.delete({ where: { id } });
     res.json({ success: true, message: 'Category deleted', statusCode: 200 } as ApiResponse);
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to delete category', statusCode: 500 } as ApiResponse);
   }
 };
 
