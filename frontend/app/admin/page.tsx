@@ -44,10 +44,10 @@ export default function AdminDashboard() {
       {/* Stats grid */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {statsLoading ? (
-           [...Array(6)].map((_, i) => (
+           [...Array(6)].map((_: any, i: number) => (
              <div key={i} className="h-32 animate-pulse rounded-2xl bg-gray-100 dark:bg-dark-800" />
            ))
-        ) : STAT_CARDS.map((stat, i) => (
+        ) : STAT_CARDS.map((stat: any, i: number) => (
           <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.06 }}
             className={`rounded-2xl border p-5 bg-white dark:bg-dark-800 ${stat.warning ? 'border-red-200 dark:border-red-900/50' : 'border-gray-200 dark:border-dark-700'}`}>
@@ -114,7 +114,7 @@ export default function AdminDashboard() {
               { label: 'Manage Orders', href: '/admin/orders', icon: '📋', color: 'bg-blue-500' },
               { label: 'View Users', href: '/admin/users', icon: '👥', color: 'bg-purple-500' },
               { label: 'Settings', href: '/admin/settings', icon: '⚙️', color: 'bg-gray-500' },
-            ].map((action) => (
+            ].map((action: any) => (
               <Link key={action.label} href={action.href}
                 className="flex items-center gap-3 rounded-xl border border-gray-100 p-3 hover:bg-gray-50 dark:border-dark-700 dark:hover:bg-dark-700 transition-colors">
                 <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${action.color} text-white`}>

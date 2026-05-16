@@ -4,13 +4,12 @@ import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
-import toast from 'react-hot-toast';
 
 export default function AdminCustomersPage() {
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('spent');
 
-  const { data: customers = [], isLoading } = useQuery({
+  const { data: customers = [] } = useQuery({
     queryKey: ['admin-customers'],
     queryFn: () => adminApi.getCustomers().then(res => res.data.data || []),
   });
@@ -80,14 +79,14 @@ export default function AdminCustomersPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 dark:divide-dark-700">
-              {filtered.map((customer, i) => (
+              {filtered.map((customer: any, i: number) => (
                 <motion.tr key={customer.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.04 }}
                   className="hover:bg-gray-50 dark:hover:bg-dark-700/30 transition-colors">
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
                       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-700 text-sm font-bold text-white">
-                        {customer.name.split(' ').map((n) => n[0]).join('').slice(0, 2)}
+                        {customer.name.split(' ').map((n: any) => n[0]).join('').slice(0, 2)}
                       </div>
                       <div>
                         <p className="font-semibold text-gray-900 dark:text-white">{customer.name}</p>

@@ -4,10 +4,21 @@ import { formatPrice } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api';
 
+const MONTHLY = [
+  { month: 'Jan', revenue: 0, orders: 0 },
+  { month: 'Feb', revenue: 0, orders: 0 },
+  { month: 'Mar', revenue: 0, orders: 0 },
+  { month: 'Apr', revenue: 0, orders: 0 },
+  { month: 'May', revenue: 0, orders: 0 },
+];
+
+const TOP_PRODUCTS: any[] = [];
+const maxRevenue = 1;
+
 export default function AdminReportsPage() {
   const [period, setPeriod] = useState('thisMonth');
 
-  const { data: stats = null, isLoading } = useQuery({
+  const { data: stats = null } = useQuery({
     queryKey: ['admin-stats'],
     queryFn: () => adminApi.getStats().then(res => res.data.data),
   });
@@ -39,9 +50,9 @@ export default function AdminReportsPage() {
         {[
           { label: 'Total Revenue', value: formatPrice(totalRevenue), change: '+18.2%', icon: '💰', up: true },
           { label: 'Total Orders', value: totalOrders, change: '+12.5%', icon: '📦', up: true },
-          { label: 'Avg Order Value', value: formatPrice(Math.round(totalRevenue / totalOrders)), change: '+5.1%', icon: '📊', up: true },
-          { label: 'New Customers', value: '284', change: '+8.3%', icon: '👥', up: true },
-        ].map((kpi) => (
+          { label: 'Total Customers', value: totalCustomers, change: '+8.3%', icon: '👥', up: true },
+          { label: 'Total Products', value: totalProducts, change: '+5.1%', icon: '🧵', up: true },
+        ].map((kpi: any) => (
           <div key={kpi.label} className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-dark-700 dark:bg-dark-800">
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{kpi.label}</p>
@@ -60,7 +71,7 @@ export default function AdminReportsPage() {
         <div className="lg:col-span-2 rounded-2xl border border-gray-200 bg-white p-6 dark:border-dark-700 dark:bg-dark-800">
           <h3 className="font-semibold text-gray-900 dark:text-white mb-6">Monthly Revenue</h3>
           <div className="flex items-end gap-3 h-48">
-            {MONTHLY.map((m) => (
+            {MONTHLY.map((m: any) => (
               <div key={m.month} className="flex flex-1 flex-col items-center gap-2">
                 <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{formatPrice(m.revenue / 1000)}K</span>
                 <div className="w-full rounded-t-lg bg-gradient-to-t from-primary-600 to-primary-400 transition-all duration-500"
@@ -98,22 +109,16 @@ export default function AdminReportsPage() {
       <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-dark-700 dark:bg-dark-800">
         <h3 className="font-semibold text-gray-900 dark:text-white mb-5">Revenue by Category</h3>
         <div className="space-y-4">
-          {[
-            { name: 'Silks', revenue: 245000, percent: 42 },
-            { name: 'Cottons', revenue: 118000, percent: 20 },
-            { name: 'Velvets', revenue: 96000, percent: 16 },
-            { name: 'Chiffons', revenue: 82000, percent: 14 },
-            { name: 'Others', revenue: 47000, percent: 8 },
-          ].map((cat) => (
-            <div key={cat.name} className="flex items-center gap-4">
-              <span className="w-20 text-sm font-medium text-gray-700 dark:text-gray-300 shrink-0">{cat.name}</span>
+          {TOP_PRODUCTS.map((p: any) => (
+            <div key={p.name} className="flex items-center gap-4">
+              <span className="w-20 text-sm font-medium text-gray-700 dark:text-gray-300 shrink-0">{p.name}</span>
               <div className="flex-1 overflow-hidden rounded-full bg-gray-100 h-2.5 dark:bg-dark-700">
                 <div className="h-full rounded-full bg-gradient-to-r from-primary-500 to-primary-600 transition-all duration-700"
-                  style={{ width: `${cat.percent}%` }}/>
+                  style={{ width: `${p.percent}%` }}/>
               </div>
               <div className="flex gap-3 shrink-0 text-right">
-                <span className="text-sm font-semibold text-gray-900 dark:text-white">{formatPrice(cat.revenue)}</span>
-                <span className="text-xs text-gray-400 w-8">{cat.percent}%</span>
+                <span className="text-sm font-semibold text-gray-900 dark:text-white">{formatPrice(p.revenue)}</span>
+                <span className="text-xs text-gray-400 w-8">{p.percent}%</span>
               </div>
             </div>
           ))}

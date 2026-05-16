@@ -68,7 +68,7 @@ export default function AdminOrdersPage() {
         <select value={filterStatus} onChange={(e) => { setFilterStatus(e.target.value); setPage(1); }}
           className="input-field w-44 py-2.5">
           <option value="">All Status</option>
-          {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+          {STATUS_OPTIONS.map((s: string) => <option key={s} value={s}>{s}</option>)}
         </select>
         {(filterStatus || search) && (
           <button onClick={() => { setFilterStatus(''); setSearch(''); setPage(1); }} className="button-ghost rounded-xl px-4 py-2.5 text-sm">Clear</button>
@@ -109,7 +109,7 @@ export default function AdminOrdersPage() {
                     <select value={order.status} onChange={(e) => handleUpdateStatus(order.id, e.target.value)}
                       disabled={updateStatusMutation.isPending}
                       className={`rounded-lg border px-2 py-1 text-xs font-semibold cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500/20 ${STATUS_COLORS[order.status]}`}>
-                      {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+                      {STATUS_OPTIONS.map((s: string) => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </td>
                   <td className="px-5 py-3.5 text-right">
@@ -131,7 +131,7 @@ export default function AdminOrdersPage() {
       {/* Pagination */}
       {ordersData.pages > 1 && (
         <div className="flex justify-center gap-2 mt-4">
-           {[...Array(ordersData.pages)].map((_, i) => (
+           {[...Array(ordersData.pages)].map((_: any, i: number) => (
              <button key={i} onClick={() => setPage(i + 1)}
                className={`h-9 w-9 rounded-xl text-sm font-semibold transition-all ${page === i + 1 ? 'bg-primary-600 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
                {i + 1}
@@ -182,7 +182,7 @@ export default function AdminOrdersPage() {
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">Update Status</p>
                   <div className="grid grid-cols-2 gap-2">
-                    {STATUS_OPTIONS.map((s) => (
+                    {STATUS_OPTIONS.map((s: string) => (
                       <button key={s} onClick={() => handleUpdateStatus(selectedOrder.id, s)}
                         disabled={updateStatusMutation.isPending}
                         className={`rounded-xl border py-2 text-xs font-semibold transition-all ${selectedOrder.status === s ? 'border-primary-500 bg-primary-600 text-white' : 'border-gray-200 text-gray-600 hover:border-primary-400 dark:border-dark-600 dark:text-gray-400'}`}>

@@ -12,7 +12,7 @@ export default function AdminBannersPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState<any>(EMPTY);
 
-  const { data: banners = [], isLoading } = useQuery({
+  const { data: banners = [] } = useQuery({
     queryKey: ['admin-banners'],
     queryFn: () => adminApi.getBanners().then(res => res.data.data || []),
   });
@@ -57,14 +57,14 @@ export default function AdminBannersPage() {
   };
   const toggleActive = (banner: any) => updateMutation.mutate({ id: banner.id, data: { isActive: !banner.isActive } });
   const handleDelete = (id: string) => { if (confirm('Are you sure?')) deleteMutation.mutate(id); };
-  const moveUp = (banner: any) => { /* logic for reordering can be added if needed */ };
+  // Reordering logic can be added here in the future
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Hero Banners</h2>
-          <p className="text-sm text-gray-500">{banners.filter((b) => b.isActive).length} active banners on homepage</p>
+          <p className="text-sm text-gray-500">{banners.filter((b: any) => b.isActive).length} active banners on homepage</p>
         </div>
         <button onClick={openAdd} className="button-primary flex items-center gap-2 px-5 py-2.5">
           <span className="text-lg">+</span> Add Banner
@@ -72,7 +72,7 @@ export default function AdminBannersPage() {
       </div>
 
       <div className="space-y-4">
-        {banners.map((banner, i) => (
+        {banners.map((banner: any, i: number) => (
           <motion.div key={banner.id} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
             className={`overflow-hidden rounded-2xl border bg-white dark:bg-dark-800 ${banner.isActive ? 'border-gray-200 dark:border-dark-700' : 'border-dashed border-gray-200 opacity-60 dark:border-dark-600'}`}>
             <div className="flex flex-col sm:flex-row">
@@ -96,9 +96,7 @@ export default function AdminBannersPage() {
                   <p className="mt-1 text-xs text-primary-600 dark:text-primary-400">→ {banner.link}</p>
                 </div>
                 <div className="flex flex-wrap gap-2 shrink-0">
-                  <button onClick={() => moveUp(banner.id)} disabled={i === 0}
-                    className="rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs text-gray-500 hover:bg-gray-50 disabled:opacity-30 dark:border-dark-600 dark:text-gray-400 transition-colors">↑</button>
-                  <button onClick={() => toggleActive(banner.id)}
+                  <button onClick={() => toggleActive(banner)}
                     className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 dark:border-dark-600 dark:text-gray-400 transition-colors">
                     {banner.isActive ? 'Disable' : 'Enable'}
                   </button>
