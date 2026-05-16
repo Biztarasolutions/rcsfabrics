@@ -1,4 +1,4 @@
-import express, { Express, Request, Response, NextFunction } from 'express';
+import express, { Express, Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -77,7 +77,7 @@ process.on('SIGINT', async () => {
   process.exit(0);
 });
 
-const server = app.listen(port, () => {
+app.listen(port, () => {
   console.log(`⚡ Server is running at http://localhost:${port}`);
   console.log(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
 });

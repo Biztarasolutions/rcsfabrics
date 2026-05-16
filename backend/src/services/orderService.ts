@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, OrderStatus } from '@prisma/client';
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
 import { productService } from './productService';
@@ -72,7 +72,10 @@ export class OrderService {
         notes: data.notes,
         items: {
           create: await Promise.all(data.items.map(async (i) => {
-            const product = await prisma.product.findUnique({ where: { id: i.productId } });
+            const product = await prisma.product.findUnique({
+              where: { id: i.productId },
+              include: { images: true },
+            });
             return {
               productId: i.productId,
               productName: product?.name || 'Unknown Product',
@@ -170,7 +173,6 @@ export class OrderService {
           items: {
             include: { product: { include: { images: { take: 1 } } } },
           },
-          shippingAddress: true,
         },
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * limit, take: limit,
@@ -187,7 +189,6 @@ export class OrderService {
       where: { id: orderId },
       include: {
         items: { include: { product: { include: { images: { take: 1 } } } } },
-        shippingAddress: true,
         user: { select: { firstName: true, lastName: true, email: true } },
       },
     });
@@ -207,7 +208,6 @@ export class OrderService {
         include: {
           user: { select: { firstName: true, lastName: true, email: true } },
           items: { include: { product: { select: { name: true } } } },
-          shippingAddress: true,
         },
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * limit, take: limit,
@@ -219,7 +219,7 @@ export class OrderService {
   }
 
   // ── Admin: update order status ────────────────────────────────────────
-  async updateOrderStatus(orderId: string, status: string, trackingNumber?: string) {
+  async updateOrderStatus(orderId: string, status: OrderStatus, trackingNumber?: string) {
     return prisma.order.update({
       where: { id: orderId },
       data: {

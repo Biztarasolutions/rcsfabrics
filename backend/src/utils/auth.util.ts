@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken';
+import * as jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { config } from '@/config';
 import { JWTPayload } from '@/types';
@@ -14,9 +14,12 @@ export const generateToken = (
     role,
   };
 
-  return jwt.sign(payload, config.JWT_SECRET, {
+  const secret = config.JWT_SECRET as unknown as jwt.Secret;
+  const signOptions = {
     expiresIn: config.JWT_EXPIRE,
-  });
+  } as jwt.SignOptions;
+
+  return jwt.sign(payload, secret, signOptions);
 };
 
 export const verifyToken = (token: string): JWTPayload | null => {

@@ -1,16 +1,24 @@
+import { Request } from 'express';
+
 export interface JWTPayload {
   userId: string;
   email: string;
   role: string;
 }
 
-export interface AuthRequest extends Request {
-  userId?: string;
-  user?: {
-    id: string;
-    email: string;
-    role: string;
-  };
+export type AuthRequest = Request;
+
+declare global {
+  namespace Express {
+    interface Request {
+      userId?: string;
+      user?: {
+        id: string;
+        email: string;
+        role: string;
+      };
+    }
+  }
 }
 
 export interface ApiResponse<T = any> {
@@ -33,4 +41,59 @@ export interface ListResponse<T> {
   page: number;
   limit: number;
   pages: number;
+}
+
+export interface ProductImageInput {
+  url: string;
+  alt?: string;
+  order?: number;
+  isMain?: boolean;
+}
+
+export interface CreateProductInput {
+  name: string;
+  description?: string;
+  categoryId: string;
+  basePrice: number;
+  discountPrice?: number | null;
+  discountPercent?: number | null;
+  material: string;
+  gsm?: number | null;
+  width?: number | null;
+  pattern?: string | null;
+  color: string;
+  stretchability: string;
+  usage?: string | null;
+  washCare?: string | null;
+  totalStock: number;
+  minOrderQty?: number;
+  sku?: string | null;
+  isActive?: boolean;
+  isFeatured?: boolean;
+  isNew?: boolean;
+  images?: ProductImageInput[];
+}
+
+export interface UpdateProductInput {
+  name?: string;
+  description?: string | null;
+  categoryId?: string;
+  basePrice?: number;
+  discountPrice?: number | null;
+  discountPercent?: number | null;
+  material?: string;
+  gsm?: number | null;
+  width?: number | null;
+  pattern?: string | null;
+  color?: string;
+  stretchability?: string;
+  usage?: string | null;
+  washCare?: string | null;
+  totalStock?: number;
+  minOrderQty?: number;
+  sku?: string | null;
+  isActive?: boolean;
+  isFeatured?: boolean;
+  isNew?: boolean;
+  images?: ProductImageInput[];
 }

@@ -2,7 +2,6 @@ import { Response } from 'express';
 import { prisma } from '@/index';
 import { AuthRequest, ApiResponse } from '@/types';
 import { parsePagination, createPaginationMeta } from '@/utils/pagination.util';
-import { generateSlug } from '@/utils/string.util';
 import { ApiError } from '@/middleware/errorHandler';
 
 export const getProducts = async (

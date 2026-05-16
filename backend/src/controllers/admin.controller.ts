@@ -1,7 +1,6 @@
 import { Response } from 'express';
 import { prisma } from '@/index';
 import { AuthRequest, ApiResponse } from '@/types';
-import { authorizeRole } from '@/middleware/auth';
 import { generateSlug, generateSKU } from '@/utils/string.util';
 import { parsePagination, createPaginationMeta } from '@/utils/pagination.util';
 import { ApiError } from '@/middleware/errorHandler';
