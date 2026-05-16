@@ -56,8 +56,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
             {NAV.find((n) => n.href === pathname)?.label || 'Admin'}
           </h1>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700 dark:bg-green-900/30 dark:text-green-400">● Live</span>
+            <button 
+              onClick={() => {
+                localStorage.removeItem('authToken');
+                window.location.href = '/auth';
+              }}
+              className="text-sm font-medium text-red-600 hover:text-red-700 dark:text-red-400"
+            >
+              Logout
+            </button>
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-600 text-sm font-bold text-white">A</div>
           </div>
         </header>
