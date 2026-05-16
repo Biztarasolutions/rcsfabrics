@@ -16,7 +16,7 @@ services:
       - key: DIRECT_URL
         sync: false
       - key: JWT_SECRET
-        generateValue: true
+        value: rcs_fabrics_secret_key_2024 # You can change this in Render Dashboard for better security
       - key: JWT_EXPIRE
         value: 7d
       - key: FRONTEND_URL
