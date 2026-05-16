@@ -52,13 +52,13 @@ export const orderApi = {
 };
 
 export const adminApi = {
-  getStats: () => api.get('/admin/stats'),
+  getStats: () => api.get('/admin/dashboard/stats'),
   getAdminProducts: (params?: any) => api.get('/admin/products', { params }),
   createProduct: (data: any) => api.post('/admin/products', data),
   updateProduct: (id: string, data: any) => api.put(`/admin/products/${id}`, data),
   deleteProduct: (id: string) => api.delete(`/admin/products/${id}`),
   getOrders: (params?: any) => api.get('/admin/orders', { params }),
-  updateOrderStatus: (id: string, data: any) => api.patch(`/admin/orders/${id}/status`, data),
+  updateOrderStatus: (id: string, status: string) => api.put(`/admin/orders/${id}`, { status }),
   getCustomers: (params?: any) => api.get('/admin/customers', { params }),
   getCoupons: () => api.get('/admin/coupons'),
   createCoupon: (data: any) => api.post('/admin/coupons', data),

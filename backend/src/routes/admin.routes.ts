@@ -4,10 +4,11 @@ import {
   createProduct,
   updateProduct,
   deleteProduct,
-  getAdminProducts,
-  getAdminOrders,
+  getAdminProducts as getProducts,
+  getOrders,
   updateOrderStatus,
   getDashboardStats,
+  getCustomers,
   getCoupons,
   createCoupon,
   deleteCoupon,
@@ -24,13 +25,16 @@ router.use(authorizeRole(['ADMIN']));
 
 // Product Management
 router.post('/products', createProduct);
-router.get('/products', getAdminProducts);
+router.get('/products', getProducts);
 router.put('/products/:id', updateProduct);
 router.delete('/products/:id', deleteProduct);
 
 // Order Management
-router.get('/orders', getAdminOrders);
+router.get('/orders', getOrders);
 router.put('/orders/:id', updateOrderStatus);
+
+// Customer Management
+router.get('/customers', getCustomers);
 
 // Dashboard
 router.get('/dashboard/stats', getDashboardStats);
