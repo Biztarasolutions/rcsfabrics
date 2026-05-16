@@ -245,3 +245,43 @@ export const getFeaturedProducts = async (
     } as ApiResponse);
   }
 };
+
+export const getNewArrivals = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const { limit = '8' } = req.query;
+
+    const products = await prisma.product.findMany({
+      where: {
+        isActive: true,
+      },
+      take: parseInt(limit as string),
+      include: {
+        images: {
+          where: { isMain: true },
+          take: 1,
+        },
+        category: {
+          select: { name: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json({
+      success: true,
+      message: 'New arrivals retrieved',
+      data: products,
+      statusCode: 200,
+    } as ApiResponse);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve new arrivals',
+      statusCode: 500,
+    } as ApiResponse);
+  }
+};
+
