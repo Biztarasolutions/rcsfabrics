@@ -11,7 +11,7 @@ export default function AdminCategoriesPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', slug: '', description: '', isActive: true });
 
-  const { data: cats = [], isLoading: loading } = useQuery({
+  const { data: cats = [], isLoading: loading, error, isError } = useQuery({
     queryKey: ['admin-categories'],
     queryFn: () => adminApi.getCategories().then(res => res.data.data || []),
   });
@@ -83,6 +83,8 @@ export default function AdminCategoriesPage() {
 
       {loading ? (
         <div className="p-10 text-center text-gray-500">Loading categories...</div>
+      ) : isError ? (
+        <div className="p-10 text-center text-red-500 bg-red-50 rounded-xl">Failed to load categories: {(error as any)?.message}</div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {cats.map((cat: any, i: number) => (
