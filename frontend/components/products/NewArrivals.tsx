@@ -11,7 +11,7 @@ export default function NewArrivals() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const { data: products = [], isLoading } = useQuery({
     queryKey: ['new-arrivals'],
-    queryFn: () => productApi.getNewArrivals().then(res => res.data),
+    queryFn: () => productApi.getNewArrivals().then(res => res.data.data),
   });
 
   const scroll = (dir: 'left' | 'right') => {
