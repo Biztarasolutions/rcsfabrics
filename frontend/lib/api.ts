@@ -53,7 +53,7 @@ export const orderApi = {
 
 export const adminApi = {
   getStats: () => api.get('/admin/stats'),
-  getProducts: (params?: any) => api.get('/admin/products', { params }),
+  getAdminProducts: (params?: any) => api.get('/admin/products', { params }),
   createProduct: (data: any) => api.post('/admin/products', data),
   updateProduct: (id: string, data: any) => api.put(`/admin/products/${id}`, data),
   deleteProduct: (id: string) => api.delete(`/admin/products/${id}`),

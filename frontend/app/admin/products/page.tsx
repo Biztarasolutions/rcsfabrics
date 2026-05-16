@@ -16,10 +16,11 @@ export default function AdminProductsPage() {
   const [form, setForm] = useState<any>(EMPTY_FORM);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-  const { data: products = [], isLoading } = useQuery({
+  const { data: productsData = { products: [] }, isLoading } = useQuery({
     queryKey: ['admin-products', search],
-    queryFn: () => adminApi.getProducts({ search }).then(res => res.data),
+    queryFn: () => adminApi.getAdminProducts({ search }).then(res => res.data.data),
   });
+  const products = productsData.products;
 
   const createMutation = useMutation({
     mutationFn: (data: any) => adminApi.createProduct(data),

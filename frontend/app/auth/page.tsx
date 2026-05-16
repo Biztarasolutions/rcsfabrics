@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAuthStore } from '@/lib/store';
 import { useRouter } from 'next/navigation';
+import { authApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 
 export default function AuthPage() {
@@ -17,16 +18,33 @@ export default function AuthPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (mode === 'register' && form.password !== form.confirm) { toast.error('Passwords do not match'); return; }
+    
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 900));
-    // Mock auth — replace with real API call
-    const mockUser = { id: '1', email: form.email, firstName: form.firstName || 'User', lastName: form.lastName, phone: '', role: 'CUSTOMER' as const, isVerified: true };
-    setUser(mockUser);
-    setToken('mock-jwt-token');
-    if (typeof window !== 'undefined') localStorage.setItem('authToken', 'mock-jwt-token');
-    toast.success(mode === 'login' ? 'Welcome back!' : 'Account created!');
-    router.push('/');
-    setLoading(false);
+    try {
+      let res;
+      if (mode === 'login') {
+        res = await authApi.login({ email: form.email, password: form.password });
+      } else {
+        res = await authApi.register({
+          email: form.email,
+          password: form.password,
+          firstName: form.firstName,
+          lastName: form.lastName
+        });
+      }
+
+      const { user, token } = res.data.data;
+      setUser(user);
+      setToken(token);
+      if (typeof window !== 'undefined') localStorage.setItem('authToken', token);
+      
+      toast.success(mode === 'login' ? 'Welcome back!' : 'Account created successfully!');
+      router.push('/');
+    } catch (error: any) {
+      toast.error(error.message || 'Authentication failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
