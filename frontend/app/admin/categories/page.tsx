@@ -1,72 +1,72 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api';
 import { toast } from 'react-hot-toast';
 
 export default function AdminCategoriesPage() {
-  const [cats, setCats] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [showModal, setShowModal] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', slug: '', description: '', isActive: true });
 
-  useEffect(() => {
-    fetchCategories();
-  }, []);
+  const { data: cats = [], isLoading: loading } = useQuery({
+    queryKey: ['admin-categories'],
+    queryFn: () => adminApi.getCategories().then(res => res.data.data || []),
+  });
 
-  const fetchCategories = async () => {
-    try {
-      const res = await adminApi.getCategories();
-      setCats(res.data.data || []);
-    } catch (error: any) {
-      toast.error(error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const createMutation = useMutation({
+    mutationFn: (data: any) => adminApi.createCategory(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
+      toast.success('Category created');
+      setShowModal(false);
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string, data: any }) => adminApi.updateCategory(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
+      toast.success('Category updated');
+      setShowModal(false);
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => adminApi.deleteCategory(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
+      toast.success('Category deleted');
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
 
   const openAdd = () => { setForm({ name: '', slug: '', description: '', isActive: true }); setEditId(null); setShowModal(true); };
   const openEdit = (c: any) => { setForm({ name: c.name, slug: c.slug, description: c.description || '', isActive: c.isActive }); setEditId(c.id); setShowModal(true); };
   
-  const handleSave = async () => {
-    try {
-      const data = {
-        ...form,
-        slug: form.slug || form.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '')
-      };
-      if (editId) {
-        await adminApi.updateCategory(editId, data);
-        toast.success('Category updated');
-      } else {
-        await adminApi.createCategory(data);
-        toast.success('Category created');
-      }
-      setShowModal(false);
-      fetchCategories();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || error.message);
+  const handleSave = () => {
+    const data = {
+      ...form,
+      slug: form.slug || form.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '')
+    };
+    if (editId) {
+      updateMutation.mutate({ id: editId, data });
+    } else {
+      createMutation.mutate(data);
     }
   };
 
-  const toggleActive = async (cat: any) => {
-    try {
-      await adminApi.updateCategory(cat.id, { isActive: !cat.isActive });
-      fetchCategories();
-    } catch (error: any) {
-      toast.error(error.message);
-    }
+  const toggleActive = (cat: any) => {
+    updateMutation.mutate({ id: cat.id, data: { isActive: !cat.isActive } });
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = (id: string) => {
     if (!confirm('Are you sure? This will not delete products in this category but might affect their display.')) return;
-    try {
-      await adminApi.deleteCategory(id);
-      toast.success('Category deleted');
-      fetchCategories();
-    } catch (error: any) {
-      toast.error(error.message);
-    }
+    deleteMutation.mutate(id);
   };
 
   return (
@@ -74,7 +74,7 @@ export default function AdminCategoriesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Categories</h2>
-          <p className="text-sm text-gray-500">{cats.length} categories · {cats.reduce((s, c) => s + (c._count?.products || 0), 0)} products total</p>
+          <p className="text-sm text-gray-500">{cats.length} categories · {cats.reduce((s: number, c: any) => s + (c._count?.products || 0), 0)} products total</p>
         </div>
         <button onClick={openAdd} className="button-primary flex items-center gap-2 px-5 py-2.5">
           <span className="text-lg">+</span> Add Category
@@ -85,7 +85,7 @@ export default function AdminCategoriesPage() {
         <div className="p-10 text-center text-gray-500">Loading categories...</div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {cats.map((cat, i) => (
+          {cats.map((cat: any, i: number) => (
             <motion.div key={cat.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
               className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-dark-700 dark:bg-dark-800">
               <div className="flex items-start justify-between">
@@ -103,13 +103,13 @@ export default function AdminCategoriesPage() {
               <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-4 dark:border-dark-700">
                 <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{cat._count?.products || 0} products</span>
                 <div className="flex gap-2">
-                  <button onClick={() => toggleActive(cat)}
+                  <button onClick={() => toggleActive(cat)} disabled={updateMutation.isPending}
                     className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 dark:border-dark-600 dark:text-gray-400 transition-colors">
                     {cat.isActive ? 'Disable' : 'Enable'}
                   </button>
                   <button onClick={() => openEdit(cat)}
                     className="rounded-lg border border-blue-200 px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 dark:border-blue-900 dark:text-blue-400 transition-colors">Edit</button>
-                  <button onClick={() => handleDelete(cat.id)}
+                  <button onClick={() => handleDelete(cat.id)} disabled={deleteMutation.isPending}
                     className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-400 transition-colors">Delete</button>
                 </div>
               </div>
@@ -137,7 +137,9 @@ export default function AdminCategoriesPage() {
               </div>
               <div className="mt-5 flex gap-3">
                 <button onClick={() => setShowModal(false)} className="button-secondary flex-1 py-3">Cancel</button>
-                <button onClick={handleSave} className="button-primary flex-1 py-3">{editId ? 'Save Changes' : 'Add Category'}</button>
+                <button onClick={handleSave} disabled={createMutation.isPending || updateMutation.isPending} className="button-primary flex-1 py-3">
+                  {(createMutation.isPending || updateMutation.isPending) ? 'Saving...' : (editId ? 'Save Changes' : 'Add Category')}
+                </button>
               </div>
             </motion.div>
           </motion.div>

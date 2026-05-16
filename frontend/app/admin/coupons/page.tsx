@@ -1,59 +1,55 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatPrice } from '@/lib/utils';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api';
 import { toast } from 'react-hot-toast';
 
 const EMPTY = { code: '', discountType: 'PERCENTAGE', discountValue: '', minOrderAmount: '', maxUses: '', expiresAt: '', isActive: true };
 
 export default function AdminCouponsPage() {
-  const [coupons, setCoupons] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState<any>(EMPTY);
 
-  useEffect(() => {
-    fetchCoupons();
-  }, []);
+  const { data: coupons = [], isLoading: loading } = useQuery({
+    queryKey: ['admin-coupons'],
+    queryFn: () => adminApi.getCoupons().then(res => res.data.data || []),
+  });
 
-  const fetchCoupons = async () => {
-    try {
-      const res = await adminApi.getCoupons();
-      setCoupons(res.data.data || []);
-    } catch (error: any) {
-      toast.error(error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSave = async () => {
-    try {
-      const data = {
-        ...form,
-        discountValue: Number(form.discountValue),
-        minOrderAmount: form.minOrderAmount ? Number(form.minOrderAmount) : null,
-        maxUses: form.maxUses ? Number(form.maxUses) : null,
-      };
-      await adminApi.createCoupon(data);
+  const createMutation = useMutation({
+    mutationFn: (data: any) => adminApi.createCoupon(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-coupons'] });
       toast.success('Coupon created');
       setShowModal(false);
-      fetchCoupons();
-    } catch (error: any) {
-      toast.error(error.message);
-    }
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => adminApi.deleteCoupon(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-coupons'] });
+      toast.success('Coupon deleted');
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
+  const handleSave = () => {
+    const data = {
+      ...form,
+      discountValue: Number(form.discountValue),
+      minOrderAmount: form.minOrderAmount ? Number(form.minOrderAmount) : null,
+      maxUses: form.maxUses ? Number(form.maxUses) : null,
+    };
+    createMutation.mutate(data);
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = (id: string) => {
     if (!confirm('Are you sure?')) return;
-    try {
-      await adminApi.deleteCoupon(id);
-      toast.success('Coupon deleted');
-      fetchCoupons();
-    } catch (error: any) {
-      toast.error(error.message);
-    }
+    deleteMutation.mutate(id);
   };
 
   return (
@@ -61,7 +57,7 @@ export default function AdminCouponsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Coupons</h2>
-          <p className="text-sm text-gray-500">{coupons.filter((c) => c.isActive).length} active coupons</p>
+          <p className="text-sm text-gray-500">{coupons.filter((c: any) => c.isActive).length} active coupons</p>
         </div>
         <button onClick={() => { setForm(EMPTY); setShowModal(true); }} className="button-primary flex items-center gap-2 px-5 py-2.5">
           <span className="text-lg">+</span> Add Coupon
@@ -86,7 +82,7 @@ export default function AdminCouponsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50 dark:divide-dark-700">
-                {coupons.map((coupon) => (
+                {coupons.map((coupon: any) => (
                   <tr key={coupon.id} className="hover:bg-gray-50 dark:hover:bg-dark-700/30 transition-colors">
                     <td className="px-5 py-4">
                       <span className="rounded-lg bg-primary-50 px-3 py-1.5 font-mono text-sm font-bold text-primary-700 dark:bg-primary-950/30 dark:text-primary-400">
@@ -101,11 +97,11 @@ export default function AdminCouponsPage() {
                     </td>
                     <td className="px-5 py-4 hidden md:table-cell">
                       <div className="flex items-center gap-2">
-                        <span className="text-gray-700 dark:text-gray-300">{coupon.usedCount}</span>
+                        <span className="text-gray-700 dark:text-gray-300">{coupon.usedCount || 0}</span>
                         {coupon.maxUses && (
                           <>
                             <div className="h-1.5 w-20 overflow-hidden rounded-full bg-gray-100 dark:bg-dark-700">
-                              <div className="h-full rounded-full bg-primary-500" style={{ width: `${Math.min((coupon.usedCount / coupon.maxUses) * 100, 100)}%` }}/>
+                              <div className="h-full rounded-full bg-primary-500" style={{ width: `${Math.min(((coupon.usedCount || 0) / coupon.maxUses) * 100, 100)}%` }}/>
                             </div>
                             <span className="text-xs text-gray-400">/ {coupon.maxUses}</span>
                           </>
@@ -122,7 +118,7 @@ export default function AdminCouponsPage() {
                     </td>
                     <td className="px-5 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <button onClick={() => handleDelete(coupon.id)} className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-400 transition-colors">Delete</button>
+                        <button onClick={() => handleDelete(coupon.id)} disabled={deleteMutation.isPending} className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-400 transition-colors">Delete</button>
                       </div>
                     </td>
                   </tr>
@@ -156,7 +152,9 @@ export default function AdminCouponsPage() {
               </div>
               <div className="mt-5 flex gap-3">
                 <button onClick={() => setShowModal(false)} className="button-secondary flex-1 py-3">Cancel</button>
-                <button onClick={handleSave} className="button-primary flex-1 py-3">Create Coupon</button>
+                <button onClick={handleSave} disabled={createMutation.isPending} className="button-primary flex-1 py-3">
+                  {createMutation.isPending ? 'Creating...' : 'Create Coupon'}
+                </button>
               </div>
             </motion.div>
           </motion.div>
@@ -165,3 +163,4 @@ export default function AdminCouponsPage() {
     </div>
   );
 }
+
