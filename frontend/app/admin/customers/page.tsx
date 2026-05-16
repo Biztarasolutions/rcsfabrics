@@ -1,23 +1,21 @@
 'use client';
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-
-const CUSTOMERS = [
-  { id: '1', name: 'Priya Sharma', email: 'priya@example.com', phone: '+91 98765 43210', orders: 8, spent: 42500, joined: '2024-01-15', status: 'Active' },
-  { id: '2', name: 'Rahul Mehta', email: 'rahul@example.com', phone: '+91 87654 32109', orders: 24, spent: 128000, joined: '2023-06-10', status: 'Active' },
-  { id: '3', name: 'Sunita Iyer', email: 'sunita@example.com', phone: '+91 76543 21098', orders: 3, spent: 12500, joined: '2025-02-20', status: 'Active' },
-  { id: '4', name: 'Ananya Roy', email: 'ananya@example.com', phone: '+91 65432 10987', orders: 1, spent: 3000, joined: '2025-05-11', status: 'Active' },
-  { id: '5', name: 'Kiran Patel', email: 'kiran@example.com', phone: '+91 54321 09876', orders: 15, spent: 78500, joined: '2023-11-05', status: 'Active' },
-  { id: '6', name: 'Meera Joshi', email: 'meera@example.com', phone: '+91 43210 98765', orders: 2, spent: 5500, joined: '2024-09-01', status: 'Inactive' },
-];
-
-const { formatPrice } = require('@/lib/utils');
+import { useQuery } from '@tanstack/react-query';
+import { adminApi } from '@/lib/api';
+import { formatPrice } from '@/lib/utils';
+import toast from 'react-hot-toast';
 
 export default function AdminCustomersPage() {
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('spent');
 
-  let filtered = CUSTOMERS.filter((c) =>
+  const { data: customers = [], isLoading } = useQuery({
+    queryKey: ['admin-customers'],
+    queryFn: () => adminApi.getCustomers().then(res => res.data.data || []),
+  });
+
+  let filtered = customers.filter((c: any) =>
     c.name.toLowerCase().includes(search.toLowerCase()) ||
     c.email.toLowerCase().includes(search.toLowerCase())
   );
@@ -25,9 +23,9 @@ export default function AdminCustomersPage() {
   if (sort === 'orders') filtered = [...filtered].sort((a, b) => b.orders - a.orders);
   if (sort === 'newest') filtered = [...filtered].sort((a, b) => new Date(b.joined).getTime() - new Date(a.joined).getTime());
 
-  const totalCustomers = CUSTOMERS.length;
-  const totalRevenue = CUSTOMERS.reduce((s, c) => s + c.spent, 0);
-  const avgOrderValue = totalRevenue / CUSTOMERS.reduce((s, c) => s + c.orders, 0);
+  const totalCustomers = customers.length;
+  const totalRevenue = customers.reduce((s: number, c: any) => s + (c.spent || 0), 0);
+  const avgOrderValue = totalRevenue / (customers.reduce((s: number, c: any) => s + (c.orders || 0), 0) || 1);
 
   return (
     <div className="space-y-6">

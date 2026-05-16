@@ -31,17 +31,21 @@ export default function AdminCategoriesPage() {
   
   const handleSave = async () => {
     try {
+      const data = {
+        ...form,
+        slug: form.slug || form.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '')
+      };
       if (editId) {
-        await adminApi.updateCategory(editId, form);
+        await adminApi.updateCategory(editId, data);
         toast.success('Category updated');
       } else {
-        await adminApi.createCategory(form);
+        await adminApi.createCategory(data);
         toast.success('Category created');
       }
       setShowModal(false);
       fetchCategories();
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(error.response?.data?.message || error.message);
     }
   };
 

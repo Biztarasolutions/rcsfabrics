@@ -1,29 +1,21 @@
 'use client';
 import React, { useState } from 'react';
 import { formatPrice } from '@/lib/utils';
-
-const MONTHLY = [
-  { month: 'Jan', revenue: 58000, orders: 24 },
-  { month: 'Feb', revenue: 72000, orders: 31 },
-  { month: 'Mar', revenue: 91000, orders: 38 },
-  { month: 'Apr', revenue: 68000, orders: 28 },
-  { month: 'May', revenue: 85000, orders: 35 },
-];
-
-const TOP_PRODUCTS = [
-  { name: 'Pure Kanjivaram Silk', revenue: 145000, orders: 52, change: '+18%' },
-  { name: 'Royal Banarasi Silk', revenue: 112000, orders: 74, change: '+12%' },
-  { name: 'Italian Velvet', revenue: 96000, orders: 40, change: '+24%' },
-  { name: 'French Linen Blend', revenue: 78000, orders: 80, change: '+8%' },
-  { name: 'Georgette Chiffon', revenue: 65000, orders: 87, change: '+5%' },
-];
-
-const maxRevenue = Math.max(...MONTHLY.map((m) => m.revenue));
+import { useQuery } from '@tanstack/react-query';
+import { adminApi } from '@/lib/api';
 
 export default function AdminReportsPage() {
   const [period, setPeriod] = useState('thisMonth');
-  const totalRevenue = MONTHLY.reduce((s, m) => s + m.revenue, 0);
-  const totalOrders = MONTHLY.reduce((s, m) => s + m.orders, 0);
+
+  const { data: stats = null, isLoading } = useQuery({
+    queryKey: ['admin-stats'],
+    queryFn: () => adminApi.getStats().then(res => res.data.data),
+  });
+
+  const totalRevenue = stats?.totalRevenue || 0;
+  const totalOrders = stats?.totalOrders || 0;
+  const totalCustomers = stats?.totalCustomers || 0;
+  const totalProducts = stats?.totalProducts || 0;
 
   return (
     <div className="space-y-6">

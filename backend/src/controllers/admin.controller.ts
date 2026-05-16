@@ -549,9 +549,113 @@ export const deleteCategory = async (
     const { id } = req.params;
     await prisma.category.delete({ where: { id } });
     res.json({ success: true, message: 'Category deleted', statusCode: 200 } as ApiResponse);
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to delete category', statusCode: 500 } as ApiResponse);
   }
 };
+
+// ── Customer Management ──────────────────────────────────────────────────
+
+export const getCustomers = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const customers = await prisma.user.findMany({
+      where: { role: 'CUSTOMER' },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phone: true,
+        createdAt: true,
+        isActive: true,
+        _count: {
+          select: { orders: true },
+        },
+        orders: {
+          select: { total: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const formattedCustomers = customers.map((c) => ({
+      id: c.id,
+      name: `${c.firstName || ''} ${c.lastName || ''}`.trim() || 'Guest User',
+      email: c.email,
+      phone: c.phone || 'N/A',
+      orders: c._count.orders,
+      spent: c.orders.reduce((s, o) => s + (o.total || 0), 0),
+      joined: c.createdAt,
+      status: c.isActive ? 'Active' : 'Inactive',
+    }));
+
+    res.json({
+      success: true,
+      message: 'Customers retrieved',
+      data: formattedCustomers,
+      statusCode: 200,
+    } as ApiResponse);
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Internal server error', statusCode: 500 } as ApiResponse);
+  }
+};
+
+// ── Banner Management ────────────────────────────────────────────────────
+
+export const getBanners = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const banners = await prisma.banner.findMany({
+      orderBy: { order: 'asc' },
+    });
+
+    res.json({ success: true, data: banners, statusCode: 200 } as ApiResponse);
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Internal server error', statusCode: 500 } as ApiResponse);
+  }
+};
+
+export const createBanner = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const data = req.body;
+    const banner = await prisma.banner.create({ data });
+    res.status(201).json({ success: true, data: banner, statusCode: 201 } as ApiResponse);
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to create banner', statusCode: 500 } as ApiResponse);
+  }
+};
+
+export const updateBanner = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const banner = await prisma.banner.update({ where: { id }, data: req.body });
+    res.json({ success: true, data: banner, statusCode: 200 } as ApiResponse);
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to update banner', statusCode: 500 } as ApiResponse);
+  }
+};
+
+export const deleteBanner = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    await prisma.banner.delete({ where: { id } });
+    res.json({ success: true, message: 'Banner deleted', statusCode: 200 } as ApiResponse);
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to delete banner', statusCode: 500 } as ApiResponse);
+  }
+};
+
 
 

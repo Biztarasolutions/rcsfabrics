@@ -1,40 +1,63 @@
 'use client';
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-
-const INITIAL_BANNERS = [
-  { id: '1', title: 'Summer Sale — Up to 30% Off', subtitle: 'Premium fabrics at exclusive prices', link: '/products?sale=true', image: 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=400&q=60', isActive: true, order: 1 },
-  { id: '2', title: 'New Kanjivaram Collection', subtitle: 'Heritage silk, modern elegance', link: '/collections/silk', image: 'https://images.unsplash.com/photo-1584992236310-6edddc08acff?w=400&q=60', isActive: true, order: 2 },
-  { id: '3', title: 'Bulk Order Discounts', subtitle: 'Special pricing for 50+ meters', link: '/contact#bulk', image: 'https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?w=400&q=60', isActive: false, order: 3 },
-];
-
 const EMPTY = { title: '', subtitle: '', link: '', image: '', isActive: true };
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { adminApi } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 export default function AdminBannersPage() {
-  const [banners, setBanners] = useState(INITIAL_BANNERS);
+  const queryClient = useQueryClient();
   const [showModal, setShowModal] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [form, setForm] = useState<typeof EMPTY>(EMPTY);
+  const [form, setForm] = useState<any>(EMPTY);
+
+  const { data: banners = [], isLoading } = useQuery({
+    queryKey: ['admin-banners'],
+    queryFn: () => adminApi.getBanners().then(res => res.data.data || []),
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (data: any) => adminApi.createBanner(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-banners'] });
+      toast.success('Banner created');
+      setShowModal(false);
+    },
+    onError: (err: any) => toast.error(err.message || 'Failed to create banner'),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string, data: any }) => adminApi.updateBanner(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-banners'] });
+      toast.success('Banner updated');
+      setShowModal(false);
+    },
+    onError: (err: any) => toast.error(err.message || 'Failed to update banner'),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => adminApi.deleteBanner(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-banners'] });
+      toast.success('Banner deleted');
+    },
+    onError: (err: any) => toast.error(err.message || 'Failed to delete banner'),
+  });
 
   const openAdd = () => { setForm(EMPTY); setEditId(null); setShowModal(true); };
-  const openEdit = (b: typeof INITIAL_BANNERS[0]) => {
+  const openEdit = (b: any) => {
     setForm({ title: b.title, subtitle: b.subtitle, link: b.link, image: b.image, isActive: b.isActive });
     setEditId(b.id); setShowModal(true);
   };
   const handleSave = () => {
-    if (editId) setBanners((p) => p.map((b) => b.id === editId ? { ...b, ...form } : b));
-    else setBanners((p) => [...p, { id: Date.now().toString(), order: p.length + 1, ...form }]);
-    setShowModal(false);
+    if (editId) updateMutation.mutate({ id: editId, data: form });
+    else createMutation.mutate(form);
   };
-  const toggleActive = (id: string) => setBanners((p) => p.map((b) => b.id === id ? { ...b, isActive: !b.isActive } : b));
-  const handleDelete = (id: string) => setBanners((p) => p.filter((b) => b.id !== id));
-  const moveUp = (id: string) => {
-    const idx = banners.findIndex((b) => b.id === id);
-    if (idx === 0) return;
-    const updated = [...banners];
-    [updated[idx - 1], updated[idx]] = [updated[idx], updated[idx - 1]];
-    setBanners(updated.map((b, i) => ({ ...b, order: i + 1 })));
-  };
+  const toggleActive = (banner: any) => updateMutation.mutate({ id: banner.id, data: { isActive: !banner.isActive } });
+  const handleDelete = (id: string) => { if (confirm('Are you sure?')) deleteMutation.mutate(id); };
+  const moveUp = (banner: any) => { /* logic for reordering can be added if needed */ };
 
   return (
     <div className="space-y-6">

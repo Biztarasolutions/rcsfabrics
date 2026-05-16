@@ -67,6 +67,10 @@ export const adminApi = {
   createCategory: (data: any) => api.post('/admin/categories', data),
   updateCategory: (id: string, data: any) => api.put(`/admin/categories/${id}`, data),
   deleteCategory: (id: string) => api.delete(`/admin/categories/${id}`),
+  getBanners: () => api.get('/admin/banners'),
+  createBanner: (data: any) => api.post('/admin/banners', data),
+  updateBanner: (id: string, data: any) => api.put(`/admin/banners/${id}`, data),
+  deleteBanner: (id: string) => api.delete(`/admin/banners/${id}`),
 };
 
 export default api;

@@ -16,6 +16,10 @@ import {
   createCategory,
   updateCategory,
   deleteCategory,
+  getBanners,
+  createBanner,
+  updateBanner,
+  deleteBanner,
 } from '@/controllers/admin.controller';
 
 const router = Router();
@@ -49,5 +53,11 @@ router.get('/categories', getCategories);
 router.post('/categories', createCategory);
 router.put('/categories/:id', updateCategory);
 router.delete('/categories/:id', deleteCategory);
+
+// Banner Management
+router.get('/banners', getBanners);
+router.post('/banners', createBanner);
+router.put('/banners/:id', updateBanner);
+router.delete('/banners/:id', deleteBanner);
 
 export default router;
