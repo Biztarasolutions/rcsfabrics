@@ -6,7 +6,7 @@ import { adminApi } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
-const EMPTY_FORM = { name: '', category: '', material: '', basePrice: '', discountPrice: '', gsm: '', width: '', color: '', pattern: '', stretchability: 'Non-Stretch', usage: '', washCare: '', totalStock: '', minOrderQty: '0.5', description: '' };
+const EMPTY_FORM = { name: '', categoryId: '', material: '', basePrice: '', discountPrice: '', gsm: '', width: '', color: '', pattern: '', stretchability: 'Non-Stretch', usage: '', washCare: '', totalStock: '', minOrderQty: '0.5', description: '' };
 
 export default function AdminProductsPage() {
   const queryClient = useQueryClient();
@@ -21,6 +21,11 @@ export default function AdminProductsPage() {
     queryFn: () => adminApi.getAdminProducts({ search }).then(res => res.data.data),
   });
   const products = productsData.products;
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ['admin-categories-list'],
+    queryFn: () => adminApi.getCategories().then(res => res.data.data || []),
+  });
 
   const createMutation = useMutation({
     mutationFn: (data: any) => adminApi.createProduct(data),
@@ -167,7 +172,7 @@ export default function AdminProductsPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 {[
                   { key: 'name', label: 'Product Name', placeholder: 'Royal Banarasi Silk', full: true },
-                  { key: 'category', label: 'Category ID', placeholder: 'Category ID' },
+                  { key: 'categoryId', label: 'Category', type: 'select', options: categories },
                   { key: 'material', label: 'Material', placeholder: 'Silk' },
                   { key: 'color', label: 'Color', placeholder: 'Deep Maroon' },
                   { key: 'basePrice', label: 'Base Price (₹/m)', placeholder: '1850' },
@@ -180,8 +185,18 @@ export default function AdminProductsPage() {
                 ].map((f) => (
                   <div key={f.key} className={f.full ? 'sm:col-span-2' : ''}>
                     <label className="mb-1.5 block text-sm font-medium">{f.label}</label>
-                    <input value={form[f.key] || ''} onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
-                      placeholder={f.placeholder} className="input-field"/>
+                    {f.type === 'select' ? (
+                      <select value={form[f.key] || ''} onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
+                        className="input-field">
+                        <option value="">Select Category</option>
+                        {f.options.map((opt: any) => (
+                          <option key={opt.id} value={opt.id}>{opt.name}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input value={form[f.key] || ''} onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
+                        placeholder={f.placeholder} className="input-field"/>
+                    )}
                   </div>
                 ))}
               </div>

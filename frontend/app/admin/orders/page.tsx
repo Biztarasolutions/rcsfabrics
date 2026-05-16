@@ -30,7 +30,7 @@ export default function AdminOrdersPage() {
 
   const { data: ordersData = { orders: [], meta: { total: 0 } }, isLoading } = useQuery({
     queryKey: ['admin-orders', page, filterStatus, search],
-    queryFn: () => adminApi.getOrders({ page, limit: 10, status: filterStatus, search }).then(res => res.data),
+    queryFn: () => adminApi.getOrders({ page, limit: 10, status: filterStatus, search }).then(res => res.data.data),
   });
 
   const updateStatusMutation = useMutation({
@@ -54,7 +54,7 @@ export default function AdminOrdersPage() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Orders</h2>
-          <p className="text-sm text-gray-500">{ordersData.meta?.total || 0} total orders</p>
+          <p className="text-sm text-gray-500">{ordersData.total || 0} total orders</p>
         </div>
       </div>
 
@@ -129,9 +129,9 @@ export default function AdminOrdersPage() {
       </div>
 
       {/* Pagination */}
-      {ordersData.meta?.pages > 1 && (
+      {ordersData.pages > 1 && (
         <div className="flex justify-center gap-2 mt-4">
-           {[...Array(ordersData.meta.pages)].map((_, i) => (
+           {[...Array(ordersData.pages)].map((_, i) => (
              <button key={i} onClick={() => setPage(i + 1)}
                className={`h-9 w-9 rounded-xl text-sm font-semibold transition-all ${page === i + 1 ? 'bg-primary-600 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
                {i + 1}

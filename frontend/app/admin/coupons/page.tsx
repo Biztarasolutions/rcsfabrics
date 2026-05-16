@@ -20,7 +20,7 @@ export default function AdminCouponsPage() {
   const fetchCoupons = async () => {
     try {
       const res = await adminApi.getCoupons();
-      setCoupons(res.data.data);
+      setCoupons(res.data.data || []);
     } catch (error: any) {
       toast.error(error.message);
     } finally {

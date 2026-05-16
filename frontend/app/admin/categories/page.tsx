@@ -18,7 +18,7 @@ export default function AdminCategoriesPage() {
   const fetchCategories = async () => {
     try {
       const res = await adminApi.getCategories();
-      setCats(res.data.data);
+      setCats(res.data.data || []);
     } catch (error: any) {
       toast.error(error.message);
     } finally {
