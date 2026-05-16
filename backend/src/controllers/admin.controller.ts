@@ -374,7 +374,7 @@ export const getDashboardStats = async (
 // ── Coupon Management ───────────────────────────────────────────────────
 
 export const getCoupons = async (
-  req: AuthRequest,
+  _req: AuthRequest,
   res: Response
 ): Promise<void> => {
   try {
@@ -422,6 +422,7 @@ export const createCoupon = async (
         discountValue,
         minOrderAmount,
         maxUses,
+        startsAt: new Date(),
         expiresAt: new Date(expiresAt),
         isActive: true,
       },
@@ -475,7 +476,7 @@ export const deleteCoupon = async (
 // ── Category Management ──────────────────────────────────────────────────
 
 export const getCategories = async (
-  req: AuthRequest,
+  _req: AuthRequest,
   res: Response
 ): Promise<void> => {
   try {
@@ -557,7 +558,7 @@ export const deleteCategory = async (
 // ── Customer Management ──────────────────────────────────────────────────
 
 export const getCustomers = async (
-  req: AuthRequest,
+  _req: AuthRequest,
   res: Response
 ): Promise<void> => {
   try {
@@ -606,7 +607,7 @@ export const getCustomers = async (
 // ── Banner Management ────────────────────────────────────────────────────
 
 export const getBanners = async (
-  req: AuthRequest,
+  _req: AuthRequest,
   res: Response
 ): Promise<void> => {
   try {

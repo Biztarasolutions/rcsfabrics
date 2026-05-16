@@ -5,7 +5,7 @@ import {
   updateProduct,
   deleteProduct,
   getAdminProducts as getProducts,
-  getOrders,
+  getAdminOrders as getOrders,
   updateOrderStatus,
   getDashboardStats,
   getCustomers,
