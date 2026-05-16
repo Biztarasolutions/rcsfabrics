@@ -13,7 +13,7 @@ const item = { hidden: { opacity: 0, y: 30 }, show: { opacity: 1, y: 0, transiti
 export default function FeaturedProducts() {
   const { data: products = [], isLoading } = useQuery({
     queryKey: ['featured-products'],
-    queryFn: () => productApi.getFeatured().then(res => res.data),
+    queryFn: () => productApi.getFeatured().then(res => res.data.data),
   });
 
   return (
