@@ -12,9 +12,9 @@ services:
       - key: PORT
         value: 10000
       - key: DATABASE_URL
-        fromContext: DATABASE_URL
+        sync: false
       - key: DIRECT_URL
-        fromContext: DIRECT_URL
+        sync: false
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_EXPIRE
