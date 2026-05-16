@@ -11,6 +11,10 @@ import {
   getCoupons,
   createCoupon,
   deleteCoupon,
+  getCategories,
+  createCategory,
+  updateCategory,
+  deleteCategory,
 } from '@/controllers/admin.controller';
 
 const router = Router();
@@ -35,5 +39,11 @@ router.get('/dashboard/stats', getDashboardStats);
 router.get('/coupons', getCoupons);
 router.post('/coupons', createCoupon);
 router.delete('/coupons/:id', deleteCoupon);
+
+// Category Management
+router.get('/categories', getCategories);
+router.post('/categories', createCategory);
+router.put('/categories/:id', updateCategory);
+router.delete('/categories/:id', deleteCategory);
 
 export default router;

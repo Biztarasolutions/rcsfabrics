@@ -472,3 +472,86 @@ export const deleteCoupon = async (
   }
 };
 
+// ── Category Management ──────────────────────────────────────────────────
+
+export const getCategories = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const categories = await prisma.category.findMany({
+      include: {
+        _count: {
+          select: { products: true },
+        },
+      },
+      orderBy: { name: 'asc' },
+    });
+
+    res.json({
+      success: true,
+      message: 'Categories retrieved',
+      data: categories,
+      statusCode: 200,
+    } as ApiResponse);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      statusCode: 500,
+    } as ApiResponse);
+  }
+};
+
+export const createCategory = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const { name, slug, description, isActive } = req.body;
+    if (!name || !slug) throw new ApiError(400, 'Name and slug are required');
+
+    const category = await prisma.category.create({
+      data: { name, slug, description, isActive: isActive ?? true },
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Category created',
+      data: category,
+      statusCode: 201,
+    } as ApiResponse);
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to create category', statusCode: 500 } as ApiResponse);
+  }
+};
+
+export const updateCategory = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const data = req.body;
+    const category = await prisma.category.update({ where: { id }, data });
+
+    res.json({ success: true, message: 'Category updated', data: category, statusCode: 200 } as ApiResponse);
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to update category', statusCode: 500 } as ApiResponse);
+  }
+};
+
+export const deleteCategory = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    await prisma.category.delete({ where: { id } });
+    res.json({ success: true, message: 'Category deleted', statusCode: 200 } as ApiResponse);
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to delete category', statusCode: 500 } as ApiResponse);
+  }
+};
+
+

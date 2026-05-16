@@ -63,6 +63,10 @@ export const adminApi = {
   getCoupons: () => api.get('/admin/coupons'),
   createCoupon: (data: any) => api.post('/admin/coupons', data),
   deleteCoupon: (id: string) => api.delete(`/admin/coupons/${id}`),
+  getCategories: () => api.get('/admin/categories'),
+  createCategory: (data: any) => api.post('/admin/categories', data),
+  updateCategory: (id: string, data: any) => api.put(`/admin/categories/${id}`, data),
+  deleteCategory: (id: string) => api.delete(`/admin/categories/${id}`),
 };
 
 export default api;
