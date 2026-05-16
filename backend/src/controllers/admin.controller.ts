@@ -370,3 +370,105 @@ export const getDashboardStats = async (
     } as ApiResponse);
   }
 };
+
+// ── Coupon Management ───────────────────────────────────────────────────
+
+export const getCoupons = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const coupons = await prisma.coupon.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json({
+      success: true,
+      message: 'Coupons retrieved',
+      data: coupons,
+      statusCode: 200,
+    } as ApiResponse);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      statusCode: 500,
+    } as ApiResponse);
+  }
+};
+
+export const createCoupon = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const {
+      code,
+      discountType,
+      discountValue,
+      minOrderAmount,
+      maxUses,
+      expiresAt,
+    } = req.body;
+
+    if (!code || !discountType || !discountValue || !expiresAt) {
+      throw new ApiError(400, 'Code, type, value, and expiry are required');
+    }
+
+    const coupon = await prisma.coupon.create({
+      data: {
+        code: code.toUpperCase(),
+        discountType,
+        discountValue,
+        minOrderAmount,
+        maxUses,
+        expiresAt: new Date(expiresAt),
+        isActive: true,
+      },
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Coupon created successfully',
+      data: coupon,
+      statusCode: 201,
+    } as ApiResponse);
+  } catch (error) {
+    if (error instanceof ApiError) {
+      res.status(error.statusCode).json({
+        success: false,
+        message: error.message,
+        statusCode: error.statusCode,
+      } as ApiResponse);
+    } else {
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        statusCode: 500,
+      } as ApiResponse);
+    }
+  }
+};
+
+export const deleteCoupon = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    await prisma.coupon.delete({ where: { id } });
+
+    res.json({
+      success: true,
+      message: 'Coupon deleted successfully',
+      statusCode: 200,
+    } as ApiResponse);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      statusCode: 500,
+    } as ApiResponse);
+  }
+};
+

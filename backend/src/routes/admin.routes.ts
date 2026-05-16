@@ -8,6 +8,9 @@ import {
   getAdminOrders,
   updateOrderStatus,
   getDashboardStats,
+  getCoupons,
+  createCoupon,
+  deleteCoupon,
 } from '@/controllers/admin.controller';
 
 const router = Router();
@@ -27,5 +30,10 @@ router.put('/orders/:id', updateOrderStatus);
 
 // Dashboard
 router.get('/dashboard/stats', getDashboardStats);
+
+// Coupon Management
+router.get('/coupons', getCoupons);
+router.post('/coupons', createCoupon);
+router.delete('/coupons/:id', deleteCoupon);
 
 export default router;

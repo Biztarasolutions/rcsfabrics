@@ -60,6 +60,9 @@ export const adminApi = {
   getOrders: (params?: any) => api.get('/admin/orders', { params }),
   updateOrderStatus: (id: string, data: any) => api.patch(`/admin/orders/${id}/status`, data),
   getCustomers: (params?: any) => api.get('/admin/customers', { params }),
+  getCoupons: () => api.get('/admin/coupons'),
+  createCoupon: (data: any) => api.post('/admin/coupons', data),
+  deleteCoupon: (id: string) => api.delete(`/admin/coupons/${id}`),
 };
 
 export default api;
