@@ -43,9 +43,9 @@ export class OrderService {
       const coupon = await prisma.coupon.findUnique({ where: { code: data.couponCode } });
       if (coupon && coupon.isActive && new Date(coupon.expiresAt) > new Date()) {
         if (!coupon.minOrderAmount || subtotal >= Number(coupon.minOrderAmount)) {
-          if (!coupon.usageLimit || coupon.usedCount < coupon.usageLimit) {
-            if (coupon.type === 'PERCENT') discount = (subtotal * coupon.value) / 100;
-            else if (coupon.type === 'FLAT') discount = Math.min(coupon.value, subtotal);
+          if (!coupon.maxUses || coupon.usedCount < coupon.maxUses) {
+            if (coupon.discountType === 'PERCENTAGE') discount = (subtotal * coupon.discountValue) / 100;
+            else if (coupon.discountType === 'FIXED') discount = Math.min(coupon.discountValue, subtotal);
             couponId = coupon.id;
           }
         }
@@ -64,22 +64,27 @@ export class OrderService {
         paymentStatus: 'PENDING',
         paymentMethod: data.paymentMethod,
         subtotal,
-        discount,
+        discountAmount: discount,
         shippingCost: shipping,
         total,
         shippingAddressId: data.shippingAddressId,
-        couponId,
+        couponCode: data.couponCode,
         notes: data.notes,
         items: {
-          create: data.items.map((i) => ({
-            productId: i.productId,
-            quantity: i.quantity,
-            pricePerMeter: i.pricePerMeter,
-            total: i.quantity * i.pricePerMeter,
+          create: await Promise.all(data.items.map(async (i) => {
+            const product = await prisma.product.findUnique({ where: { id: i.productId } });
+            return {
+              productId: i.productId,
+              productName: product?.name || 'Unknown Product',
+              productImage: product?.images?.[0]?.url || null,
+              quantity: i.quantity,
+              pricePerMeter: i.pricePerMeter,
+              total: i.quantity * i.pricePerMeter,
+            };
           })),
         },
       },
-      include: { items: { include: { product: true } }, shippingAddress: true },
+      include: { items: { include: { product: true } } },
     });
 
     // 5. Create Razorpay order (if not COD)
@@ -93,7 +98,7 @@ export class OrderService {
 
       await prisma.order.update({
         where: { id: order.id },
-        data: { razorpayOrderId: rzOrder.id },
+        data: { razorpayOrderId: rzOrder.id as string },
       });
 
       return { order, razorpayOrder: rzOrder };
@@ -233,13 +238,13 @@ export class OrderService {
     if (coupon.minOrderAmount && orderTotal < Number(coupon.minOrderAmount)) {
       throw new Error(`Minimum order of ₹${coupon.minOrderAmount} required`);
     }
-    if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit) {
+    if (coupon.maxUses && coupon.usedCount >= coupon.maxUses) {
       throw new Error('Coupon usage limit reached');
     }
 
     let discount = 0;
-    if (coupon.type === 'PERCENT') discount = (orderTotal * coupon.value) / 100;
-    else if (coupon.type === 'FLAT') discount = Math.min(coupon.value, orderTotal);
+    if (coupon.discountType === 'PERCENTAGE') discount = (orderTotal * coupon.discountValue) / 100;
+    else if (coupon.discountType === 'FIXED') discount = Math.min(coupon.discountValue, orderTotal);
 
     return { coupon, discount };
   }

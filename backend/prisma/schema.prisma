@@ -259,7 +259,15 @@ model Order {
   
   // Payment Info
   stripePaymentId String?  @db.VarChar(255)
+  razorpayOrderId String?  @db.VarChar(255)
+  razorpayPaymentId String? @db.VarChar(255)
   
+  // Fulfillment Info
+  trackingNumber String?   @db.VarChar(255)
+  notes          String?   @db.Text
+  deliveredAt    DateTime?
+  paidAt         DateTime?
+
   // Timestamps
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
