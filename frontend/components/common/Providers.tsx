@@ -6,7 +6,15 @@ import { useThemeStore } from '@/lib/store';
 import CartSidebar from '@/components/common/CartSidebar';
 
 const queryClient = new QueryClient({
-  defaultOptions: { queries: { staleTime: 1000 * 60 * 5, retry: 1 } },
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 30, // 30 minutes - keep data fresh longer
+      gcTime: 1000 * 60 * 60, // 1 hour - garbage collection time
+      retry: 1,
+      refetchOnWindowFocus: false, // Don't refetch when user returns to tab
+      refetchOnReconnect: 'stale', // Only refetch if data is stale
+    },
+  },
 });
 
 function ThemeApplier() {

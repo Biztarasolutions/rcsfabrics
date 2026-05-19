@@ -285,3 +285,93 @@ export const getNewArrivals = async (
   }
 };
 
+/**
+ * Batch endpoint to fetch multiple data points for homepage
+ * Reduces number of API calls from 5+ to 1
+ */
+export const getHomepageData = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const limit = 8;
+
+    // Fetch all data in parallel
+    const [featured, newArrivals, bestSellers, categories, collections] = await Promise.all([
+      // Featured products
+      prisma.product.findMany({
+        where: { isActive: true, isFeatured: true },
+        take: limit,
+        include: {
+          images: { where: { isMain: true }, take: 1 },
+          category: { select: { name: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      // New arrivals
+      prisma.product.findMany({
+        where: { isActive: true },
+        take: limit,
+        include: {
+          images: { where: { isMain: true }, take: 1 },
+          category: { select: { name: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      // Best sellers (products with most sales)
+      prisma.product.findMany({
+        where: { isActive: true },
+        take: limit,
+        include: {
+          images: { where: { isMain: true }, take: 1 },
+          category: { select: { name: true } },
+        },
+        orderBy: { totalSales: 'desc' },
+      }),
+      // Active categories
+      prisma.category.findMany({
+        where: { isActive: true },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          image: true,
+        },
+        orderBy: { order: 'asc' },
+      }),
+      // Featured collections
+      prisma.collection.findMany({
+        where: { isActive: true },
+        take: 6,
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          image: true,
+          description: true,
+        },
+        orderBy: { order: 'asc' },
+      }),
+    ]);
+
+    res.json({
+      success: true,
+      message: 'Homepage data retrieved',
+      data: {
+        featured,
+        newArrivals,
+        bestSellers,
+        categories,
+        collections,
+      },
+      statusCode: 200,
+    } as ApiResponse);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve homepage data',
+      statusCode: 500,
+    } as ApiResponse);
+  }
+};
+

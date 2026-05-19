@@ -185,8 +185,13 @@ export const getAdminProducts = async (
       prisma.product.findMany({
         where,
         include: {
-          images: true,
-          category: true,
+          images: {
+            where: { isMain: true },
+            take: 1,
+          },
+          category: {
+            select: { name: true, id: true },
+          },
         },
         skip,
         take: parsedLimit,
@@ -247,9 +252,16 @@ export const getAdminOrders = async (
       prisma.order.findMany({
         where,
         include: {
-          user: { select: { email: true, firstName: true } },
+          user: { select: { email: true, firstName: true, lastName: true } },
           items: {
-            include: { product: true },
+            select: {
+              id: true,
+              quantity: true,
+              pricePerMeter: true,
+              total: true,
+              productName: true,
+              productImage: true,
+            },
           },
         },
         skip,
@@ -577,6 +589,7 @@ export const getCustomers = async (
         },
         orders: {
           select: { total: true },
+          take: 100, // Limit to prevent fetching too much data
         },
       },
       orderBy: { createdAt: 'desc' },

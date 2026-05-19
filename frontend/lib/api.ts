@@ -41,6 +41,7 @@ export const productApi = {
   getAll: (params?: any) => api.get('products', { params }),
   getFeatured: () => api.get('products/featured'),
   getNewArrivals: () => api.get('products/new-arrivals'),
+  getHomepageData: () => api.get('products/batch/homepage'),
   getBySlug: (slug: string) => api.get(`products/slug/${slug}`),
   getRelated: (id: string, categoryId: string) => api.get(`products/related/${id}/${categoryId}`),
   search: (query: string) => api.get(`products/search?q=${query}`),

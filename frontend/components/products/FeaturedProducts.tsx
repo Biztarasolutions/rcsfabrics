@@ -3,18 +3,15 @@
 import React from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { useQuery } from '@tanstack/react-query';
-import { productApi } from '@/lib/api';
+import { useHomepageData } from '@/hooks/useHomepageData';
 import ProductCard from './ProductCard';
 
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.1 } } };
 const item = { hidden: { opacity: 0, y: 30 }, show: { opacity: 1, y: 0, transition: { duration: 0.5 } } };
 
 export default function FeaturedProducts() {
-  const { data: products = [], isLoading } = useQuery({
-    queryKey: ['featured-products'],
-    queryFn: () => productApi.getFeatured().then(res => res.data.data),
-  });
+  const { data: homepageData, isLoading } = useHomepageData();
+  const products = homepageData?.featured || [];
 
   return (
     <div className="mt-12">

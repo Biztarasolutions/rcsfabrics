@@ -3,16 +3,13 @@
 import React, { useRef } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { useQuery } from '@tanstack/react-query';
-import { productApi } from '@/lib/api';
+import { useHomepageData } from '@/hooks/useHomepageData';
 import ProductCard from './ProductCard';
 
 export default function NewArrivals() {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { data: products = [], isLoading } = useQuery({
-    queryKey: ['new-arrivals'],
-    queryFn: () => productApi.getNewArrivals().then(res => res.data.data),
-  });
+  const { data: homepageData, isLoading } = useHomepageData();
+  const products = homepageData?.newArrivals || [];
 
   const scroll = (dir: 'left' | 'right') => {
     if (scrollRef.current) {

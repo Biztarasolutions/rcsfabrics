@@ -5,9 +5,13 @@ import {
   getProductBySlug,
   getFeaturedProducts,
   getNewArrivals,
+  getHomepageData,
 } from '@/controllers/product.controller';
 
 const router = Router();
+
+// Batch endpoint for homepage - should be called before individual endpoints
+router.get('/batch/homepage', getHomepageData);
 
 router.get('/', getProducts);
 router.get('/featured', getFeaturedProducts);

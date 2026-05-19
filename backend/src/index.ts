@@ -15,6 +15,7 @@ import wishlistRoutes from '@/routes/wishlist.routes';
 
 import { errorHandler, notFound } from '@/middleware/errorHandler';
 import { authenticateToken } from '@/middleware/auth';
+import { cacheMiddleware } from '@/middleware/cache';
 
 const app: Express = express();
 const port = process.env.PORT || 5000;
@@ -45,6 +46,9 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Logging
 app.use(morgan('combined'));
+
+// Cache Middleware - Cache all GET requests
+app.use('/api/', cacheMiddleware);
 
 // Health Check
 app.get('/health', (_req: Request, res: Response) => {
