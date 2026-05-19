@@ -129,7 +129,7 @@ export const createProduct = async (
       data: product,
       statusCode: 201,
     } as ApiResponse);
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof ApiError) {
       res.status(error.statusCode).json({
         success: false,
@@ -139,7 +139,7 @@ export const createProduct = async (
     } else {
       res.status(500).json({
         success: false,
-        message: 'Internal server error',
+        message: error.message || 'Internal server error',
         statusCode: 500,
       } as ApiResponse);
     }
@@ -198,7 +198,7 @@ export const updateProduct = async (
       data: product,
       statusCode: 200,
     } as ApiResponse);
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof ApiError) {
       res.status(error.statusCode).json({
         success: false,
@@ -208,7 +208,7 @@ export const updateProduct = async (
     } else {
       res.status(500).json({
         success: false,
-        message: 'Internal server error',
+        message: error.message || 'Internal server error',
         statusCode: 500,
       } as ApiResponse);
     }
