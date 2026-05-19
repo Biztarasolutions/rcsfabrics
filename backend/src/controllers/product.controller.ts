@@ -412,9 +412,9 @@ export const proxyProductImage = async (
     
     // Pipe the stream to res
     (driveRes.data as any).pipe(res);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error proxying Google Drive image:', error);
-    res.status(404).send('Image not found or access denied');
+    res.status(404).send(`Image not found or access denied: ${error.message}`);
   }
 };
 
