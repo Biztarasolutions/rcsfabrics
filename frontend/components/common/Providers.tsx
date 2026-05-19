@@ -12,7 +12,7 @@ const queryClient = new QueryClient({
       gcTime: 1000 * 60 * 60, // 1 hour - garbage collection time
       retry: 1,
       refetchOnWindowFocus: false, // Don't refetch when user returns to tab
-      refetchOnReconnect: 'stale', // Only refetch if data is stale
+      refetchOnReconnect: true, // Refetch when connection is re-established
     },
   },
 });
