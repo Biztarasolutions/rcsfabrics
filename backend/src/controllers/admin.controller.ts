@@ -6,6 +6,7 @@ import { parsePagination, createPaginationMeta } from '@/utils/pagination.util';
 import { ApiError } from '@/middleware/errorHandler';
 import { extractFolderId, getDriveImageStream, fetchFolderImageDetails } from '@/utils/googleDrive.util';
 import { uploadImageToSupabase } from '@/utils/supabase.util';
+import { invalidateCache } from '@/middleware/cache';
 
 // Reusable function to convert a stream to a buffer
 const streamToBuffer = (stream: any): Promise<Buffer> => {
@@ -812,20 +813,21 @@ export const syncProductImages = async (
     // Upload files to Supabase
     const supabaseUrls = await uploadDriveImagesToSupabase(folderId);
 
-    if (supabaseUrls.length > 0) {
-      // Clear existing images and replace with the newly synced ones
-      await prisma.$transaction([
-        prisma.productImage.deleteMany({ where: { productId: id } }),
-        prisma.productImage.createMany({
-          data: supabaseUrls.map((url, index) => ({
-            productId: id,
-            url,
-            isMain: index === 0,
-            order: index,
-          })),
-        }),
-      ]);
-    }
+    // Clear existing images and replace with the newly synced ones (even if 0 images remain)
+    await prisma.$transaction([
+      prisma.productImage.deleteMany({ where: { productId: id } }),
+      prisma.productImage.createMany({
+        data: supabaseUrls.map((url, index) => ({
+          productId: id,
+          url,
+          isMain: index === 0,
+          order: index,
+        })),
+      }),
+    ]);
+
+    // Invalidate product cache to show updates instantly
+    invalidateCache('/api/products');
 
     res.json({
       success: true,
@@ -877,25 +879,27 @@ export const syncAllProductImages = async (
         console.log(`[Sync All] Syncing product: ${product.name}`);
         const supabaseUrls = await uploadDriveImagesToSupabase(folderId);
 
-        if (supabaseUrls.length > 0) {
-          await prisma.$transaction([
-            prisma.productImage.deleteMany({ where: { productId: product.id } }),
-            prisma.productImage.createMany({
-              data: supabaseUrls.map((url, index) => ({
-                productId: product.id,
-                url,
-                isMain: index === 0,
-                order: index,
-              })),
-            }),
-          ]);
-          syncCount++;
-        }
+        // Clear existing images and replace with the newly synced ones (even if 0 images remain)
+        await prisma.$transaction([
+          prisma.productImage.deleteMany({ where: { productId: product.id } }),
+          prisma.productImage.createMany({
+            data: supabaseUrls.map((url, index) => ({
+              productId: product.id,
+              url,
+              isMain: index === 0,
+              order: index,
+            })),
+          }),
+        ]);
+        syncCount++;
       } catch (err: any) {
         console.error(`[Sync All] Failed syncing product "${product.name}":`, err.message);
         errors.push(`Product "${product.name}": ${err.message}`);
       }
     }
+
+    // Invalidate product cache to show updates instantly
+    invalidateCache('/api/products');
 
     res.json({
       success: true,
