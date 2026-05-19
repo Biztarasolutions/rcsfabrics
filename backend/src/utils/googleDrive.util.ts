@@ -4,11 +4,31 @@ import path from 'path';
 // Define the scopes for the Google Drive API
 const SCOPES = ['https://www.googleapis.com/auth/drive.readonly'];
 
-// Initialize the Google Auth client
-const auth = new google.auth.GoogleAuth({
-  keyFile: path.join(__dirname, '../../google-credentials.json'),
-  scopes: SCOPES,
-});
+// Initialize the Google Auth client dynamically to support both local files and in-memory cloud credentials
+let auth: any;
+if (process.env.GOOGLE_CREDS_JSON) {
+  try {
+    const creds = JSON.parse(process.env.GOOGLE_CREDS_JSON);
+    auth = new google.auth.GoogleAuth({
+      credentials: {
+        client_email: creds.client_email,
+        private_key: creds.private_key?.replace(/\\n/g, '\n'),
+      },
+      scopes: SCOPES,
+    });
+  } catch (err: any) {
+    console.error('Error parsing GOOGLE_CREDS_JSON environment variable:', err);
+    auth = new google.auth.GoogleAuth({
+      keyFile: path.join(__dirname, '../../google-credentials.json'),
+      scopes: SCOPES,
+    });
+  }
+} else {
+  auth = new google.auth.GoogleAuth({
+    keyFile: path.join(__dirname, '../../google-credentials.json'),
+    scopes: SCOPES,
+  });
+}
 
 const drive = google.drive({ version: 'v3', auth });
 
