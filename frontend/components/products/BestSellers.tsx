@@ -32,7 +32,7 @@ export default function BestSellers() {
           </div>
         ) : (
           <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {products.map((product: any, i) => (
+            {products.map((product: any, i: number) => (
             <motion.div key={product.id}
               initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }} transition={{ delay: i * 0.1 }}

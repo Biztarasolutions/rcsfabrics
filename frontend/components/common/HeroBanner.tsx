@@ -50,7 +50,7 @@ export default function HeroBanner() {
   return (
     <section className="relative h-[90vh] min-h-[600px] max-h-[900px] overflow-hidden">
       {/* Background image with ken-burns */}
-      {SLIDES.map((s, i) => (
+      {SLIDES.map((s, i: number) => (
         <div key={s.id}
           className={`absolute inset-0 transition-opacity duration-1000 ${i === current ? 'opacity-100' : 'opacity-0'}`}>
           <img src={s.image} alt={s.tag} className="h-full w-full object-cover scale-105 animate-float"
@@ -126,7 +126,7 @@ export default function HeroBanner() {
 
       {/* Slide indicators */}
       <div className="absolute bottom-8 left-1/2 z-10 flex -translate-x-1/2 gap-2">
-        {SLIDES.map((_, i) => (
+        {SLIDES.map((_, i: number) => (
           <button key={i} onClick={() => setCurrent(i)}
             className={`rounded-full transition-all duration-300 ${i === current ? 'w-8 bg-white' : 'w-2 bg-white/40 hover:bg-white/60'} h-2`}
             aria-label={`Slide ${i + 1}`}/>

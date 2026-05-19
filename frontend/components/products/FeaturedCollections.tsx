@@ -53,7 +53,7 @@ export default function FeaturedCollections() {
               )}
 
               {/* Tall cards */}
-              {collections.slice(1, 3).map((col: any, i) => (
+              {collections.slice(1, 3).map((col: any, i: number) => (
                 <motion.div key={col.id}
                   initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }} transition={{ delay: i * 0.1 }}>
