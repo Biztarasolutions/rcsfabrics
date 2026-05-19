@@ -156,7 +156,17 @@ export const updateProduct = async (
     }
 
     const { id } = req.params;
-    const { imageUrls, folderUrl, ...updateData } = req.body;
+    const { 
+      id: bodyId, 
+      createdAt, 
+      updatedAt, 
+      images, 
+      category, 
+      reviews,
+      imageUrls, 
+      folderUrl, 
+      ...updateData 
+    } = req.body;
 
     const product = await prisma.product.update({
       where: { id },
