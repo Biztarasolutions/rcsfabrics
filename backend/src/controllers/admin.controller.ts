@@ -30,6 +30,7 @@ export const createProduct = async (
       washCare,
       totalStock,
       minOrderQty,
+      imageUrls,
     } = req.body;
 
     if (!name || !categoryId || !basePrice) {
@@ -55,6 +56,15 @@ export const createProduct = async (
         totalStock: totalStock || 0,
         minOrderQty: minOrderQty || 0.5,
         sku: generateSKU('FAB'),
+        ...(imageUrls && Array.isArray(imageUrls) && imageUrls.filter(url => url).length > 0 && {
+          images: {
+            create: imageUrls.filter(url => url).map((url, index) => ({
+              url,
+              isMain: index === 0,
+              order: index
+            }))
+          }
+        })
       },
     });
 
@@ -91,12 +101,28 @@ export const updateProduct = async (
     }
 
     const { id } = req.params;
-    const updateData = req.body;
+    const { imageUrls, ...updateData } = req.body;
 
     const product = await prisma.product.update({
       where: { id },
       data: updateData,
     });
+
+    if (imageUrls && Array.isArray(imageUrls)) {
+      await prisma.productImage.deleteMany({ where: { productId: id } });
+      
+      const validUrls = imageUrls.filter((url: string) => url);
+      if (validUrls.length > 0) {
+        await prisma.productImage.createMany({
+          data: validUrls.map((url: string, index: number) => ({
+            productId: id,
+            url,
+            isMain: index === 0,
+            order: index
+          }))
+        });
+      }
+    }
 
     res.json({
       success: true,

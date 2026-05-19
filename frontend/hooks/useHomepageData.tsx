@@ -3,6 +3,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { productApi } from '@/lib/api';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 /**
  * Hook to fetch all homepage data in a single optimized request
@@ -26,3 +27,17 @@ export function HomepageDataProvider({ children }: { children: React.ReactNode }
   
   return <>{children}</>;
 }
+
+/**
+ * Hook to add a new category and invalidate cache
+ */
+export const useAddCategory = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation(productApi.createCategory, {
+    onSuccess: () => {
+      // Invalidate homepage data cache
+      queryClient.invalidateQueries(['homepage-data']);
+    },
+  });
+};
