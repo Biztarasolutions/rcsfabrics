@@ -36,11 +36,11 @@ function ProductsContent() {
       maxPrice: maxPrice ? Number(maxPrice) : undefined,
       page: Number(page),
       limit: 12,
-    }).then(res => res.data),
+    }).then(res => res.data.data),
   });
 
   const products = data?.products || [];
-  const pagination = data?.pagination;
+  const pagination = data;
 
   const updateParam = (key: string, value: string) => {
     const params = new URLSearchParams(searchParams.toString());
