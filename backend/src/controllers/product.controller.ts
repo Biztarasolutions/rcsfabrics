@@ -1,8 +1,9 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { prisma } from '@/index';
 import { AuthRequest, ApiResponse } from '@/types';
 import { parsePagination, createPaginationMeta } from '@/utils/pagination.util';
 import { ApiError } from '@/middleware/errorHandler';
+import { getDriveImageStream } from '@/utils/googleDrive.util';
 
 export const getProducts = async (
   req: AuthRequest,
@@ -290,7 +291,7 @@ export const getNewArrivals = async (
  * Reduces number of API calls from 5+ to 1
  */
 export const getHomepageData = async (
-  req: AuthRequest,
+  _req: AuthRequest,
   res: Response
 ): Promise<void> => {
   try {
@@ -326,7 +327,7 @@ export const getHomepageData = async (
           images: { where: { isMain: true }, take: 1 },
           category: { select: { name: true } },
         },
-        orderBy: { totalSales: 'desc' },
+        orderBy: { orderItems: { _count: 'desc' } },
       }),
       // Active categories
       prisma.category.findMany({
@@ -372,6 +373,48 @@ export const getHomepageData = async (
       message: 'Failed to retrieve homepage data',
       statusCode: 500,
     } as ApiResponse);
+  }
+};
+
+/**
+ * Public proxy endpoint to stream images from Google Drive securely
+ */
+export const proxyProductImage = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { fileId } = req.params;
+    if (!fileId) {
+      throw new ApiError(400, 'File ID is required');
+    }
+
+    // Call the drive utility to get the stream
+    const driveRes = await getDriveImageStream(fileId);
+    
+    // Log headers to see what googleapis returned
+    console.log(`[Proxy] Google Drive response headers for ${fileId}:`, driveRes.headers);
+
+    // Set headers from the Google Drive response
+    const contentType = driveRes.headers['content-type'] || 'image/jpeg';
+    res.setHeader('Content-Type', contentType);
+    
+    const contentLength = driveRes.headers['content-length'];
+    if (contentLength) {
+      res.setHeader('Content-Length', contentLength);
+    }
+
+    // Crucial for cross-origin image rendering in browsers when Helmet is enabled
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+
+    // Set cache headers to avoid hitting Google Drive API repeatedly
+    res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for 1 day
+    
+    // Pipe the stream to res
+    (driveRes.data as any).pipe(res);
+  } catch (error) {
+    console.error('Error proxying Google Drive image:', error);
+    res.status(404).send('Image not found or access denied');
   }
 };
 

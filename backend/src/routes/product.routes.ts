@@ -6,6 +6,7 @@ import {
   getFeaturedProducts,
   getNewArrivals,
   getHomepageData,
+  proxyProductImage,
 } from '@/controllers/product.controller';
 
 const router = Router();
@@ -16,6 +17,7 @@ router.get('/batch/homepage', getHomepageData);
 router.get('/', getProducts);
 router.get('/featured', getFeaturedProducts);
 router.get('/new-arrivals', getNewArrivals);
+router.get('/image/:fileId', proxyProductImage);
 router.get('/:id', getProductById);
 router.get('/slug/:slug', getProductBySlug);
 

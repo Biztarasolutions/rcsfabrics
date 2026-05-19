@@ -75,3 +75,14 @@ export const fetchAndSortFolderImages = async (folderId: string): Promise<string
     throw new Error('Failed to fetch files from the provided Google Drive folder. Ensure the folder is shared with the service account.');
   }
 };
+
+/**
+ * Fetches a file's media stream from Google Drive using the service account.
+ */
+export const getDriveImageStream = async (fileId: string) => {
+  return await drive.files.get(
+    { fileId, alt: 'media' },
+    { responseType: 'stream' }
+  );
+};
+

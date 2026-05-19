@@ -16,6 +16,7 @@ import wishlistRoutes from '@/routes/wishlist.routes';
 import { errorHandler, notFound } from '@/middleware/errorHandler';
 import { authenticateToken } from '@/middleware/auth';
 import { cacheMiddleware } from '@/middleware/cache';
+import { driveProxyMiddleware } from '@/middleware/driveProxy';
 
 const app: Express = express();
 const port = process.env.PORT || 5000;
@@ -39,6 +40,7 @@ const limiter = rateLimit({
 });
 
 app.use('/api/', limiter);
+app.use(driveProxyMiddleware);
 
 // Body Parser Middleware
 app.use(express.json({ limit: '50mb' }));
