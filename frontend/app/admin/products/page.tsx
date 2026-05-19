@@ -134,7 +134,9 @@ export default function AdminProductsPage() {
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
                       <img src={product.images?.[0]?.url || 'https://via.placeholder.com/40'} alt={product.name} className="h-10 w-10 rounded-xl object-cover"/>
-                      <span className="font-semibold text-gray-900 dark:text-white">{product.name}</span>
+                      <a href={`/product/${product.slug}`} target="_blank" rel="noopener noreferrer" className="font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 hover:underline">
+                        {product.name}
+                      </a>
                     </div>
                   </td>
                   <td className="px-5 py-4 hidden sm:table-cell text-gray-600 dark:text-gray-400">{product.category?.name}</td>

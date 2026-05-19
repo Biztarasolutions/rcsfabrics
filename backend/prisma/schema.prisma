@@ -131,7 +131,6 @@ model Product {
   @@index([isActive])
   @@index([isFeatured])
   @@index([isNew])
-  // Composite indexes for common queries
   @@index([isActive, isFeatured, createdAt])
   @@index([isActive, createdAt])
   @@index([categoryId, isActive])
@@ -227,7 +226,6 @@ model Order {
   @@index([status])
   @@index([paymentStatus])
   @@index([orderNumber])
-  // Composite indexes for common queries
   @@index([userId, status, createdAt])
   @@index([status, createdAt])
   @@map("orders")
@@ -267,7 +265,6 @@ model Review {
   @@unique([productId, userId])
   @@index([productId])
   @@index([userId])
-  // Composite index for fetching reviews sorted by newest
   @@index([productId, createdAt])
   @@map("reviews")
 }
