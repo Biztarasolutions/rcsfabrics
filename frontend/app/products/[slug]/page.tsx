@@ -14,7 +14,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
 
   const { data: PRODUCT, isLoading, isError } = useQuery({
     queryKey: ['product', params.slug],
-    queryFn: () => productApi.getBySlug(params.slug).then(res => res.data),
+    queryFn: () => productApi.getBySlug(params.slug).then(res => res.data.data),
   });
 
   const { addItem } = useCartStore();
