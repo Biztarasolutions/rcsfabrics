@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { productApi } from '@/lib/api';
+import { productApi, adminApi } from '@/lib/api';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 /**
@@ -34,10 +34,11 @@ export function HomepageDataProvider({ children }: { children: React.ReactNode }
 export const useAddCategory = () => {
   const queryClient = useQueryClient();
 
-  return useMutation(productApi.createCategory, {
+  return useMutation({
+    mutationFn: adminApi.createCategory,
     onSuccess: () => {
       // Invalidate homepage data cache
-      queryClient.invalidateQueries(['homepage-data']);
+      queryClient.invalidateQueries({ queryKey: ['homepage-data'] });
     },
   });
 };
