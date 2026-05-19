@@ -6,16 +6,7 @@ import { adminApi } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
-const EMPTY_FORM = { name: '', categoryId: '', material: '', basePrice: '', discountPrice: '', gsm: '', width: '', color: '', pattern: '', stretchability: 'Non-Stretch', usage: '', washCare: '', totalStock: '', minOrderQty: '0.5', description: '', imageUrls: [''] };
-
-const convertGoogleDriveLink = (url: string): string => {
-  if (!url) return '';
-  const match = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
-  if (match && match[1]) {
-    return `https://drive.google.com/uc?export=view&id=${match[1]}`;
-  }
-  return url;
-};
+const EMPTY_FORM = { name: '', categoryId: '', material: '', basePrice: '', discountPrice: '', gsm: '', width: '', color: '', pattern: '', stretchability: 'Non-Stretch', usage: '', washCare: '', totalStock: '', minOrderQty: '0.5', description: '', folderUrl: '' };
 
 export default function AdminProductsPage() {
   const queryClient = useQueryClient();
@@ -75,7 +66,7 @@ export default function AdminProductsPage() {
       gsm: p.gsm ? String(p.gsm) : '',
       width: p.width ? String(p.width) : '',
       minOrderQty: String(p.minOrderQty),
-      imageUrls: p.images?.length > 0 ? p.images.map((img: any) => img.url) : [''],
+      folderUrl: '', // Reset folder url on edit
     });
     setEditId(p.id);
     setShowModal(true);
@@ -90,7 +81,7 @@ export default function AdminProductsPage() {
       gsm: form.gsm ? Number(form.gsm) : undefined,
       width: form.width ? Number(form.width) : undefined,
       minOrderQty: Number(form.minOrderQty),
-      imageUrls: (form.imageUrls || []).filter(Boolean).map(convertGoogleDriveLink),
+      folderUrl: form.folderUrl || undefined,
     };
 
     if (editId) {
@@ -193,6 +184,7 @@ export default function AdminProductsPage() {
                   { key: 'pattern', label: 'Pattern', placeholder: 'Zari Brocade' },
                   { key: 'totalStock', label: 'Stock (meters)', placeholder: '50' },
                   { key: 'minOrderQty', label: 'Min Order (m)', placeholder: '0.5' },
+                  { key: 'folderUrl', label: 'Google Drive Folder URL (Auto-imports images)', placeholder: 'https://drive.google.com/drive/folders/...', full: true },
                 ].map((f) => (
                   <div key={f.key} className={f.full ? 'sm:col-span-2' : ''}>
                     <label className="mb-1.5 block text-sm font-medium">{f.label}</label>
@@ -210,45 +202,6 @@ export default function AdminProductsPage() {
                     )}
                   </div>
                 ))}
-
-                {/* Dynamic Image Fields */}
-                <div className="sm:col-span-2 space-y-3 mt-2">
-                  <label className="block text-sm font-medium">Product Images (Google Drive Direct Links)</label>
-                  {(form.imageUrls || []).map((url: string, index: number) => (
-                    <div key={index} className="flex gap-2 items-center">
-                      <input 
-                        value={url} 
-                        onChange={(e) => {
-                          const newUrls = [...(form.imageUrls || [])];
-                          newUrls[index] = e.target.value;
-                          setForm({ ...form, imageUrls: newUrls });
-                        }}
-                        placeholder={`Image ${index + 1} URL (https://...)`}
-                        className="input-field flex-1"
-                      />
-                      <button 
-                        type="button"
-                        onClick={() => {
-                          const newUrls = [...(form.imageUrls || [])];
-                          newUrls.splice(index, 1);
-                          setForm({ ...form, imageUrls: newUrls });
-                        }}
-                        className="rounded-lg p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
-                        title="Remove Image"
-                      >
-                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                      </button>
-                    </div>
-                  ))}
-                  <button 
-                    type="button" 
-                    onClick={() => setForm({ ...form, imageUrls: [...(form.imageUrls || []), ''] })}
-                    className="text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1"
-                  >
-                    <span>+ Add Another Image</span>
-                  </button>
-                </div>
-
               </div>
               <div className="mt-6 flex gap-3">
                 <button onClick={() => setShowModal(false)} className="button-secondary flex-1 py-3">Cancel</button>

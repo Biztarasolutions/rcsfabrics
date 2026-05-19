@@ -4,6 +4,7 @@ import { AuthRequest, ApiResponse } from '@/types';
 import { generateSlug, generateSKU } from '@/utils/string.util';
 import { parsePagination, createPaginationMeta } from '@/utils/pagination.util';
 import { ApiError } from '@/middleware/errorHandler';
+import { extractFolderId, fetchAndSortFolderImages } from '@/utils/googleDrive.util';
 
 export const createProduct = async (
   req: AuthRequest,
@@ -31,10 +32,22 @@ export const createProduct = async (
       totalStock,
       minOrderQty,
       imageUrls,
+      folderUrl,
     } = req.body;
 
     if (!name || !categoryId || !basePrice) {
       throw new ApiError(400, 'Name, category, and price are required');
+    }
+
+    let finalImageUrls: string[] = [];
+    
+    if (folderUrl) {
+      const folderId = extractFolderId(folderUrl);
+      if (folderId) {
+        finalImageUrls = await fetchAndSortFolderImages(folderId);
+      }
+    } else if (imageUrls && Array.isArray(imageUrls)) {
+      finalImageUrls = imageUrls.filter(url => url);
     }
 
     const product = await prisma.product.create({
@@ -56,9 +69,9 @@ export const createProduct = async (
         totalStock: totalStock || 0,
         minOrderQty: minOrderQty || 0.5,
         sku: generateSKU('FAB'),
-        ...(imageUrls && Array.isArray(imageUrls) && imageUrls.filter(url => url).length > 0 && {
+        ...(finalImageUrls.length > 0 && {
           images: {
-            create: imageUrls.filter(url => url).map((url, index) => ({
+            create: finalImageUrls.map((url, index) => ({
               url,
               isMain: index === 0,
               order: index
@@ -101,27 +114,37 @@ export const updateProduct = async (
     }
 
     const { id } = req.params;
-    const { imageUrls, ...updateData } = req.body;
+    const { imageUrls, folderUrl, ...updateData } = req.body;
 
     const product = await prisma.product.update({
       where: { id },
       data: updateData,
     });
 
-    if (imageUrls && Array.isArray(imageUrls)) {
+    let finalImageUrls: string[] | null = null;
+    if (folderUrl) {
+      const folderId = extractFolderId(folderUrl);
+      if (folderId) {
+        finalImageUrls = await fetchAndSortFolderImages(folderId);
+      }
+    } else if (imageUrls && Array.isArray(imageUrls)) {
+      finalImageUrls = imageUrls.filter((url: string) => url);
+    }
+
+    if (finalImageUrls && finalImageUrls.length > 0) {
       await prisma.productImage.deleteMany({ where: { productId: id } });
       
-      const validUrls = imageUrls.filter((url: string) => url);
-      if (validUrls.length > 0) {
-        await prisma.productImage.createMany({
-          data: validUrls.map((url: string, index: number) => ({
-            productId: id,
-            url,
-            isMain: index === 0,
-            order: index
-          }))
-        });
-      }
+      await prisma.productImage.createMany({
+        data: finalImageUrls.map((url: string, index: number) => ({
+          productId: id,
+          url,
+          isMain: index === 0,
+          order: index
+        }))
+      });
+    } else if (imageUrls && Array.isArray(imageUrls) && imageUrls.length === 0) {
+      // Allow clearing all images if empty array provided
+      await prisma.productImage.deleteMany({ where: { productId: id } });
     }
 
     res.json({
