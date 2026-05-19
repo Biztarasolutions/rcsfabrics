@@ -4,7 +4,48 @@ import { AuthRequest, ApiResponse } from '@/types';
 import { generateSlug, generateSKU } from '@/utils/string.util';
 import { parsePagination, createPaginationMeta } from '@/utils/pagination.util';
 import { ApiError } from '@/middleware/errorHandler';
-import { extractFolderId, fetchAndSortFolderImages } from '@/utils/googleDrive.util';
+import { extractFolderId, getDriveImageStream, fetchFolderImageDetails } from '@/utils/googleDrive.util';
+import { uploadImageToSupabase } from '@/utils/supabase.util';
+
+// Reusable function to convert a stream to a buffer
+const streamToBuffer = (stream: any): Promise<Buffer> => {
+  return new Promise((resolve, reject) => {
+    const chunks: any[] = [];
+    stream.on('data', (chunk: any) => chunks.push(chunk));
+    stream.on('error', (err: any) => reject(err));
+    stream.on('end', () => resolve(Buffer.concat(chunks)));
+  });
+};
+
+/**
+ * Downloads Google Drive images as streams, converts them to buffers, and uploads them to Supabase Storage
+ */
+const uploadDriveImagesToSupabase = async (folderId: string): Promise<string[]> => {
+  try {
+    const files = await fetchFolderImageDetails(folderId);
+    const publicUrls: string[] = [];
+
+    for (const file of files) {
+      console.log(`[Supabase Upload] Downloading file: ${file.name} (${file.id})`);
+      const streamRes = await getDriveImageStream(file.id);
+      const buffer = await streamToBuffer(streamRes.data);
+      
+      const publicUrl = await uploadImageToSupabase(
+        buffer,
+        file.name,
+        file.mimeType || 'image/jpeg'
+      );
+      
+      publicUrls.push(publicUrl);
+      console.log(`[Supabase Upload] Uploaded successfully: ${file.name} -> ${publicUrl}`);
+    }
+
+    return publicUrls;
+  } catch (error) {
+    console.error('[Supabase Upload] Error syncing images:', error);
+    throw error;
+  }
+};
 
 export const createProduct = async (
   req: AuthRequest,
@@ -44,7 +85,7 @@ export const createProduct = async (
     if (folderUrl) {
       const folderId = extractFolderId(folderUrl);
       if (folderId) {
-        finalImageUrls = await fetchAndSortFolderImages(folderId);
+        finalImageUrls = await uploadDriveImagesToSupabase(folderId);
       }
     } else if (imageUrls && Array.isArray(imageUrls)) {
       finalImageUrls = imageUrls.filter(url => url);
@@ -69,6 +110,7 @@ export const createProduct = async (
         totalStock: totalStock || 0,
         minOrderQty: minOrderQty || 0.5,
         sku: generateSKU('FAB'),
+        folderUrl,
         ...(finalImageUrls.length > 0 && {
           images: {
             create: finalImageUrls.map((url, index) => ({
@@ -118,14 +160,17 @@ export const updateProduct = async (
 
     const product = await prisma.product.update({
       where: { id },
-      data: updateData,
+      data: {
+        ...updateData,
+        folderUrl,
+      },
     });
 
     let finalImageUrls: string[] | null = null;
     if (folderUrl) {
       const folderId = extractFolderId(folderUrl);
       if (folderId) {
-        finalImageUrls = await fetchAndSortFolderImages(folderId);
+        finalImageUrls = await uploadDriveImagesToSupabase(folderId);
       }
     } else if (imageUrls && Array.isArray(imageUrls)) {
       finalImageUrls = imageUrls.filter((url: string) => url);
@@ -719,6 +764,146 @@ export const deleteBanner = async (
     res.json({ success: true, message: 'Banner deleted', statusCode: 200 } as ApiResponse);
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to delete banner', statusCode: 500 } as ApiResponse);
+  }
+};
+
+/**
+ * Syncs images of a single product from Google Drive to Supabase Storage
+ */
+export const syncProductImages = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.user || req.user.role !== 'ADMIN') {
+      throw new ApiError(403, 'Only admins can sync product images');
+    }
+
+    const { id } = req.params;
+    const product = await prisma.product.findUnique({
+      where: { id },
+    });
+
+    if (!product) {
+      throw new ApiError(404, 'Product not found');
+    }
+
+    if (!product.folderUrl) {
+      throw new ApiError(400, 'This product does not have a Google Drive folder link saved.');
+    }
+
+    const folderId = extractFolderId(product.folderUrl);
+    if (!folderId) {
+      throw new ApiError(400, 'Invalid Google Drive folder link.');
+    }
+
+    console.log(`[Sync] Starting image sync for product: ${product.name} (${product.id})`);
+    
+    // Upload files to Supabase
+    const supabaseUrls = await uploadDriveImagesToSupabase(folderId);
+
+    if (supabaseUrls.length > 0) {
+      // Clear existing images and replace with the newly synced ones
+      await prisma.$transaction([
+        prisma.productImage.deleteMany({ where: { productId: id } }),
+        prisma.productImage.createMany({
+          data: supabaseUrls.map((url, index) => ({
+            productId: id,
+            url,
+            isMain: index === 0,
+            order: index,
+          })),
+        }),
+      ]);
+    }
+
+    res.json({
+      success: true,
+      message: `Successfully synced ${supabaseUrls.length} images for product: ${product.name}`,
+      statusCode: 200,
+    } as ApiResponse);
+  } catch (error: any) {
+    console.error('Error syncing images:', error);
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || 'Failed to sync product images.',
+      statusCode: error.statusCode || 500,
+    } as ApiResponse);
+  }
+};
+
+/**
+ * Syncs images for all products that have folderUrls
+ */
+export const syncAllProductImages = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.user || req.user.role !== 'ADMIN') {
+      throw new ApiError(403, 'Only admins can sync all product images');
+    }
+
+    // Find all products with a folderUrl
+    const products = await prisma.product.findMany({
+      where: {
+        folderUrl: { not: null },
+      },
+    });
+
+    console.log(`[Sync All] Found ${products.length} products to sync.`);
+    let syncCount = 0;
+    const errors: string[] = [];
+
+    for (const product of products) {
+      if (!product.folderUrl) continue;
+      const folderId = extractFolderId(product.folderUrl);
+      if (!folderId) {
+        errors.push(`Product "${product.name}": Invalid folder URL`);
+        continue;
+      }
+
+      try {
+        console.log(`[Sync All] Syncing product: ${product.name}`);
+        const supabaseUrls = await uploadDriveImagesToSupabase(folderId);
+
+        if (supabaseUrls.length > 0) {
+          await prisma.$transaction([
+            prisma.productImage.deleteMany({ where: { productId: product.id } }),
+            prisma.productImage.createMany({
+              data: supabaseUrls.map((url, index) => ({
+                productId: product.id,
+                url,
+                isMain: index === 0,
+                order: index,
+              })),
+            }),
+          ]);
+          syncCount++;
+        }
+      } catch (err: any) {
+        console.error(`[Sync All] Failed syncing product "${product.name}":`, err.message);
+        errors.push(`Product "${product.name}": ${err.message}`);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Successfully synced ${syncCount} of ${products.length} products.`,
+      data: {
+        totalProducts: products.length,
+        syncedCount: syncCount,
+        errors: errors.length > 0 ? errors : undefined,
+      },
+      statusCode: 200,
+    } as ApiResponse);
+  } catch (error: any) {
+    console.error('Error syncing all images:', error);
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || 'Failed to sync all product images.',
+      statusCode: error.statusCode || 500,
+    } as ApiResponse);
   }
 };
 

@@ -20,6 +20,8 @@ import {
   createBanner,
   updateBanner,
   deleteBanner,
+  syncProductImages,
+  syncAllProductImages,
 } from '@/controllers/admin.controller';
 
 const router = Router();
@@ -32,6 +34,8 @@ router.post('/products', createProduct);
 router.get('/products', getProducts);
 router.put('/products/:id', updateProduct);
 router.delete('/products/:id', deleteProduct);
+router.post('/products/sync-all', syncAllProductImages);
+router.post('/products/:id/sync', syncProductImages);
 
 // Order Management
 router.get('/orders', getOrders);

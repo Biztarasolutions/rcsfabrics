@@ -56,6 +56,42 @@ export default function AdminProductsPage() {
     },
   });
 
+  const syncSingleMutation = useMutation({
+    mutationFn: (id: string) => adminApi.syncProduct(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+    },
+  });
+
+  const syncAllMutation = useMutation({
+    mutationFn: () => adminApi.syncAllProducts(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+    },
+  });
+
+  const handleSyncSingle = (id: string) => {
+    toast.promise(
+      syncSingleMutation.mutateAsync(id),
+      {
+        loading: 'Syncing images with Google Drive...',
+        success: 'Sync completed!',
+        error: (err) => err.message || 'Failed to sync images.',
+      }
+    );
+  };
+
+  const handleSyncAll = () => {
+    toast.promise(
+      syncAllMutation.mutateAsync(),
+      {
+        loading: 'Syncing all product images. This may take a moment...',
+        success: 'All products synced!',
+        error: (err) => err.message || 'Failed to sync all products.',
+      }
+    );
+  };
+
   const openAdd = () => { setForm(EMPTY_FORM); setEditId(null); setShowModal(true); };
   const openEdit = (p: any) => {
     setForm({
@@ -98,9 +134,18 @@ export default function AdminProductsPage() {
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Products</h2>
           <p className="text-sm text-gray-500">{products.length} fabrics in catalog</p>
         </div>
-        <button onClick={openAdd} className="button-primary flex items-center gap-2 px-5 py-2.5">
-          <span className="text-lg">+</span> Add Product
-        </button>
+        <div className="flex gap-3">
+          <button onClick={handleSyncAll} disabled={syncAllMutation.isPending}
+            className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-dark-700 dark:bg-dark-800 dark:text-gray-200 dark:hover:bg-dark-700 transition-all active:scale-[0.98]">
+            <svg className={`h-4 w-4 text-gray-500 dark:text-gray-400 ${syncAllMutation.isPending ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.228 5.6M22 7h-6v6" />
+            </svg>
+            {syncAllMutation.isPending ? 'Syncing...' : 'Sync All Images'}
+          </button>
+          <button onClick={openAdd} className="button-primary flex items-center gap-2 px-5 py-2.5">
+            <span className="text-lg">+</span> Add Product
+          </button>
+        </div>
       </div>
 
       {/* Search bar */}
@@ -153,6 +198,15 @@ export default function AdminProductsPage() {
                   </td>
                   <td className="px-5 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
+                      {product.folderUrl && (
+                        <button onClick={() => handleSyncSingle(product.id)} disabled={syncSingleMutation.isPending}
+                          className="rounded-lg border border-blue-200 px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 dark:border-blue-900 dark:text-blue-400 dark:hover:bg-blue-950/30 transition-colors flex items-center gap-1 active:scale-[0.97]">
+                          <svg className={`h-3 w-3 ${syncSingleMutation.isPending && syncSingleMutation.variables === product.id ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.228 5.6M22 7h-6v6" />
+                          </svg>
+                          Sync
+                        </button>
+                      )}
                       <button onClick={() => openEdit(product)} className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-dark-600 dark:text-gray-300 dark:hover:bg-dark-700 transition-colors">Edit</button>
                       <button onClick={() => setDeleteConfirm(product.id)} className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/30 transition-colors">Delete</button>
                     </div>
