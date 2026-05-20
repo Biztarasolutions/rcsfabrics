@@ -15,7 +15,8 @@ const ProductForm = () => {
     colors: [{ name: '', hexCode: '', folderUrl: '' }],
   });
 
-  const mutation = useMutation(adminApi.createProduct, {
+  const mutation = useMutation({
+    mutationFn: adminApi.createProduct,
     onSuccess: () => {
       alert('Product created successfully!');
       setFormData({
@@ -28,20 +29,20 @@ const ProductForm = () => {
         colors: [{ name: '', hexCode: '', folderUrl: '' }],
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       alert(`Error: ${error.message}`);
     },
   });
 
-  const handleChange = (e) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleColorChange = (index, e) => {
+  const handleColorChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     const updatedColors = [...formData.colors];
-    updatedColors[index][name] = value;
+    updatedColors[index][name as keyof typeof updatedColors[number]] = value;
     setFormData((prev) => ({ ...prev, colors: updatedColors }));
   };
 
@@ -52,7 +53,7 @@ const ProductForm = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     mutation.mutate(formData);
   };
