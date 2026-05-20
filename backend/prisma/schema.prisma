@@ -130,6 +130,7 @@ model Product {
   reviews         Review[]
   swatchRequests  SwatchRequest[]
   wishlist        Wishlist[]
+  colors       ProductColor[]
 
   @@index([categoryId])
   @@index([slug])
@@ -458,4 +459,18 @@ enum BulkOrderStatus {
   QUOTED
   ACCEPTED
   REJECTED
+}
+
+model ProductColor {
+  id          String   @id @default(cuid())
+  productId   String
+  name        String   @db.VarChar(50)
+  hexCode     String   @db.VarChar(7)
+  folderUrl   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@map("product_colors")
 }

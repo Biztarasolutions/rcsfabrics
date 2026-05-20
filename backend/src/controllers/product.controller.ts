@@ -418,3 +418,79 @@ export const proxyProductImage = async (
   }
 };
 
+export const createProduct = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const {
+      name,
+      categoryId,
+      basePrice,
+      discountPrice,
+      material,
+      width,
+      pattern,
+      stretchability,
+      workType,
+      stock,
+      minOrderQty,
+      colors,
+    } = req.body;
+
+    if (!name || !categoryId || !basePrice || !material || !stretchability || !stock) {
+      throw new ApiError(400, 'Required fields are missing');
+    }
+
+    const product = await prisma.product.create({
+      data: {
+        name,
+        slug: name.toLowerCase().replace(/\s+/g, '-'),
+        categoryId,
+        basePrice,
+        discountPrice,
+        material,
+        width,
+        pattern,
+        stretchability,
+        totalStock: stock,
+        minOrderQty,
+      },
+    });
+
+    if (colors && Array.isArray(colors)) {
+      for (const color of colors) {
+        await prisma.productColor.create({
+          data: {
+            productId: product.id,
+            name: color.name,
+            hexCode: color.hexCode,
+            folderUrl: color.folderUrl,
+          },
+        });
+      }
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Product created successfully',
+      data: product,
+      statusCode: 201,
+    } as ApiResponse);
+  } catch (error) {
+    if (error instanceof ApiError) {
+      res.status(error.statusCode).json({
+        success: false,
+        message: error.message,
+        statusCode: error.statusCode,
+      } as ApiResponse);
+    } else {
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        statusCode: 500,
+      } as ApiResponse);
+    }
+  }
+};
+
