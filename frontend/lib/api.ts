@@ -92,21 +92,30 @@ export const adminApi = {
 
 // Upload an image from a URL (e.g., Google Drive share link) to Supabase storage and return its public URL.
 export const uploadCategoryImage = async (fileUrl: string): Promise<string> => {
+  // Support Google Drive share links
+  let downloadUrl = fileUrl;
+  const driveRegex = /(?:https?:\/\/)?(?:drive\.google\.com\/file\/d\/|drive\.google\.com\/open\?id=)([^\/\?]+)/;
+  const match = fileUrl.match(driveRegex);
+  if (match && match[1]) {
+    const fileId = match[1];
+    downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+  }
+
   // Fetch the image binary.
-  const response = await fetch(fileUrl);
+  const response = await fetch(downloadUrl);
   if (!response.ok) {
     throw new Error('Failed to fetch image from the provided URL');
   }
   const blob = await response.blob();
-   // Generate a unique filename.
-   const filename = `${Date.now()}-${Math.random().toString(36).substring(2)}.${blob.type.split('/')[1] || 'jpg'}`;
-   
-   const { data, error } = await supabase.storage
-     .from('category-images')
-     .upload(filename, blob, {
-       contentType: blob.type || 'image/jpeg',
-       upsert: true,
-     });
+  // Generate a unique filename.
+  const filename = `${Date.now()}-${Math.random().toString(36).substring(2)}.${blob.type.split('/')[1] || 'jpg'}`;
+
+  const { data, error } = await supabase.storage
+    .from('category-images')
+    .upload(filename, blob, {
+      contentType: blob.type || 'image/jpeg',
+      upsert: true,
+    });
 
   if (error) {
     console.error('[Supabase] Upload error:', error);
@@ -117,5 +126,4 @@ export const uploadCategoryImage = async (fileUrl: string): Promise<string> => {
   const publicUrl = publicUrlData.publicUrl;
   return publicUrl;
 };
-
 export default api;
