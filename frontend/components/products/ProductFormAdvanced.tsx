@@ -24,8 +24,7 @@ const EMPTY_FORM = {
   totalStock: '',
   minOrderQty: '0.5',
   description: '',
-  folderUrl: '',
-  colors: [{ name: '', hexCode: '#000000', folderUrl: '' }],
+  colors: [{ name: '', hexCode: '#000000', folderUrl: '', productCode: '' }],
 };
 
 export default function ProductFormAdvanced() {
@@ -74,7 +73,7 @@ export default function ProductFormAdvanced() {
   const addColor = () => {
     setForm((prev: any) => ({
       ...prev,
-      colors: [...prev.colors, { name: '', hexCode: '#000000', folderUrl: '' }],
+      colors: [...prev.colors, { name: '', hexCode: '#000000', folderUrl: '', productCode: '' }],
     }));
   };
 
@@ -97,6 +96,7 @@ export default function ProductFormAdvanced() {
       code: form.code ? Number(form.code) : undefined,
       minOrderQty: Number(form.minOrderQty),
       styleCode,
+      folderUrl: undefined,
     };
     mutation.mutate(payload);
   };
@@ -344,18 +344,6 @@ export default function ProductFormAdvanced() {
             />
           </div>
 
-          {/* Google Drive Folder URL */}
-          <div className="sm:col-span-2">
-            <label className="mb-1.5 block text-sm font-medium">Google Drive Folder URL</label>
-            <input
-              name="folderUrl"
-              value={form.folderUrl}
-              onChange={handleChange}
-              placeholder="https://drive.google.com/drive/folders/..."
-              className="input-field"
-            />
-            <p className="mt-1 text-xs text-gray-500">Base images that will be auto-imported</p>
-          </div>
         </div>
       </div>
 
@@ -421,15 +409,29 @@ export default function ProductFormAdvanced() {
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="mb-1 block text-xs font-medium">Google Drive Folder URL (for this color)</label>
+                  <label className="mb-1 block text-xs font-medium">Product Code (Editable) *</label>
+                  <input
+                    type="text"
+                    value={color.productCode || `${styleCode}-${color.name.substring(0, 3).toUpperCase()}`}
+                    onChange={(e) => handleColorChange(index, 'productCode', e.target.value)}
+                    placeholder={`e.g., ${styleCode}-RED`}
+                    className="input-field"
+                    required
+                  />
+                  <p className="mt-1 text-xs text-gray-500">Edit to customize the product code for this color variant. Default: StyleCode-ColorCode</p>
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="mb-1 block text-xs font-medium">Google Drive Folder URL (Images for this color) *</label>
                   <input
                     type="text"
                     value={color.folderUrl}
                     onChange={(e) => handleColorChange(index, 'folderUrl', e.target.value)}
                     placeholder="https://drive.google.com/drive/folders/..."
                     className="input-field"
+                    required
                   />
-                  <p className="mt-1 text-xs text-gray-500">Product Code: {styleCode}-{color.name.substring(0, 3).toUpperCase()}</p>
+                  <p className="mt-1 text-xs text-gray-500">Upload folder URL with images for this color variant</p>
                 </div>
               </div>
             </div>

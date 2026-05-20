@@ -80,6 +80,7 @@ export interface CreateProductInput {
     name: string;
     hexCode: string;
     folderUrl?: string;
+    productCode?: string;
   }>;
   images?: ProductImageInput[];
 }
@@ -114,6 +115,7 @@ export interface UpdateProductInput {
     name: string;
     hexCode: string;
     folderUrl?: string;
+    productCode?: string;
   }>;
   images?: ProductImageInput[];
 }

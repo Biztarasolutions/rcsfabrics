@@ -96,16 +96,25 @@ export const createProduct = async (
     // Generate styleCode as Name-Category
     const styleCode = `${name.substring(0, 3).toUpperCase()}-${category.name.substring(0, 3).toUpperCase()}`;
 
-    let finalImageUrls: string[] = [];
+    // Process colors with their individual folder URLs
+    let colorImages: { [key: string]: string[] } = {};
     
-    if (folderUrl) {
-      const folderId = extractFolderId(folderUrl);
-      if (folderId) {
-        finalImageUrls = await uploadDriveImagesToSupabase(folderId);
+    if (colors && Array.isArray(colors) && colors.length > 0) {
+      for (const color of colors) {
+        if (color.folderUrl) {
+          try {
+            const folderId = extractFolderId(color.folderUrl);
+            if (folderId) {
+              colorImages[color.productCode || `${styleCode}-${color.name.substring(0, 3).toUpperCase()}`] = await uploadDriveImagesToSupabase(folderId);
+            }
+          } catch (error) {
+            console.error(`Error processing images for color ${color.name}:`, error);
+          }
+        }
       }
-    } else if (imageUrls && Array.isArray(imageUrls)) {
-      finalImageUrls = imageUrls.filter(url => url);
     }
+
+    let finalImageUrls: string[] = [];
 
     const product = await prisma.product.create({
       data: {
@@ -132,28 +141,20 @@ export const createProduct = async (
         totalStock: totalStock || 0,
         minOrderQty: minOrderQty || 0.5,
         sku: generateSKU('FAB'),
-        folderUrl,
-        ...(finalImageUrls.length > 0 && {
-          images: {
-            create: finalImageUrls.map((url, index) => ({
-              url,
-              isMain: index === 0,
-              order: index
-            }))
-          }
-        }),
         ...(colors && Array.isArray(colors) && colors.length > 0 && {
           colors: {
-            create: colors.map((color: any) => ({
-              name: color.name,
-              hexCode: color.hexCode,
-              productCode: `${styleCode}-${color.name.substring(0, 3).toUpperCase()}`,
-              folderUrl: color.folderUrl,
-            }))
+            create: colors.map((color: any) => {
+              const computedProductCode = color.productCode || `${styleCode}-${color.name.substring(0, 3).toUpperCase()}`;
+              return {
+                name: color.name,
+                hexCode: color.hexCode,
+                productCode: computedProductCode,
+              };
+            })
           }
         })
       },
-      include: { colors: true, images: true }
+      include: { colors: true }
     });
 
     res.status(201).json({
