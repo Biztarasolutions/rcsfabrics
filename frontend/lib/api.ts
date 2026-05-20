@@ -33,8 +33,15 @@ api.interceptors.response.use(
 export const authApi = {
   login: (data: any) => api.post('auth/login', data),
   register: (data: any) => api.post('auth/register', data),
-  getProfile: () => api.get('auth/profile'),
-  updateProfile: (data: any) => api.put('auth/profile', data),
+  getProfile: () => api.get('auth/me'),
+  updateProfile: (data: any) => api.put('users/profile', data),
+};
+
+export const userApi = {
+  getAddresses: () => api.get('users/addresses'),
+  addAddress: (data: any) => api.post('users/addresses', data),
+  updateAddress: (id: string, data: any) => api.put(`users/addresses/${id}`, data),
+  deleteAddress: (id: string) => api.delete(`users/addresses/${id}`),
 };
 
 export const productApi = {

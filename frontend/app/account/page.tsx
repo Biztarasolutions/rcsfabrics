@@ -1,16 +1,13 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { useAuthStore } from '@/lib/store';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useAuthStore, useWishlistStore } from '@/lib/store';
 import { formatPrice } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
-
-const MOCK_ORDERS = [
-  { id: 'ORD-001', orderNumber: 'RCS-2025-001', status: 'DELIVERED', paymentStatus: 'PAID', total: 4497, createdAt: '2025-04-10', items: [{ productName: 'Royal Banarasi Silk', quantity: 3, pricePerMeter: 1499 }] },
-  { id: 'ORD-002', orderNumber: 'RCS-2025-002', status: 'PROCESSING', paymentStatus: 'PAID', total: 1960, createdAt: '2025-05-01', items: [{ productName: 'French Linen Blend', quantity: 2, pricePerMeter: 980 }] },
-  { id: 'ORD-003', orderNumber: 'RCS-2025-003', status: 'PENDING', paymentStatus: 'PENDING', total: 1360, createdAt: '2025-05-12', items: [{ productName: 'Georgette Chiffon', quantity: 2, pricePerMeter: 680 }] },
-];
+import { useQuery } from '@tanstack/react-query';
+import { authApi, orderApi, userApi } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 const STATUS_COLORS: Record<string, string> = {
   PENDING: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
@@ -24,11 +21,140 @@ const TABS = ['Overview', 'My Orders', 'Profile', 'Addresses'];
 
 export default function AccountPage() {
   const [activeTab, setActiveTab] = useState('Overview');
-  const [profile, setProfile] = useState({ firstName: 'Priya', lastName: 'Sharma', email: 'priya@example.com', phone: '+91 98765 43210' });
   const { user, logout } = useAuthStore();
+  const { items: wishlistItems } = useWishlistStore();
   const router = useRouter();
 
+  // Redirect if not logged in
+  useEffect(() => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+    if (!user && !token) {
+      router.push('/auth?redirect=/account');
+    }
+  }, [user, router]);
+
+  // Fetch real profile data (including phone, isVerified, etc.)
+  const { data: profileRes, isLoading: isProfileLoading, refetch: refetchProfile } = useQuery({
+    queryKey: ['user-profile'],
+    queryFn: () => authApi.getProfile().then(res => res.data.data),
+    enabled: !!user,
+  });
+
+  // Fetch real user orders
+  const { data: orders = [], isLoading: isOrdersLoading } = useQuery({
+    queryKey: ['user-orders'],
+    queryFn: () => orderApi.getUserOrders().then(res => res.data.data?.orders || []),
+    enabled: !!user,
+  });
+
+  // Fetch real addresses
+  const { data: addresses = [], isLoading: isAddressesLoading, refetch: refetchAddresses } = useQuery({
+    queryKey: ['user-addresses'],
+    queryFn: () => userApi.getAddresses().then(res => res.data.data || []),
+    enabled: !!user,
+  });
+
+  // Profile Form State
+  const [profileForm, setProfileForm] = useState({ firstName: '', lastName: '', email: '', phone: '' });
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  useEffect(() => {
+    if (profileRes) {
+      setProfileForm({
+        firstName: profileRes.firstName || '',
+        lastName: profileRes.lastName || '',
+        email: profileRes.email || '',
+        phone: profileRes.phone || '',
+      });
+    }
+  }, [profileRes]);
+
+  // Address Form State
+  const [showAddressForm, setShowAddressForm] = useState(false);
+  const [savingAddress, setSavingAddress] = useState(false);
+  const [addressForm, setAddressForm] = useState({
+    firstName: '',
+    lastName: '',
+    phone: '',
+    email: '',
+    street: '',
+    city: '',
+    state: '',
+    postalCode: '',
+    country: 'India',
+  });
+
   const handleLogout = () => { logout(); router.push('/'); };
+
+  const handleSaveProfile = async () => {
+    setSavingProfile(true);
+    try {
+      const res = await authApi.updateProfile({
+        firstName: profileForm.firstName,
+        lastName: profileForm.lastName,
+        phone: profileForm.phone,
+      });
+      const updatedUser = res.data.data;
+      useAuthStore.getState().setUser(updatedUser);
+      toast.success('Profile updated successfully!');
+      refetchProfile();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update profile');
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const handleAddAddress = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingAddress(true);
+    try {
+      await userApi.addAddress(addressForm);
+      toast.success('Address added successfully!');
+      refetchAddresses();
+      setShowAddressForm(false);
+      setAddressForm({
+        firstName: '',
+        lastName: '',
+        phone: '',
+        email: '',
+        street: '',
+        city: '',
+        state: '',
+        postalCode: '',
+        country: 'India',
+      });
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to add address');
+    } finally {
+      setSavingAddress(false);
+    }
+  };
+
+  const handleDeleteAddress = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this address?')) return;
+    try {
+      await userApi.deleteAddress(id);
+      toast.success('Address deleted successfully!');
+      refetchAddresses();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete address');
+    }
+  };
+
+  if (!user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-dark-950">
+        <div className="text-center">
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary-600 border-t-transparent mx-auto"></div>
+          <p className="mt-4 text-gray-500 dark:text-gray-400 font-medium">Redirecting to login...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const isPageLoading = isProfileLoading || isOrdersLoading || isAddressesLoading;
+  const totalSpent = orders.reduce((sum: number, o: any) => sum + (o.total || 0), 0);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark-950">
@@ -37,7 +163,9 @@ export default function AccountPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="font-display text-3xl font-bold text-gray-900 dark:text-white">My Account</h1>
-            <p className="mt-1 text-gray-500 dark:text-gray-400">Welcome back, {user?.firstName || profile.firstName}!</p>
+            <p className="mt-1 text-gray-500 dark:text-gray-400">
+              Welcome back, {profileRes?.firstName || user.firstName}!
+            </p>
           </div>
           <button onClick={handleLogout} className="button-secondary flex items-center gap-2 px-4 py-2 text-sm text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-900">
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
@@ -48,20 +176,22 @@ export default function AccountPage() {
         <div className="mt-8 grid gap-8 lg:grid-cols-4">
           {/* Sidebar */}
           <aside className="lg:col-span-1">
-            <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-dark-700 dark:bg-dark-800">
+            <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-dark-700 dark:bg-dark-800 animate-fade-in">
               <div className="mb-4 flex items-center gap-3 border-b border-gray-100 pb-4 dark:border-dark-700">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-700 text-lg font-bold text-white">
-                  {(user?.firstName || profile.firstName)?.[0]}
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-700 text-lg font-bold text-white shadow-md">
+                  {(profileRes?.firstName || user.firstName)?.[0]}
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-900 dark:text-white">{user?.firstName || profile.firstName} {user?.lastName || profile.lastName}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{user?.email || profile.email}</p>
+                  <p className="font-semibold text-gray-900 dark:text-white">
+                    {profileRes?.firstName || user.firstName} {profileRes?.lastName || user.lastName}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{profileRes?.email || user.email}</p>
                 </div>
               </div>
               <nav className="space-y-1">
                 {TABS.map((tab) => (
                   <button key={tab} onClick={() => setActiveTab(tab)}
-                    className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${activeTab === tab ? 'bg-primary-600 text-white' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-dark-700'}`}>
+                    className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${activeTab === tab ? 'bg-primary-600 text-white shadow-sm shadow-primary-500/25' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-dark-700'}`}>
                     {tab === 'Overview' && '📊'}
                     {tab === 'My Orders' && '📦'}
                     {tab === 'Profile' && '👤'}
@@ -78,111 +208,241 @@ export default function AccountPage() {
 
           {/* Content */}
           <main className="lg:col-span-3">
-            {activeTab === 'Overview' && (
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-                {/* Stats */}
-                <div className="grid gap-4 sm:grid-cols-3">
-                  {[
-                    { label: 'Total Orders', value: MOCK_ORDERS.length, icon: '📦' },
-                    { label: 'Total Spent', value: formatPrice(MOCK_ORDERS.reduce((s, o) => s + o.total, 0)), icon: '💰' },
-                    { label: 'Wishlist Items', value: '3', icon: '❤️' },
-                  ].map((stat) => (
-                    <div key={stat.label} className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-dark-700 dark:bg-dark-800">
-                      <p className="text-2xl">{stat.icon}</p>
-                      <p className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">{stat.value}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{stat.label}</p>
+            {isPageLoading ? (
+              <div className="flex h-64 items-center justify-center rounded-2xl border border-gray-200 bg-white dark:border-dark-700 dark:bg-dark-800">
+                <div className="flex flex-col items-center">
+                  <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary-600 border-t-transparent"></div>
+                  <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">Loading your account details...</p>
+                </div>
+              </div>
+            ) : (
+              <AnimatePresence mode="wait">
+                {activeTab === 'Overview' && (
+                  <motion.div key="overview" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="space-y-6">
+                    {/* Stats */}
+                    <div className="grid gap-4 sm:grid-cols-3">
+                      {[
+                        { label: 'Total Orders', value: orders.length, icon: '📦' },
+                        { label: 'Total Spent', value: formatPrice(totalSpent), icon: '💰' },
+                        { label: 'Wishlist Items', value: wishlistItems.length, icon: '❤️' },
+                      ].map((stat) => (
+                        <div key={stat.label} className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-dark-700 dark:bg-dark-800 shadow-sm hover:shadow-md transition-shadow">
+                          <p className="text-2xl">{stat.icon}</p>
+                          <p className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">{stat.value}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{stat.label}</p>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-                {/* Recent orders */}
-                <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-dark-700 dark:bg-dark-800">
-                  <h3 className="font-display text-lg font-bold text-gray-900 dark:text-white">Recent Orders</h3>
-                  <div className="mt-4 space-y-3">
-                    {MOCK_ORDERS.slice(0, 3).map((order) => (
-                      <div key={order.id} className="flex items-center justify-between rounded-xl bg-gray-50 p-4 dark:bg-dark-700">
-                        <div>
-                          <p className="font-semibold text-gray-900 dark:text-white">{order.orderNumber}</p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">{order.items[0].productName} · {new Date(order.createdAt).toLocaleDateString('en-IN')}</p>
-                        </div>
-                        <div className="text-right">
-                          <span className={`badge ${STATUS_COLORS[order.status]}`}>{order.status}</span>
-                          <p className="mt-1 text-sm font-bold text-gray-900 dark:text-white">{formatPrice(order.total)}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <button onClick={() => setActiveTab('My Orders')} className="button-secondary mt-4 w-full py-2.5 text-sm">View All Orders</button>
-                </div>
-              </motion.div>
-            )}
 
-            {activeTab === 'My Orders' && (
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-dark-700 dark:bg-dark-800">
-                <h3 className="font-display text-xl font-bold text-gray-900 dark:text-white">My Orders</h3>
-                <div className="mt-5 space-y-4">
-                  {MOCK_ORDERS.map((order) => (
-                    <div key={order.id} className="rounded-2xl border border-gray-100 p-5 dark:border-dark-700">
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div>
-                          <p className="font-bold text-gray-900 dark:text-white">{order.orderNumber}</p>
-                          <p className="text-sm text-gray-500">{new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                    {/* Recent orders */}
+                    <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-dark-700 dark:bg-dark-800 shadow-sm">
+                      <h3 className="font-display text-lg font-bold text-gray-900 dark:text-white">Recent Orders</h3>
+                      {orders.length === 0 ? (
+                        <div className="mt-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                          <p className="text-3xl mb-2">🛍️</p>
+                          <p className="font-medium">No orders yet</p>
+                          <Link href="/products" className="text-primary-600 font-semibold hover:underline text-sm mt-1 inline-block">Start exploring fabrics</Link>
                         </div>
-                        <div className="flex gap-2">
-                          <span className={`badge ${STATUS_COLORS[order.status]}`}>{order.status}</span>
-                          <span className={`badge ${order.paymentStatus === 'PAID' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-yellow-100 text-yellow-700'}`}>{order.paymentStatus}</span>
-                        </div>
+                      ) : (
+                        <>
+                          <div className="mt-4 space-y-3">
+                            {orders.slice(0, 3).map((order: any) => (
+                              <div key={order.id} className="flex items-center justify-between rounded-xl bg-gray-50 p-4 dark:bg-dark-700/50 border border-gray-100 dark:border-dark-700">
+                                <div>
+                                  <p className="font-semibold text-gray-900 dark:text-white">{order.orderNumber}</p>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    {order.items?.[0]?.productName || 'Fabric Purchase'}
+                                    {order.items?.length > 1 ? ` + ${order.items.length - 1} more items` : ''} · {new Date(order.createdAt).toLocaleDateString('en-IN')}
+                                  </p>
+                                </div>
+                                <div className="text-right">
+                                  <span className={`badge ${STATUS_COLORS[order.status] || 'bg-gray-100 text-gray-600'}`}>{order.status}</span>
+                                  <p className="mt-1.5 text-sm font-bold text-gray-900 dark:text-white">{formatPrice(order.total)}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <button onClick={() => setActiveTab('My Orders')} className="button-secondary mt-4 w-full py-2.5 text-sm font-medium">View All Orders</button>
+                        </>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+
+                {activeTab === 'My Orders' && (
+                  <motion.div key="orders" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-dark-700 dark:bg-dark-800 shadow-sm">
+                    <h3 className="font-display text-xl font-bold text-gray-900 dark:text-white">My Orders</h3>
+                    {orders.length === 0 ? (
+                      <div className="py-12 text-center text-gray-500 dark:text-gray-400">
+                        <p className="text-5xl mb-3">📦</p>
+                        <p className="font-medium text-lg">You have not placed any orders yet</p>
+                        <Link href="/products" className="button-primary mt-5 px-6 py-2.5 text-sm">Shop Now</Link>
                       </div>
-                      <div className="mt-3 space-y-1">
-                        {order.items.map((item, i) => (
-                          <p key={i} className="text-sm text-gray-700 dark:text-gray-300">
-                            {item.productName} × {item.quantity}m @ {formatPrice(item.pricePerMeter)}/m
-                          </p>
+                    ) : (
+                      <div className="mt-5 space-y-4">
+                        {orders.map((order: any) => (
+                          <div key={order.id} className="rounded-2xl border border-gray-150 p-5 dark:border-dark-750 bg-gray-50/20 dark:bg-dark-800/10">
+                            <div className="flex flex-wrap items-start justify-between gap-3">
+                              <div>
+                                <p className="font-bold text-gray-900 dark:text-white">{order.orderNumber}</p>
+                                <p className="text-sm text-gray-500">
+                                  {new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                </p>
+                              </div>
+                              <div className="flex gap-2">
+                                <span className={`badge ${STATUS_COLORS[order.status] || 'bg-gray-100 text-gray-600'}`}>{order.status}</span>
+                                <span className={`badge ${order.paymentStatus === 'PAID' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20'}`}>
+                                  {order.paymentStatus}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="mt-4 space-y-2 border-t border-gray-100 pt-3 dark:border-dark-700">
+                              {order.items?.map((item: any, i: number) => (
+                                <div key={i} className="flex justify-between text-sm text-gray-700 dark:text-gray-300">
+                                  <span>{item.productName} <span className="text-gray-400">× {item.quantity}m</span></span>
+                                  <span className="font-medium">{formatPrice((item.pricePerMeter || item.price) * item.quantity)}</span>
+                                </div>
+                              ))}
+                            </div>
+                            <div className="mt-3 flex items-center justify-between border-t border-gray-100 pt-3 dark:border-dark-700">
+                              <p className="text-sm font-bold text-gray-900 dark:text-white">Total: {formatPrice(order.total)}</p>
+                              {order.status === 'DELIVERED' && (
+                                <button className="text-sm font-semibold text-primary-600 hover:underline dark:text-primary-400">Write Review</button>
+                              )}
+                            </div>
+                          </div>
                         ))}
                       </div>
-                      <div className="mt-3 flex items-center justify-between border-t border-gray-100 pt-3 dark:border-dark-700">
-                        <p className="text-sm font-bold text-gray-900 dark:text-white">Total: {formatPrice(order.total)}</p>
-                        {order.status === 'DELIVERED' && (
-                          <button className="text-sm font-medium text-primary-600 hover:underline dark:text-primary-400">Write Review</button>
-                        )}
+                    )}
+                  </motion.div>
+                )}
+
+                {activeTab === 'Profile' && (
+                  <motion.div key="profile" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-dark-700 dark:bg-dark-800 shadow-sm">
+                    <h3 className="font-display text-xl font-bold text-gray-900 dark:text-white">Edit Profile</h3>
+                    <p className="text-sm text-gray-500 mb-5">Update your personal information and contact details</p>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">First Name</label>
+                        <input value={profileForm.firstName} onChange={(e) => setProfileForm({ ...profileForm, firstName: e.target.value })} className="input-field"/>
+                      </div>
+                      <div>
+                        <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Last Name</label>
+                        <input value={profileForm.lastName} onChange={(e) => setProfileForm({ ...profileForm, lastName: e.target.value })} className="input-field"/>
+                      </div>
+                      <div>
+                        <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Email Address (Read-only)</label>
+                        <input value={profileForm.email} disabled className="input-field bg-gray-50 dark:bg-dark-700 cursor-not-allowed opacity-75"/>
+                      </div>
+                      <div>
+                        <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Phone Number</label>
+                        <input value={profileForm.phone} placeholder="+91 98765 43210" onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })} className="input-field"/>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </motion.div>
-            )}
+                    <button onClick={handleSaveProfile} disabled={savingProfile} className="button-primary mt-6 px-8 py-3 font-semibold shadow-sm transition-all flex items-center gap-2">
+                      {savingProfile ? 'Saving Changes...' : 'Save Changes'}
+                    </button>
+                  </motion.div>
+                )}
 
-            {activeTab === 'Profile' && (
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-dark-700 dark:bg-dark-800">
-                <h3 className="font-display text-xl font-bold text-gray-900 dark:text-white">Edit Profile</h3>
-                <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                  {[
-                    { key: 'firstName', label: 'First Name' },
-                    { key: 'lastName', label: 'Last Name' },
-                    { key: 'email', label: 'Email' },
-                    { key: 'phone', label: 'Phone' },
-                  ].map((f) => (
-                    <div key={f.key}>
-                      <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{f.label}</label>
-                      <input value={(profile as any)[f.key]} onChange={(e) => setProfile({ ...profile, [f.key]: e.target.value })} className="input-field"/>
+                {activeTab === 'Addresses' && (
+                  <motion.div key="addresses" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-dark-700 dark:bg-dark-800 shadow-sm">
+                    <div className="flex items-center justify-between border-b border-gray-100 pb-4 dark:border-dark-700">
+                      <div>
+                        <h3 className="font-display text-xl font-bold text-gray-900 dark:text-white">Saved Addresses</h3>
+                        <p className="text-sm text-gray-500 mt-0.5">Manage your shipping and billing addresses</p>
+                      </div>
+                      <button onClick={() => setShowAddressForm(!showAddressForm)} className="button-primary px-4 py-2 text-sm font-medium">
+                        {showAddressForm ? 'Cancel' : '+ Add Address'}
+                      </button>
                     </div>
-                  ))}
-                </div>
-                <button className="button-primary mt-5 px-8 py-3">Save Changes</button>
-              </motion.div>
-            )}
 
-            {activeTab === 'Addresses' && (
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-dark-700 dark:bg-dark-800">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-display text-xl font-bold text-gray-900 dark:text-white">Saved Addresses</h3>
-                  <button className="button-primary px-4 py-2 text-sm">+ Add Address</button>
-                </div>
-                <div className="mt-5 rounded-xl border-2 border-dashed border-gray-200 p-6 text-center dark:border-dark-700">
-                  <p className="text-4xl">📍</p>
-                  <p className="mt-3 font-medium text-gray-700 dark:text-gray-300">No saved addresses yet</p>
-                  <p className="text-sm text-gray-500">Add an address for faster checkout</p>
-                </div>
-              </motion.div>
+                    {showAddressForm && (
+                      <motion.form initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-5 rounded-2xl bg-gray-50 dark:bg-dark-900 p-5 border border-gray-200 dark:border-dark-700 space-y-4" onSubmit={handleAddAddress}>
+                        <h4 className="font-semibold text-gray-900 dark:text-white">New Shipping Address</h4>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <div>
+                            <label className="text-xs font-semibold text-gray-600 dark:text-gray-400">First Name</label>
+                            <input required value={addressForm.firstName} onChange={(e) => setAddressForm({ ...addressForm, firstName: e.target.value })} className="input-field mt-1 py-2 text-sm" placeholder="Priya"/>
+                          </div>
+                          <div>
+                            <label className="text-xs font-semibold text-gray-600 dark:text-gray-400">Last Name</label>
+                            <input required value={addressForm.lastName} onChange={(e) => setAddressForm({ ...addressForm, lastName: e.target.value })} className="input-field mt-1 py-2 text-sm" placeholder="Sharma"/>
+                          </div>
+                          <div className="sm:col-span-2">
+                            <label className="text-xs font-semibold text-gray-600 dark:text-gray-400">Email</label>
+                            <input type="email" required value={addressForm.email} onChange={(e) => setAddressForm({ ...addressForm, email: e.target.value })} className="input-field mt-1 py-2 text-sm" placeholder="priya@example.com"/>
+                          </div>
+                          <div>
+                            <label className="text-xs font-semibold text-gray-600 dark:text-gray-400">Phone</label>
+                            <input required value={addressForm.phone} onChange={(e) => setAddressForm({ ...addressForm, phone: e.target.value })} className="input-field mt-1 py-2 text-sm" placeholder="+91 98765 43210"/>
+                          </div>
+                          <div className="sm:col-span-2">
+                            <label className="text-xs font-semibold text-gray-600 dark:text-gray-400">Street Address</label>
+                            <input required value={addressForm.street} onChange={(e) => setAddressForm({ ...addressForm, street: e.target.value })} className="input-field mt-1 py-2 text-sm" placeholder="123, Main Road, Apt 4B"/>
+                          </div>
+                          <div>
+                            <label className="text-xs font-semibold text-gray-600 dark:text-gray-400">City</label>
+                            <input required value={addressForm.city} onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })} className="input-field mt-1 py-2 text-sm" placeholder="Mumbai"/>
+                          </div>
+                          <div>
+                            <label className="text-xs font-semibold text-gray-600 dark:text-gray-400">State</label>
+                            <input required value={addressForm.state} onChange={(e) => setAddressForm({ ...addressForm, state: e.target.value })} className="input-field mt-1 py-2 text-sm" placeholder="Maharashtra"/>
+                          </div>
+                          <div>
+                            <label className="text-xs font-semibold text-gray-600 dark:text-gray-400">Postal Code (PIN)</label>
+                            <input required value={addressForm.postalCode} onChange={(e) => setAddressForm({ ...addressForm, postalCode: e.target.value })} className="input-field mt-1 py-2 text-sm" placeholder="400001"/>
+                          </div>
+                          <div>
+                            <label className="text-xs font-semibold text-gray-600 dark:text-gray-400">Country</label>
+                            <input required value={addressForm.country} onChange={(e) => setAddressForm({ ...addressForm, country: e.target.value })} className="input-field mt-1 py-2 text-sm" placeholder="India"/>
+                          </div>
+                        </div>
+                        <button type="submit" disabled={savingAddress} className="button-primary w-full py-2.5 mt-2 font-medium">
+                          {savingAddress ? 'Saving Address...' : 'Save Address'}
+                        </button>
+                      </motion.form>
+                    )}
+
+                    {addresses.length === 0 ? (
+                      <div className="mt-5 rounded-xl border-2 border-dashed border-gray-200 p-6 text-center dark:border-dark-700 animate-fade-in">
+                        <p className="text-4xl">📍</p>
+                        <p className="mt-3 font-medium text-gray-700 dark:text-gray-300">No saved addresses yet</p>
+                        <p className="text-sm text-gray-500">Add an address for faster checkout</p>
+                      </div>
+                    ) : (
+                      <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                        {addresses.map((addr: any) => (
+                          <div key={addr.id} className="relative rounded-xl border border-gray-200 dark:border-dark-700 p-4 bg-white dark:bg-dark-800 shadow-sm flex flex-col justify-between">
+                            <div>
+                              <div className="flex items-center justify-between">
+                                <p className="font-semibold text-gray-900 dark:text-white">
+                                  {addr.firstName} {addr.lastName}
+                                </p>
+                                {addr.isDefault && (
+                                  <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-primary-100 text-primary-700 dark:bg-primary-950/40 dark:text-primary-400">
+                                    Default
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 line-clamp-2">
+                                {addr.street}, {addr.city}, {addr.state} - {addr.postalCode}
+                              </p>
+                              <p className="text-xs text-gray-500 mt-1">{addr.country}</p>
+                              <p className="text-xs text-gray-500 mt-2">📞 {addr.phone}</p>
+                            </div>
+                            <div className="mt-4 pt-3 border-t border-gray-100 dark:border-dark-700 flex justify-end">
+                              <button onClick={() => handleDeleteAddress(addr.id)} className="text-xs font-semibold text-red-600 hover:text-red-700 dark:text-red-400 hover:underline">
+                                Delete Address
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             )}
           </main>
         </div>
