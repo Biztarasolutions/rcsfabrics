@@ -670,6 +670,15 @@ export const deleteCategory = async (
 
     const { id } = req.params;
 
+    // Check if the category exists first
+    const category = await prisma.category.findUnique({
+      where: { id },
+    });
+
+    if (!category) {
+      throw new ApiError(404, 'Category not found or has already been deleted');
+    }
+
     // Check if any products are currently associated with this category
     const productCount = await prisma.product.count({
       where: { categoryId: id },
