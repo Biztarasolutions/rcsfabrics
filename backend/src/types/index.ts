@@ -54,13 +54,18 @@ export interface CreateProductInput {
   name: string;
   description?: string;
   categoryId: string;
+  code?: number;
   basePrice: number;
   discountPrice?: number | null;
   discountPercent?: number | null;
+  discountType?: string;
+  discountValue?: number | null;
   material: string;
   gsm?: number | null;
   width?: number | null;
   pattern?: string | null;
+  occasion?: string | null;
+  workType?: string | null;
   color: string;
   stretchability: string;
   usage?: string | null;
@@ -71,6 +76,11 @@ export interface CreateProductInput {
   isActive?: boolean;
   isFeatured?: boolean;
   isNew?: boolean;
+  colors?: Array<{
+    name: string;
+    hexCode: string;
+    folderUrl?: string;
+  }>;
   images?: ProductImageInput[];
 }
 
@@ -78,13 +88,18 @@ export interface UpdateProductInput {
   name?: string;
   description?: string | null;
   categoryId?: string;
+  code?: number;
   basePrice?: number;
   discountPrice?: number | null;
   discountPercent?: number | null;
+  discountType?: string;
+  discountValue?: number | null;
   material?: string;
   gsm?: number | null;
   width?: number | null;
   pattern?: string | null;
+  occasion?: string | null;
+  workType?: string | null;
   color?: string;
   stretchability?: string;
   usage?: string | null;
@@ -95,5 +110,10 @@ export interface UpdateProductInput {
   isActive?: boolean;
   isFeatured?: boolean;
   isNew?: boolean;
+  colors?: Array<{
+    name: string;
+    hexCode: string;
+    folderUrl?: string;
+  }>;
   images?: ProductImageInput[];
 }

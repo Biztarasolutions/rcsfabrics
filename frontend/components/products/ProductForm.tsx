@@ -15,24 +15,26 @@ const ProductForm = () => {
     colors: [{ name: '', hexCode: '', folderUrl: '' }],
   });
 
-  const mutation = useMutation({
-    mutationFn: adminApi.createProduct,
-    onSuccess: () => {
-      alert('Product created successfully!');
-      setFormData({
-        name: '',
-        categoryId: '',
-        basePrice: '',
-        material: '',
-        stretchability: '',
-        stock: '',
-        colors: [{ name: '', hexCode: '', folderUrl: '' }],
-      });
-    },
-    onError: (error: any) => {
-      alert(`Error: ${error.message}`);
-    },
-  });
+const mutation = useMutation<any, Error, any>({
+  mutationFn: adminApi.createProduct,
+  onSuccess: () => {
+    alert('Product created successfully!');
+    setFormData({
+      name: '',
+      categoryId: '',
+      basePrice: '',
+      material: '',
+      stretchability: '',
+      stock: '',
+      colors: [{ name: '', hexCode: '', folderUrl: '' }],
+    });
+  },
+  onError: (error: any) => {
+    alert(`Error: ${error.message}`);
+  },
+});
+
+
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

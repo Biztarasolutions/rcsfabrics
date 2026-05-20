@@ -65,7 +65,10 @@ export const orderApi = {
 export const adminApi = {
   getStats: () => api.get('admin/dashboard/stats'),
   getAdminProducts: (params?: any) => api.get('admin/products', { params }),
-  createProduct: (data: any) => api.post('admin/products', data),
+  createProduct: async (data: any) => {
+    const res = await api.post('admin/products', data);
+    return res.data;
+  },
   updateProduct: (id: string, data: any) => api.put(`admin/products/${id}`, data),
   deleteProduct: (id: string) => api.delete(`admin/products/${id}`),
   syncProduct: (id: string) => api.post(`admin/products/${id}/sync`),

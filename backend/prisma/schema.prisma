@@ -100,13 +100,19 @@ model Product {
   slug            String              @unique @db.VarChar(255)
   description     String?
   categoryId      String
+  code            Int?
+  styleCode       String?             @db.VarChar(100)
   basePrice       Float
   discountPrice   Float?
   discountPercent Float?
+  discountType    String?             @db.VarChar(20) // "percentage" or "fixed"
+  discountValue   Float?
   material        String              @db.VarChar(100)
   gsm             Int?
   width           Float?
   pattern         String?             @db.VarChar(100)
+  occasion        String?             @db.VarChar(100)
+  workType        String?             @db.VarChar(50) // "Plain", "Printed", "Embroidered"
   color           String              @db.VarChar(50)
   stretchability  String              @db.VarChar(50)
   usage           String?
@@ -130,7 +136,7 @@ model Product {
   reviews         Review[]
   swatchRequests  SwatchRequest[]
   wishlist        Wishlist[]
-  colors       ProductColor[]
+  colors          ProductColor[]
 
   @@index([categoryId])
   @@index([slug])
@@ -466,6 +472,7 @@ model ProductColor {
   productId   String
   name        String   @db.VarChar(50)
   hexCode     String   @db.VarChar(7)
+  productCode String?  @db.VarChar(100) // Style Code-Color (e.g., "RAJ-SILK-RED")
   folderUrl   String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

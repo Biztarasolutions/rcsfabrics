@@ -61,18 +61,24 @@ export const createProduct = async (
       name,
       description,
       categoryId,
+      code,
       basePrice,
       discountPrice,
+      discountType,
+      discountValue,
       material,
       gsm,
       width,
       pattern,
+      occasion,
+      workType,
       color,
       stretchability,
       usage,
       washCare,
       totalStock,
       minOrderQty,
+      colors,
       imageUrls,
       folderUrl,
     } = req.body;
@@ -80,6 +86,15 @@ export const createProduct = async (
     if (!name || !categoryId || !basePrice) {
       throw new ApiError(400, 'Name, category, and price are required');
     }
+
+    // Get category to build styleCode
+    const category = await prisma.category.findUnique({ where: { id: categoryId } });
+    if (!category) {
+      throw new ApiError(404, 'Category not found');
+    }
+
+    // Generate styleCode as Name-Category
+    const styleCode = `${name.substring(0, 3).toUpperCase()}-${category.name.substring(0, 3).toUpperCase()}`;
 
     let finalImageUrls: string[] = [];
     
@@ -98,12 +113,18 @@ export const createProduct = async (
         slug: generateSlug(name),
         description,
         categoryId,
+        code,
+        styleCode,
         basePrice,
         discountPrice,
+        discountType,
+        discountValue,
         material,
         gsm,
         width,
         pattern,
+        occasion,
+        workType,
         color,
         stretchability,
         usage,
@@ -120,8 +141,19 @@ export const createProduct = async (
               order: index
             }))
           }
+        }),
+        ...(colors && Array.isArray(colors) && colors.length > 0 && {
+          colors: {
+            create: colors.map((color: any) => ({
+              name: color.name,
+              hexCode: color.hexCode,
+              productCode: `${styleCode}-${color.name.substring(0, 3).toUpperCase()}`,
+              folderUrl: color.folderUrl,
+            }))
+          }
         })
       },
+      include: { colors: true, images: true }
     });
 
     res.status(201).json({
