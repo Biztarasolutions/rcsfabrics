@@ -664,11 +664,40 @@ export const deleteCategory = async (
   res: Response
 ): Promise<void> => {
   try {
+    if (!req.user || req.user.role !== 'ADMIN') {
+      throw new ApiError(403, 'Only admins can delete categories');
+    }
+
     const { id } = req.params;
+
+    // Check if any products are currently associated with this category
+    const productCount = await prisma.product.count({
+      where: { categoryId: id },
+    });
+
+    if (productCount > 0) {
+      throw new ApiError(
+        400,
+        `Cannot delete category: ${productCount} product(s) are currently associated with it. Please reassign or delete these products first.`
+      );
+    }
+
     await prisma.category.delete({ where: { id } });
-    res.json({ success: true, message: 'Category deleted', statusCode: 200 } as ApiResponse);
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to delete category', statusCode: 500 } as ApiResponse);
+    res.json({ success: true, message: 'Category deleted successfully', statusCode: 200 } as ApiResponse);
+  } catch (error: any) {
+    if (error instanceof ApiError) {
+      res.status(error.statusCode).json({
+        success: false,
+        message: error.message,
+        statusCode: error.statusCode,
+      } as ApiResponse);
+    } else {
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to delete category',
+        statusCode: 500,
+      } as ApiResponse);
+    }
   }
 };
 
