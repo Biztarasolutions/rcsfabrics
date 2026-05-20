@@ -68,6 +68,10 @@ model Category {
   updatedAt   DateTime  @updatedAt
   products    Product[]
 
+  gender      String    @default("women")
+  bestFor     String[]  @default([])
+  properties  String[]  @default([])
+
   @@index([slug])
   @@index([isActive])
   @@map("categories")

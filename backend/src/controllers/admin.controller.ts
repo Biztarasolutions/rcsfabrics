@@ -626,11 +626,19 @@ export const createCategory = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { name, slug, description, isActive } = req.body;
+    const { name, slug, description, isActive, gender, bestFor, properties } = req.body;
     if (!name || !slug) throw new ApiError(400, 'Name and slug are required');
 
     const category = await prisma.category.create({
-      data: { name, slug, description, isActive: isActive ?? true },
+      data: {
+        name,
+        slug,
+        description,
+        isActive: isActive ?? true,
+        gender: gender || 'women',
+        bestFor: bestFor || [],
+        properties: properties || [],
+      },
     });
 
     res.status(201).json({
