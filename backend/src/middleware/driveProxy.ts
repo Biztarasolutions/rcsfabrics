@@ -40,6 +40,7 @@ export const driveProxyMiddleware = (req: Request, res: Response, next: NextFunc
       }
 
       if (obj !== null && typeof obj === 'object') {
+        if (obj instanceof Date) return obj;
         const newObj: any = {};
         for (const key in obj) {
           if (Object.prototype.hasOwnProperty.call(obj, key)) {
