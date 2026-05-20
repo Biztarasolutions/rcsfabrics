@@ -1,4 +1,5 @@
-import React from "react";
+'use client';
+
 import ProductForm from "@/components/products/ProductForm";
 
 // This page renders the ProductForm component for adding a new product.
