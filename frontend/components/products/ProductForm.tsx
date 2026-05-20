@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+'use client';
+
 import { useMutation } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api';
 
