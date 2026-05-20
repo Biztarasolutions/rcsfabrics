@@ -1,12 +1,7 @@
 'use client';
 import React, { useState } from 'react';
+import { useHomepageData } from '@/hooks/useHomepageData';
 
-const CATEGORIES = [
-  { name: 'All', slug: '' }, { name: 'Silks', slug: 'silks' },
-  { name: 'Cottons', slug: 'cottons' }, { name: 'Blends', slug: 'blends' },
-  { name: 'Velvets', slug: 'velvets' }, { name: 'Chiffons', slug: 'chiffons' },
-  { name: 'Satins', slug: 'satins' }, { name: 'Woolens', slug: 'woolens' },
-];
 const MATERIALS = ['Silk','Cotton','Linen','Velvet','Chiffon','Satin','Wool','Khadi'];
 
 interface ProductFiltersProps {
@@ -18,6 +13,8 @@ interface ProductFiltersProps {
 export default function ProductFilters({ selectedCategory, onCategoryChange, onPriceChange }: ProductFiltersProps) {
   const [maxPrice, setMaxPrice] = useState(5000);
   const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
+  const { data: homepageData } = useHomepageData();
+  const categories = [{ name: 'All', slug: '' }, ...(homepageData?.categories || [])];
 
   const toggleMaterial = (m: string) => setSelectedMaterials((p) => p.includes(m) ? p.filter((x) => x !== m) : [...p, m]);
 
@@ -25,7 +22,7 @@ export default function ProductFilters({ selectedCategory, onCategoryChange, onP
     <div className="space-y-6">
       <div>
         <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-gray-900 dark:text-white">Category</h3>
-        {CATEGORIES.map((cat) => (
+        {categories.map((cat) => (
           <button key={cat.slug} onClick={() => onCategoryChange(cat.slug)}
             className={`flex w-full items-center rounded-xl px-3 py-2.5 text-sm transition-colors ${selectedCategory === cat.slug ? 'bg-primary-600 font-semibold text-white' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-dark-700'}`}>
             {cat.name}
