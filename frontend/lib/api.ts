@@ -113,7 +113,8 @@ export const uploadCategoryImage = async (fileUrl: string): Promise<string> => {
     throw new Error(`Supabase upload failed: ${error.message}`);
   }
 
-  const { publicUrl } = supabase.storage.from('category-images').getPublicUrl(data.path);
+  const { data: publicUrlData } = supabase.storage.from('category-images').getPublicUrl(data.path);
+  const publicUrl = publicUrlData.publicUrl;
   return publicUrl;
 };
 

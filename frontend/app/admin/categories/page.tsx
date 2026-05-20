@@ -73,6 +73,7 @@ export default function AdminCategoriesPage() {
       gender: 'women',
       bestFor: '',
       properties: '',
+      imageLink: '',
     });
     setEditId(null);
     setShowModal(true);
@@ -87,6 +88,7 @@ export default function AdminCategoriesPage() {
       gender: c.gender || 'women',
       bestFor: Array.isArray(c.bestFor) ? c.bestFor.join(', ') : '',
       properties: Array.isArray(c.properties) ? c.properties.join(', ') : '',
+      imageLink: c.imageUrl || '',
     });
     setEditId(c.id);
     setShowModal(true);
@@ -94,7 +96,7 @@ export default function AdminCategoriesPage() {
   
   const handleSave = async () => {
     const generatedSlug = form.name.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
-    const baseData = {
+    let baseData: any = {
       name: form.name,
       slug: generatedSlug,
       description: form.description,

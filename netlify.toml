@@ -11,3 +11,7 @@
   to = "https://rcsfabrics-backend.onrender.com/api/:splat"
   status = 200
   force = true
+
+[context.production.environment]
+  NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co"
+  NEXT_PUBLIC_SUPABASE_ANON_KEY = "public-anon-key"
