@@ -1,4 +1,5 @@
 // Trigger Netlify Build - Proxies configured
+import { supabase } from '@/lib/supabase';
 import axios, { AxiosError } from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
@@ -87,6 +88,33 @@ export const adminApi = {
   createBanner: (data: any) => api.post('admin/banners', data),
   updateBanner: (id: string, data: any) => api.put(`admin/banners/${id}`, data),
   deleteBanner: (id: string) => api.delete(`admin/banners/${id}`),
+};
+
+// Upload an image from a URL (e.g., Google Drive share link) to Supabase storage and return its public URL.
+export const uploadCategoryImage = async (fileUrl: string): Promise<string> => {
+  // Fetch the image binary.
+  const response = await fetch(fileUrl);
+  if (!response.ok) {
+    throw new Error('Failed to fetch image from the provided URL');
+  }
+  const blob = await response.blob();
+   // Generate a unique filename.
+   const filename = `${Date.now()}-${Math.random().toString(36).substring(2)}.${blob.type.split('/')[1] || 'jpg'}`;
+   
+   const { data, error } = await supabase.storage
+     .from('category-images')
+     .upload(filename, blob, {
+       contentType: blob.type || 'image/jpeg',
+       upsert: true,
+     });
+
+  if (error) {
+    console.error('[Supabase] Upload error:', error);
+    throw new Error(`Supabase upload failed: ${error.message}`);
+  }
+
+  const { publicUrl } = supabase.storage.from('category-images').getPublicUrl(data.path);
+  return publicUrl;
 };
 
 export default api;

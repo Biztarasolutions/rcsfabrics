@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { adminApi } from '@/lib/api';
+import { adminApi, uploadCategoryImage } from '@/lib/api';
 import { toast } from 'react-hot-toast';
 
 export default function AdminCategoriesPage() {
@@ -18,6 +18,7 @@ export default function AdminCategoriesPage() {
     gender: 'women',
     bestFor: '',
     properties: '',
+    imageLink: '', // Google Drive share link for category image
   });
 
   const { data: cats = [], isLoading: loading, error, isError } = useQuery({
@@ -91,9 +92,9 @@ export default function AdminCategoriesPage() {
     setShowModal(true);
   };
   
-  const handleSave = () => {
+  const handleSave = async () => {
     const generatedSlug = form.name.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
-    const data = {
+    const baseData = {
       name: form.name,
       slug: generatedSlug,
       description: form.description,
@@ -102,11 +103,22 @@ export default function AdminCategoriesPage() {
       bestFor: form.bestFor ? form.bestFor.split(',').map((s: string) => s.trim()).filter(Boolean) : [],
       properties: form.properties ? form.properties.split(',').map((s: string) => s.trim()).filter(Boolean) : [],
     };
-    
+
+    // If an image link is provided, upload it to Supabase first
+    if (form.imageLink) {
+      try {
+        const imageUrl = await uploadCategoryImage(form.imageLink);
+        baseData['imageUrl'] = imageUrl;
+      } catch (err:any) {
+        toast.error(`Image upload failed: ${err.message}`);
+        return;
+      }
+    }
+
     if (editId) {
-      updateMutation.mutate({ id: editId, data });
+      updateMutation.mutate({ id: editId, data: baseData });
     } else {
-      createMutation.mutate(data);
+      createMutation.mutate(baseData);
     }
   };
 
@@ -244,6 +256,11 @@ export default function AdminCategoriesPage() {
                   <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">Properties</label>
                   <input value={form.properties} onChange={(e) => setForm({ ...form, properties: e.target.value })} className="input-field" placeholder="e.g. Skin friendly, Breathable"/>
                   <span className="text-[10px] text-gray-400 block mt-1">Separate properties with commas</span>
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">Image Link</label>
+                  <input value={form.imageLink} onChange={(e) => setForm({ ...form, imageLink: e.target.value })} className="input-field" placeholder="https://..."/>
                 </div>
 
                 <label className="flex items-center gap-2 cursor-pointer pt-2">

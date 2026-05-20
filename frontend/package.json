@@ -13,6 +13,9 @@
     "export": "next export"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    // other existing dependencies will remain unchanged
+  },
     "@next/font": "^14.0.0",
     "@tanstack/react-query": "^5.28.0",
     "autoprefixer": "^10.4.16",

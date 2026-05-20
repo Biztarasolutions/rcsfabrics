@@ -34,7 +34,7 @@ export default function CategoryShowcase() {
                     className="group relative block overflow-hidden rounded-2xl">
                     {/* Image */}
                     <div className="relative h-52 overflow-hidden">
-                      <img src={cat.image} alt={cat.name}
+                      <img src={cat.imageUrl || cat.image} alt={cat.name}
                         className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"/>
                       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"/>
                     </div>
