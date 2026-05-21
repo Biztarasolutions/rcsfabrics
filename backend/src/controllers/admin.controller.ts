@@ -299,6 +299,7 @@ export const getAdminProducts = async (
           category: {
             select: { name: true, id: true },
           },
+          colors: true,
         },
         skip,
         take: parsedLimit,
@@ -892,25 +893,41 @@ export const syncProductImages = async (
     const { id } = req.params;
     const product = await prisma.product.findUnique({
       where: { id },
+      include: { colors: true },
     });
 
     if (!product) {
       throw new ApiError(404, 'Product not found');
     }
 
-    if (!product.folderUrl) {
-      throw new ApiError(400, 'This product does not have a Google Drive folder link saved.');
+    const foldersToSync = new Set<string>();
+    if (product.folderUrl) {
+      const folderId = extractFolderId(product.folderUrl);
+      if (folderId) foldersToSync.add(folderId);
+    }
+    for (const color of product.colors) {
+      if (color.folderUrl) {
+        const folderId = extractFolderId(color.folderUrl);
+        if (folderId) foldersToSync.add(folderId);
+      }
     }
 
-    const folderId = extractFolderId(product.folderUrl);
-    if (!folderId) {
-      throw new ApiError(400, 'Invalid Google Drive folder link.');
+    if (foldersToSync.size === 0) {
+      throw new ApiError(400, 'This product does not have any Google Drive folder links saved (either on product level or color variant level).');
     }
 
-    console.log(`[Sync] Starting image sync for product: ${product.name} (${product.id})`);
+    console.log(`[Sync] Starting image sync for product: ${product.name} (${product.id}) across ${foldersToSync.size} folders`);
     
-    // Upload files to Supabase
-    const supabaseUrls = await uploadDriveImagesToSupabase(folderId);
+    // Upload files to Supabase from all folders
+    const supabaseUrls: string[] = [];
+    for (const folderId of foldersToSync) {
+      try {
+        const urls = await uploadDriveImagesToSupabase(folderId);
+        supabaseUrls.push(...urls);
+      } catch (err: any) {
+        console.error(`[Sync] Failed to sync folder ${folderId}:`, err);
+      }
+    }
 
     // Clear existing images and replace with the newly synced ones (even if 0 images remain)
     await prisma.$transaction([
@@ -955,11 +972,9 @@ export const syncAllProductImages = async (
       throw new ApiError(403, 'Only admins can sync all product images');
     }
 
-    // Find all products with a folderUrl
+    // Find all products
     const products = await prisma.product.findMany({
-      where: {
-        folderUrl: { not: null },
-      },
+      include: { colors: true },
     });
 
     console.log(`[Sync All] Found ${products.length} products to sync.`);
@@ -967,16 +982,31 @@ export const syncAllProductImages = async (
     const errors: string[] = [];
 
     for (const product of products) {
-      if (!product.folderUrl) continue;
-      const folderId = extractFolderId(product.folderUrl);
-      if (!folderId) {
-        errors.push(`Product "${product.name}": Invalid folder URL`);
-        continue;
+      const foldersToSync = new Set<string>();
+      if (product.folderUrl) {
+        const folderId = extractFolderId(product.folderUrl);
+        if (folderId) foldersToSync.add(folderId);
+      }
+      for (const color of product.colors) {
+        if (color.folderUrl) {
+          const folderId = extractFolderId(color.folderUrl);
+          if (folderId) foldersToSync.add(folderId);
+        }
       }
 
+      if (foldersToSync.size === 0) continue;
+
       try {
-        console.log(`[Sync All] Syncing product: ${product.name}`);
-        const supabaseUrls = await uploadDriveImagesToSupabase(folderId);
+        console.log(`[Sync All] Syncing product: ${product.name} across ${foldersToSync.size} folders`);
+        const supabaseUrls: string[] = [];
+        for (const folderId of foldersToSync) {
+          try {
+            const urls = await uploadDriveImagesToSupabase(folderId);
+            supabaseUrls.push(...urls);
+          } catch (err: any) {
+            console.error(`[Sync All] Failed syncing folder ${folderId} for product "${product.name}":`, err.message);
+          }
+        }
 
         // Clear existing images and replace with the newly synced ones (even if 0 images remain)
         await prisma.$transaction([

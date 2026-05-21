@@ -229,7 +229,7 @@ export default function AdminProductsPage() {
                     {/* Actions */}
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        {product.folderUrl && (
+                        {(product.folderUrl || product.colors?.some((c: any) => c.folderUrl)) && (
                           <button 
                             onClick={() => handleSyncSingle(product.id)} 
                             disabled={syncSingleMutation.isPending}

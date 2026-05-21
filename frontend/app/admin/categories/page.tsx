@@ -163,10 +163,15 @@ export default function AdminCategoriesPage() {
             <motion.div key={cat.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
               className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-dark-700 dark:bg-dark-800 flex flex-col justify-between">
               <div className="space-y-3">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-semibold text-gray-900 dark:text-white">{cat.name}</h3>
+                <div className="flex items-start gap-4">
+                  <img 
+                    src={cat.imageUrl || cat.image || 'https://via.placeholder.com/60'} 
+                    alt={cat.name} 
+                    className="h-14 w-14 rounded-xl object-cover border border-gray-100 dark:border-dark-700 flex-shrink-0"
+                  />
+                  <div className="space-y-1 min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <h3 className="font-semibold text-gray-900 dark:text-white text-base truncate">{cat.name}</h3>
                       <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${cat.isActive ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-500 dark:bg-dark-700 dark:text-gray-400'}`}>
                         {cat.isActive ? 'Active' : 'Inactive'}
                       </span>
@@ -174,7 +179,7 @@ export default function AdminCategoriesPage() {
                         {cat.gender || 'women'}
                       </span>
                     </div>
-                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{cat.description}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">{cat.description}</p>
                   </div>
                 </div>
 

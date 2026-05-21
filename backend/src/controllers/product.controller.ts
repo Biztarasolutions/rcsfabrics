@@ -337,6 +337,7 @@ export const getHomepageData = async (
           name: true,
           slug: true,
           image: true,
+          imageUrl: true,
         },
         orderBy: { order: 'asc' },
       }),
