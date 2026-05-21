@@ -62,7 +62,7 @@ export default function ProductCard({ product }: ProductCardProps) {
               <span className="text-xs text-gray-500 dark:text-gray-400">({product.ratingCount})</span>
             </div>
             <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-lg font-bold text-primary-700 dark:text-primary-400">{formatPrice(price)}<span className="text-xs font-normal text-gray-400">/m</span></span>
+              <span className="text-lg font-bold text-primary-700 dark:text-primary-400 whitespace-nowrap">{formatPrice(price)}<span className="text-xs font-normal text-gray-400">/m</span></span>
               {product.discountPrice && <span className="text-sm text-gray-400 line-through">{formatPrice(product.basePrice)}</span>}
             </div>
           </div>
