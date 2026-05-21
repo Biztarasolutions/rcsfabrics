@@ -11,6 +11,7 @@ export default function AdminProductsPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<any>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   const { data: productsData = { products: [] }, isLoading } = useQuery({
@@ -241,6 +242,12 @@ export default function AdminProductsPage() {
                           </button>
                         )}
                         <button 
+                          onClick={() => { setEditingProduct(product); setShowModal(true); }} 
+                          className="rounded-lg border border-green-200 px-2 py-1 text-xs font-medium text-green-600 hover:bg-green-50 dark:border-green-900 dark:text-green-400 dark:hover:bg-green-950/30 transition-colors"
+                        >
+                          Edit
+                        </button>
+                        <button 
                           onClick={() => setDeleteConfirm(product.id)} 
                           className="rounded-lg border border-red-200 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/30 transition-colors"
                         >
@@ -256,15 +263,15 @@ export default function AdminProductsPage() {
         </div>
       </div>
 
-      {/* Add Product Modal */}
+      {/* Add/Edit Product Modal */}
       <AnimatePresence>
-        {showModal && (
+        {(showModal || editingProduct) && (
           <motion.div 
             initial={{ opacity: 0 }} 
             animate={{ opacity: 1 }} 
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
-            onClick={(e) => e.target === e.currentTarget && setShowModal(false)}
+            onClick={(e) => e.target === e.currentTarget && (setShowModal(false), setEditingProduct(null))}
           >
             <motion.div 
               initial={{ scale: 0.95, y: 20 }} 
@@ -273,9 +280,9 @@ export default function AdminProductsPage() {
               className="w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl dark:bg-dark-800"
             >
               <div className="mb-6 flex items-center justify-between">
-                <h3 className="text-2xl font-bold">Add New Product</h3>
+                <h3 className="text-2xl font-bold">{editingProduct ? 'Edit Product' : 'Add New Product'}</h3>
                 <button
-                  onClick={() => setShowModal(false)}
+                  onClick={() => { setShowModal(false); setEditingProduct(null); }}
                   className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-dark-700"
                 >
                   <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -283,7 +290,10 @@ export default function AdminProductsPage() {
                   </svg>
                 </button>
               </div>
-              <ProductFormAdvanced />
+              <ProductFormAdvanced 
+                initialData={editingProduct}
+                onClose={() => { setShowModal(false); setEditingProduct(null); }}
+              />
             </motion.div>
           </motion.div>
         )}

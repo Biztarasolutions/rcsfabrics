@@ -158,72 +158,41 @@ export default function AdminCategoriesPage() {
       ) : isError ? (
         <div className="p-10 text-center text-red-500 bg-red-50 rounded-xl">Failed to load categories: {(error as any)?.message}</div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="space-y-4">
           {cats.map((cat: any, i: number) => (
             <motion.div key={cat.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-              className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-dark-700 dark:bg-dark-800 flex flex-col justify-between">
-              <div className="space-y-3">
-                <div className="flex items-start gap-4">
-                  <img 
-                    src={cat.imageUrl || cat.image || 'https://via.placeholder.com/60'} 
-                    alt={cat.name} 
-                    className="h-14 w-14 rounded-xl object-cover border border-gray-100 dark:border-dark-700 flex-shrink-0"
-                  />
-                  <div className="space-y-1 min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <h3 className="font-semibold text-gray-900 dark:text-white text-base truncate">{cat.name}</h3>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${cat.isActive ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-500 dark:bg-dark-700 dark:text-gray-400'}`}>
-                        {cat.isActive ? 'Active' : 'Inactive'}
-                      </span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium uppercase bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400`}>
-                        {cat.gender || 'women'}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">{cat.description}</p>
+              className="flex items-center justify-between rounded-2xl border border-gray-200 bg-white p-4 dark:border-dark-700 dark:bg-dark-800"
+            >
+              <div className="flex items-center gap-4">
+                <img
+                  src={cat.imageUrl || cat.image || 'https://via.placeholder.com/60'}
+                  alt={cat.name}
+                  className="h-14 w-14 rounded-xl object-cover border border-gray-100 dark:border-dark-700"
+                />
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-gray-900 dark:text-white text-base truncate">{cat.name}</h3>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${cat.isActive ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-500 dark:bg-dark-700 dark:text-gray-400'}`}>
+                      {cat.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-medium uppercase bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">{cat.gender || 'women'}</span>
                   </div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">{cat.description}</p>
                 </div>
-
-                {/* Best For Tags */}
-                {cat.bestFor && cat.bestFor.length > 0 && (
-                  <div>
-                    <span className="text-[11px] font-semibold text-gray-400 dark:text-dark-500 uppercase tracking-wider block mb-1">Best For</span>
-                    <div className="flex flex-wrap gap-1">
-                      {cat.bestFor.map((bf: string) => (
-                        <span key={bf} className="text-[11px] px-2 py-0.5 bg-blue-50 text-blue-600 dark:bg-blue-900/10 dark:text-blue-400 rounded-md font-medium border border-blue-100 dark:border-blue-900/20">
-                          {bf}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Properties Tags */}
-                {cat.properties && cat.properties.length > 0 && (
-                  <div>
-                    <span className="text-[11px] font-semibold text-gray-400 dark:text-dark-500 uppercase tracking-wider block mb-1">Properties</span>
-                    <div className="flex flex-wrap gap-1">
-                      {cat.properties.map((prop: string) => (
-                        <span key={prop} className="text-[11px] px-2 py-0.5 bg-amber-50 text-amber-600 dark:bg-amber-900/10 dark:text-amber-400 rounded-md font-medium border border-amber-100 dark:border-amber-900/20">
-                          {prop}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
-
-              <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-4 dark:border-dark-700">
-                <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{cat._count?.products || 0} products</span>
-                <div className="flex gap-2">
-                  <button onClick={() => toggleActive(cat)} disabled={updateMutation.isPending}
-                    className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 dark:border-dark-600 dark:text-gray-400 transition-colors">
-                    {cat.isActive ? 'Disable' : 'Enable'}
-                  </button>
-                  <button onClick={() => openEdit(cat)}
-                    className="rounded-lg border border-blue-200 px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 dark:border-blue-900 dark:text-blue-400 transition-colors">Edit</button>
-                  <button onClick={() => handleDelete(cat.id)} disabled={deleteMutation.isPending}
-                    className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-400 transition-colors">Delete</button>
-                </div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => toggleActive(cat)} disabled={updateMutation.isPending}
+                  className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 dark:border-dark-600 dark:text-gray-400 transition-colors">
+                  {cat.isActive ? 'Disable' : 'Enable'}
+                </button>
+                <button onClick={() => openEdit(cat)}
+                  className="rounded-lg border border-blue-200 px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 dark:border-blue-900 dark:text-blue-400 transition-colors">
+                  Edit
+                </button>
+                <button onClick={() => handleDelete(cat.id)} disabled={deleteMutation.isPending}
+                  className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-400 transition-colors">
+                  Delete
+                </button>
               </div>
             </motion.div>
           ))}
