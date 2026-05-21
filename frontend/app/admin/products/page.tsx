@@ -104,7 +104,6 @@ export default function AdminProductsPage() {
                 <th className="px-4 py-3 hidden lg:table-cell">Style Code</th>
                 <th className="px-4 py-3 hidden sm:table-cell">Category</th>
                 <th className="px-4 py-3">Price</th>
-                <th className="px-4 py-3 hidden md:table-cell">Material</th>
                 <th className="px-4 py-3 hidden xl:table-cell">Work Type</th>
                 <th className="px-4 py-3 hidden md:table-cell">Stock</th>
                 <th className="px-4 py-3 hidden lg:table-cell">Colors</th>
@@ -142,6 +141,23 @@ export default function AdminProductsPage() {
                           {product.code && (
                             <div className="text-xs text-gray-500">Code: {product.code}</div>
                           )}
+                          {product.description && (
+                            <div className="mt-1 text-xs text-gray-500 line-clamp-2">{product.description}</div>
+                          )}
+                          {product.bestFor && product.bestFor.length > 0 && (
+                            <div className="mt-1 flex flex-wrap gap-1 text-[11px] text-gray-600 dark:text-gray-400">
+                              {product.bestFor.map((item: string) => (
+                                <span key={item} className="rounded-full bg-yellow-100 px-2 py-0.5 dark:bg-yellow-900/30">{item}</span>
+                              ))}
+                            </div>
+                          )}
+                          {product.properties && product.properties.length > 0 && (
+                            <div className="mt-1 flex flex-wrap gap-1 text-[11px] text-gray-600 dark:text-gray-400">
+                              {product.properties.map((prop: string) => (
+                                <span key={prop} className="rounded-full bg-gray-100 px-2 py-0.5 dark:bg-gray-900/30">{prop}</span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -168,11 +184,6 @@ export default function AdminProductsPage() {
                           {formatPrice(product.basePrice)}
                         </div>
                       )}
-                    </td>
-
-                    {/* Material */}
-                    <td className="px-4 py-3 hidden md:table-cell text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                      {product.material}
                     </td>
 
                     {/* Work Type */}

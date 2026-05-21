@@ -53,7 +53,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         </div>
         {/* Content */}
         <div className="flex flex-1 flex-col p-4">
-          <p className="text-xs font-medium uppercase tracking-wider text-primary-600 dark:text-primary-400">{product.category?.name} · {product.material}</p>
+          <p className="text-xs font-medium uppercase tracking-wider text-primary-600 dark:text-primary-400">{product.category?.name} · {product.bestFor?.join(', ') || 'Fabric'}</p>
           <h3 className="mt-1 line-clamp-2 font-semibold text-gray-900 dark:text-white">{product.name}</h3>
           {product.color && <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{product.color}</p>}
           <div className="mt-auto pt-3">

@@ -10,7 +10,6 @@ export class ProductService {
     limit?: number;
     category?: string;
     search?: string;
-    material?: string;
     color?: string;
     minPrice?: number;
     maxPrice?: number;
@@ -19,14 +18,13 @@ export class ProductService {
     isNew?: boolean;
   }) {
     const {
-      page = 1, limit = 12, category, search, material,
+      page = 1, limit = 12, category, search,
       color, minPrice, maxPrice, sort = 'featured', featured, isNew,
     } = params;
 
     const where: any = { isActive: true };
 
     if (category) where.category = { slug: category };
-    if (material) where.material = { contains: material, mode: 'insensitive' };
     if (color) where.color = { contains: color, mode: 'insensitive' };
     if (featured !== undefined) where.isFeatured = featured;
     if (isNew !== undefined) where.isNew = isNew;
@@ -39,7 +37,6 @@ export class ProductService {
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
-        { material: { contains: search, mode: 'insensitive' } },
         { color: { contains: search, mode: 'insensitive' } },
         { tags: { has: search } },
       ];
@@ -106,29 +103,46 @@ export class ProductService {
 
   // ── Create ────────────────────────────────────────────────────────────
   async createProduct(data: CreateProductInput) {
-    const { images, ...productData } = data;
+    const { images, colors, ...productData } = data;
+    const createPayload: any = {
+      ...productData,
+      slug: productData.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+      images: images ? { create: images } : undefined,
+      colors: colors ? { create: colors.map((color) => ({
+        name: color.name,
+        hexCode: color.hexCode,
+        folderUrl: color.folderUrl,
+        productCode: color.productCode,
+      })) } : undefined,
+    };
     return prisma.product.create({
-      data: {
-        ...productData,
-        slug: productData.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
-        images: images ? { create: images } : undefined,
-      },
+      data: createPayload,
       include: { category: true, images: true },
     });
   }
 
   // ── Update ────────────────────────────────────────────────────────────
   async updateProduct(id: string, data: UpdateProductInput) {
-    const { images, ...productData } = data;
+    const { images, colors, ...productData } = data;
+    const updatePayload: any = {
+      ...productData,
+      images: images ? {
+        deleteMany: {},
+        create: images,
+      } : undefined,
+      colors: colors ? {
+        deleteMany: {},
+        create: colors.map((color) => ({
+          name: color.name,
+          hexCode: color.hexCode,
+          folderUrl: color.folderUrl,
+          productCode: color.productCode,
+        })),
+      } : undefined,
+    };
     return prisma.product.update({
       where: { id },
-      data: {
-        ...productData,
-        images: images ? {
-          deleteMany: {},
-          create: images,
-        } : undefined,
-      },
+      data: updatePayload,
       include: { category: true, images: true },
     });
   }
@@ -174,7 +188,7 @@ export class ProductService {
         isActive: true,
         OR: [
           { name: { contains: query, mode: 'insensitive' } },
-          { material: { contains: query, mode: 'insensitive' } },
+          { color: { contains: query, mode: 'insensitive' } },
         ],
       },
       select: { id: true, name: true, slug: true, basePrice: true, discountPrice: true, images: { take: 1 } },

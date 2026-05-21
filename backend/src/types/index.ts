@@ -60,7 +60,6 @@ export interface CreateProductInput {
   discountPercent?: number | null;
   discountType?: string;
   discountValue?: number | null;
-  material: string;
   gsm?: number | null;
   width?: number | null;
   pattern?: string | null;
@@ -68,8 +67,6 @@ export interface CreateProductInput {
   workType?: string | null;
   color: string;
   stretchability: string;
-  usage?: string | null;
-  washCare?: string | null;
   totalStock: number;
   minOrderQty?: number;
   sku?: string | null;
@@ -95,7 +92,6 @@ export interface UpdateProductInput {
   discountPercent?: number | null;
   discountType?: string;
   discountValue?: number | null;
-  material?: string;
   gsm?: number | null;
   width?: number | null;
   pattern?: string | null;
@@ -103,8 +99,6 @@ export interface UpdateProductInput {
   workType?: string | null;
   color?: string;
   stretchability?: string;
-  usage?: string | null;
-  washCare?: string | null;
   totalStock?: number;
   minOrderQty?: number;
   sku?: string | null;

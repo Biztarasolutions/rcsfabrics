@@ -40,13 +40,13 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
   };
 
   const specs = [
-    { label: 'Material', value: PRODUCT.material },
+    { label: 'Best For', value: PRODUCT.bestFor?.join(', ') || 'N/A' },
+    { label: 'Properties', value: PRODUCT.properties?.join(', ') || 'N/A' },
     { label: 'GSM', value: PRODUCT.gsm ? `${PRODUCT.gsm} gsm` : 'N/A' },
     { label: 'Width', value: PRODUCT.width ? `${PRODUCT.width} inches` : 'N/A' },
     { label: 'Pattern', value: PRODUCT.pattern || 'N/A' },
     { label: 'Color', value: PRODUCT.color || 'N/A' },
     { label: 'Stretchability', value: PRODUCT.stretchability || 'N/A' },
-    { label: 'Best For', value: PRODUCT.usage || 'N/A' },
     { label: 'Min Order', value: `${PRODUCT.minOrderQty || 0.5} meter` },
     { label: 'Stock', value: `${PRODUCT.totalStock} meters` },
   ];
@@ -95,7 +95,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
           <div className="space-y-6">
             <div>
               <p className="text-sm font-medium uppercase tracking-wider text-primary-600 dark:text-primary-400">
-                {PRODUCT.category?.name} · {PRODUCT.material}
+                {PRODUCT.category?.name}
               </p>
               <h1 className="mt-2 font-display text-4xl font-bold text-gray-900 dark:text-white">{PRODUCT.name}</h1>
               <div className="mt-3 flex items-center gap-3">
@@ -168,7 +168,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
               {(['specs', 'care', 'reviews'] as const).map((tab) => (
                 <button key={tab} onClick={() => setActiveTab(tab)}
                   className={`border-b-2 pb-4 text-sm font-semibold capitalize transition-colors ${activeTab === tab ? 'border-primary-600 text-primary-600 dark:border-primary-400 dark:text-primary-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}>
-                  {tab === 'specs' ? 'Fabric Specifications' : tab === 'care' ? 'Care Instructions' : `Reviews (${REVIEWS.length})`}
+                  {tab === 'specs' ? 'Fabric Specifications' : tab === 'care' ? 'Product Properties' : `Reviews (${REVIEWS.length})`}
                 </button>
               ))}
             </div>
@@ -187,13 +187,13 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
             )}
             {activeTab === 'care' && (
               <div className="max-w-lg space-y-3">
-                {PRODUCT.washCare ? (
+                {PRODUCT.properties?.length ? (
                    <div className="flex items-center gap-3 rounded-xl bg-gray-50 px-4 py-3 dark:bg-dark-800">
                     <svg className="h-4 w-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/></svg>
-                    <span className="text-sm text-gray-700 dark:text-gray-300">{PRODUCT.washCare}</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-300">{PRODUCT.properties.join(', ')}</span>
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-500">No care instructions available.</p>
+                  <p className="text-sm text-gray-500">No product properties available.</p>
                 )}
               </div>
             )}

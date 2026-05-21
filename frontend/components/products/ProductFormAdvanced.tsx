@@ -4,6 +4,41 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 
+const COLOR_NAME_TO_HEX: Record<string, string> = {
+  RED: '#FF0000',
+  PINK: '#FFC0CB',
+  ORANGE: '#FFA500',
+  YELLOW: '#FFFF00',
+  GREEN: '#008000',
+  BLUE: '#0000FF',
+  PURPLE: '#800080',
+  MAGENTA: '#FF00FF',
+  CYAN: '#00FFFF',
+  TEAL: '#008080',
+  BROWN: '#A52A2A',
+  BLACK: '#000000',
+  WHITE: '#FFFFFF',
+  GRAY: '#808080',
+  NAVY: '#000080',
+  BEIGE: '#F5F5DC',
+  CORAL: '#FF7F50',
+  GOLD: '#FFD700',
+  SILVER: '#C0C0C0',
+  LAVENDER: '#E6E6FA',
+  MINT: '#98FF98',
+  MAROON: '#800000',
+};
+
+const HEX_TO_COLOR_NAME = Object.fromEntries(
+  Object.entries(COLOR_NAME_TO_HEX).map(([name, hex]) => [hex.toUpperCase(), name])
+);
+
+const normalizeHex = (value: string) => {
+  const cleaned = value.trim();
+  if (!cleaned) return '#000000';
+  return cleaned.startsWith('#') ? cleaned.toUpperCase() : `#${cleaned.toUpperCase()}`;
+};
+
 const EMPTY_FORM = {
   name: '',
   categoryId: '',
@@ -11,20 +46,14 @@ const EMPTY_FORM = {
   basePrice: '',
   discountType: 'percentage',
   discountValue: '',
-  material: '',
   gsm: '',
   width: '',
   pattern: '',
-  occasion: '',
   workType: 'Plain',
-  color: '',
   stretchability: 'Non-Stretch',
-  usage: '',
-  washCare: '',
   totalStock: '',
   minOrderQty: '0.5',
-  description: '',
-  colors: [{ name: '', hexCode: '#000000', folderUrl: '', productCode: '' }],
+  colors: [{ name: '', hexCode: '#000000', folderUrl: '' }],
 };
 
 export default function ProductFormAdvanced() {
@@ -37,16 +66,19 @@ export default function ProductFormAdvanced() {
     queryFn: () => adminApi.getCategories().then(res => res.data.data || []),
   });
 
-  // Auto-generate style code when name or category changes
+  const selectedCategory = categories.find((c: any) => c.id === form.categoryId);
+
   useMemo(() => {
     if (form.name && form.categoryId) {
-      const selectedCategory = categories.find((c: any) => c.id === form.categoryId);
       if (selectedCategory) {
-        const code = `${form.name.substring(0, 3).toUpperCase()}-${selectedCategory.name.substring(0, 3).toUpperCase()}`;
-        setStyleCode(code);
+        const codePrefix = form.code ? `${form.code}-` : '';
+        const computed = `${codePrefix}${form.name.substring(0, 3).toUpperCase()}-${selectedCategory.name.substring(0, 3).toUpperCase()}`;
+        setStyleCode(computed);
+        return;
       }
     }
-  }, [form.name, form.categoryId, categories]);
+    setStyleCode('');
+  }, [form.name, form.categoryId, form.code, selectedCategory]);
 
   const mutation = useMutation({
     mutationFn: (data: any) => adminApi.createProduct(data),
@@ -63,17 +95,36 @@ export default function ProductFormAdvanced() {
     const { name, value } = e.target;
     setForm((prev: any) => ({ ...prev, [name]: value }));
   };
-
   const handleColorChange = (index: number, field: string, value: string) => {
     const updatedColors = [...form.colors];
-    updatedColors[index] = { ...updatedColors[index], [field]: value };
+    const currentColor = { ...updatedColors[index] };
+
+    if (field === 'name') {
+      currentColor.name = value;
+      const normalizedName = value.trim().toUpperCase();
+      const mappedHex = COLOR_NAME_TO_HEX[normalizedName];
+      if (mappedHex) {
+        currentColor.hexCode = mappedHex;
+      }
+    } else if (field === 'hexCode') {
+      const normalizedHex = normalizeHex(value);
+      currentColor.hexCode = normalizedHex;
+      const mappedName = HEX_TO_COLOR_NAME[normalizedHex];
+      if (mappedName) {
+        currentColor.name = mappedName;
+      }
+    } else {
+      currentColor[field] = value;
+    }
+
+    updatedColors[index] = currentColor;
     setForm((prev: any) => ({ ...prev, colors: updatedColors }));
   };
 
   const addColor = () => {
     setForm((prev: any) => ({
       ...prev,
-      colors: [...prev.colors, { name: '', hexCode: '#000000', folderUrl: '', productCode: '' }],
+      colors: [...prev.colors, { name: '', hexCode: '#000000', folderUrl: '' }],
     }));
   };
 
@@ -96,7 +147,6 @@ export default function ProductFormAdvanced() {
       code: form.code ? Number(form.code) : undefined,
       minOrderQty: Number(form.minOrderQty),
       styleCode,
-      folderUrl: undefined,
     };
     mutation.mutate(payload);
   };
@@ -131,9 +181,18 @@ export default function ProductFormAdvanced() {
             </select>
           </div>
 
+          {selectedCategory && (
+            <div className="sm:col-span-2 rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-gray-600 dark:border-dark-700 dark:bg-dark-700/40 dark:text-gray-300">
+              <p className="font-semibold text-gray-800 dark:text-gray-100">Category details</p>
+              <p className="mt-2"><span className="font-medium">Description:</span> {selectedCategory.description || 'No description available'}</p>
+              <p className="mt-2"><span className="font-medium">Best For:</span> {selectedCategory.bestFor?.length ? selectedCategory.bestFor.join(', ') : 'Not set'}</p>
+              <p className="mt-2"><span className="font-medium">Properties:</span> {selectedCategory.properties?.length ? selectedCategory.properties.join(', ') : 'Not set'}</p>
+            </div>
+          )}
+
           {/* Code */}
           <div>
-            <label className="mb-1.5 block text-sm font-medium">Code (Number)</label>
+            <label className="mb-1.5 block text-sm font-medium">Code (Number) *</label>
             <input
               name="code"
               type="number"
@@ -141,6 +200,7 @@ export default function ProductFormAdvanced() {
               onChange={handleChange}
               placeholder="e.g., 101"
               className="input-field"
+              required
             />
           </div>
 
@@ -154,20 +214,7 @@ export default function ProductFormAdvanced() {
               placeholder="Generated automatically"
               className="input-field bg-gray-50 dark:bg-dark-700"
             />
-            <p className="mt-1 text-xs text-gray-500">Format: Name-Category</p>
-          </div>
-
-          {/* Material */}
-          <div>
-            <label className="mb-1.5 block text-sm font-medium">Material *</label>
-            <input
-              name="material"
-              value={form.material}
-              onChange={handleChange}
-              placeholder="e.g., Silk"
-              className="input-field"
-              required
-            />
+            <p className="mt-1 text-xs text-gray-500">Format: Code-Name-Category (auto-generated)</p>
           </div>
 
           {/* Pattern */}
@@ -182,17 +229,6 @@ export default function ProductFormAdvanced() {
             />
           </div>
 
-          {/* Occasion */}
-          <div>
-            <label className="mb-1.5 block text-sm font-medium">Occasion</label>
-            <input
-              name="occasion"
-              value={form.occasion}
-              onChange={handleChange}
-              placeholder="e.g., Wedding, Party"
-              className="input-field"
-            />
-          </div>
 
           {/* Width */}
           <div>
@@ -306,55 +342,21 @@ export default function ProductFormAdvanced() {
             />
           </div>
 
-          {/* Usage */}
-          <div>
-            <label className="mb-1.5 block text-sm font-medium">Usage</label>
-            <input
-              name="usage"
-              value={form.usage}
-              onChange={handleChange}
-              placeholder="e.g., Sarees, Dupattas"
-              className="input-field"
-            />
-          </div>
-
-          {/* Wash Care */}
-          <div>
-            <label className="mb-1.5 block text-sm font-medium">Wash Care</label>
-            <textarea
-              name="washCare"
-              value={form.washCare}
-              onChange={handleChange}
-              placeholder="e.g., Dry clean only"
-              className="input-field"
-              rows={2}
-            />
-          </div>
-
-          {/* Description */}
-          <div className="sm:col-span-2">
-            <label className="mb-1.5 block text-sm font-medium">Description</label>
-            <textarea
-              name="description"
-              value={form.description}
-              onChange={handleChange}
-              placeholder="Product description..."
-              className="input-field"
-              rows={3}
-            />
-          </div>
-
         </div>
       </div>
 
       {/* Colors Section */}
       <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-dark-700 dark:bg-dark-800">
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-lg font-bold">Color Variants</h3>
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="text-lg font-bold">Color Variants</h3>
+            <p className="text-sm text-gray-500">Add product colors after Code and Category are set.</p>
+          </div>
           <button
             type="button"
             onClick={addColor}
-            className="button-secondary px-3 py-1.5 text-sm"
+            disabled={!form.code || !styleCode}
+            className="button-secondary px-3 py-1.5 text-sm disabled:cursor-not-allowed disabled:opacity-50"
           >
             + Add Color
           </button>
@@ -409,16 +411,16 @@ export default function ProductFormAdvanced() {
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="mb-1 block text-xs font-medium">Product Code (Editable) *</label>
+                  <label className="mb-1 block text-xs font-medium">Product Code</label>
                   <input
                     type="text"
-                    value={color.productCode || `${styleCode}-${color.name.substring(0, 3).toUpperCase()}`}
-                    onChange={(e) => handleColorChange(index, 'productCode', e.target.value)}
+                    value={styleCode && color.name ? `${styleCode}-${color.name.substring(0, 3).toUpperCase()}` : ''}
+                    readOnly
                     placeholder={`e.g., ${styleCode}-RED`}
-                    className="input-field"
+                    className="input-field bg-gray-100 dark:bg-dark-700"
                     required
                   />
-                  <p className="mt-1 text-xs text-gray-500">Edit to customize the product code for this color variant. Default: StyleCode-ColorCode</p>
+                  <p className="mt-1 text-xs text-gray-500">Auto-generated from Code and Color name.</p>
                 </div>
 
                 <div className="sm:col-span-2">

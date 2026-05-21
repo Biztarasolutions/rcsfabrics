@@ -13,7 +13,7 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "moduleResolution": "node",
+    "moduleResolution": "node10",
     "allowSyntheticDefaultImports": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
@@ -21,16 +21,15 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noImplicitReturns": true,
-    "baseUrl": "./",
     "paths": {
-      "@/*": ["src/*"],
-      "@/routes/*": ["src/routes/*"],
-      "@/controllers/*": ["src/controllers/*"],
-      "@/services/*": ["src/services/*"],
-      "@/middleware/*": ["src/middleware/*"],
-      "@/utils/*": ["src/utils/*"],
-      "@/config/*": ["src/config/*"],
-      "@/types/*": ["src/types/*"]
+      "@/*": ["./src/*"],
+      "@/routes/*": ["./src/routes/*"],
+      "@/controllers/*": ["./src/controllers/*"],
+      "@/services/*": ["./src/services/*"],
+      "@/middleware/*": ["./src/middleware/*"],
+      "@/utils/*": ["./src/utils/*"],
+      "@/config/*": ["./src/config/*"],
+      "@/types/*": ["./src/types/*"]
     },
     "ignoreDeprecations": "5.0"
   },

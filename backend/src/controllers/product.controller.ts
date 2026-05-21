@@ -429,7 +429,6 @@ export const createProduct = async (
       basePrice,
       discountPrice,
       discountPercent,
-      material,
       width,
       pattern,
       stretchability,
@@ -438,25 +437,35 @@ export const createProduct = async (
       colors,
     } = req.body;
 
-    if (!name || !categoryId || !basePrice || !material || !stretchability || !stock) {
+    if (!name || !categoryId || !basePrice || !stretchability || !stock) {
       throw new ApiError(400, 'Required fields are missing');
+    }
+
+    const category = await prisma.category.findUnique({
+      where: { id: categoryId },
+      select: { bestFor: true, properties: true },
+    });
+
+    if (!category) {
+      throw new ApiError(404, 'Category not found');
     }
 
     const product = await prisma.product.create({
       data: {
         name,
         slug: name.toLowerCase().replace(/\s+/g, '-'),
-        categoryId: categoryId,
+        categoryId,
         color: colors && colors.length > 0 ? colors[0].name : '',
         basePrice: parseFloat(basePrice),
         discountPrice: discountPrice ? parseFloat(discountPrice) : null,
         discountPercent: discountPercent ? parseFloat(discountPercent) : 0,
-        material,
         width,
         pattern,
         stretchability,
         totalStock: parseInt(stock),
         minOrderQty: parseInt(minOrderQty || '1'),
+        bestFor: category?.bestFor || [],
+        properties: category?.properties || [],
       },
     });
 

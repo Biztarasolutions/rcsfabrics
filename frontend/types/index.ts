@@ -16,14 +16,11 @@ export interface Product {
   description?: string;
   basePrice: number;
   discountPrice?: number;
-  material: string;
   gsm?: number;
   width?: number;
   pattern?: string;
   color: string;
   stretchability: string;
-  usage?: string;
-  washCare?: string;
   totalStock: number;
   minOrderQty: number;
   images: ProductImage[];
@@ -31,6 +28,8 @@ export interface Product {
     name: string;
     slug: string;
   };
+  bestFor?: string[];
+  properties?: string[];
   rating: number;
   ratingCount: number;
   isFeatured: boolean;

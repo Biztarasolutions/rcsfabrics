@@ -35,7 +35,7 @@ export default function CartSummary({ items }: CartSummaryProps) {
               {item.product.name}
             </h3>
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              {item.product.material}
+              {item.product.bestFor?.join(', ') || item.product.category?.name}
             </p>
             <div className="mt-2 flex items-center gap-2">
               <span className="text-lg font-bold text-primary">

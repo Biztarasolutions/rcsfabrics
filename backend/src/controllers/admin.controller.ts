@@ -59,32 +59,24 @@ export const createProduct = async (
 
     const {
       name,
-      description,
       categoryId,
       code,
       basePrice,
       discountPrice,
       discountType,
       discountValue,
-      material,
       gsm,
       width,
       pattern,
-      occasion,
       workType,
-      color,
       stretchability,
-      usage,
-      washCare,
       totalStock,
       minOrderQty,
       colors,
-      imageUrls,
-      folderUrl,
     } = req.body;
 
-    if (!name || !categoryId || !basePrice) {
-      throw new ApiError(400, 'Name, category, and price are required');
+    if (!name || !categoryId || !basePrice || !code) {
+      throw new ApiError(400, 'Name, category, code, and price are required');
     }
 
     // Get category to build styleCode
@@ -93,34 +85,14 @@ export const createProduct = async (
       throw new ApiError(404, 'Category not found');
     }
 
-    // Generate styleCode as Name-Category
-    const styleCode = `${name.substring(0, 3).toUpperCase()}-${category.name.substring(0, 3).toUpperCase()}`;
-
-    // Process colors with their individual folder URLs
-    let colorImages: { [key: string]: string[] } = {};
-    
-    if (colors && Array.isArray(colors) && colors.length > 0) {
-      for (const color of colors) {
-        if (color.folderUrl) {
-          try {
-            const folderId = extractFolderId(color.folderUrl);
-            if (folderId) {
-              colorImages[color.productCode || `${styleCode}-${color.name.substring(0, 3).toUpperCase()}`] = await uploadDriveImagesToSupabase(folderId);
-            }
-          } catch (error) {
-            console.error(`Error processing images for color ${color.name}:`, error);
-          }
-        }
-      }
-    }
-
-    let finalImageUrls: string[] = [];
+    // Generate styleCode as Code-Name-Category
+    const styleCode = `${code}-${name.substring(0, 3).toUpperCase()}-${category.name.substring(0, 3).toUpperCase()}`;
 
     const product = await prisma.product.create({
       data: {
         name,
         slug: generateSlug(name),
-        description,
+        description: category.description,
         categoryId,
         code,
         styleCode,
@@ -128,29 +100,26 @@ export const createProduct = async (
         discountPrice,
         discountType,
         discountValue,
-        material,
         gsm,
         width,
         pattern,
-        occasion,
+        occasion: category.bestFor?.join(', ') || undefined,
         workType,
-        color,
+        color: colors && colors.length > 0 ? colors[0].name : 'Unknown',
         stretchability,
-        usage,
-        washCare,
         totalStock: totalStock || 0,
         minOrderQty: minOrderQty || 0.5,
         sku: generateSKU('FAB'),
+        bestFor: category.bestFor,
+        properties: category.properties,
         ...(colors && Array.isArray(colors) && colors.length > 0 && {
           colors: {
-            create: colors.map((color: any) => {
-              const computedProductCode = color.productCode || `${styleCode}-${color.name.substring(0, 3).toUpperCase()}`;
-              return {
-                name: color.name,
-                hexCode: color.hexCode,
-                productCode: computedProductCode,
-              };
-            })
+            create: colors.map((color: any) => ({
+              name: color.name,
+              hexCode: color.hexCode,
+              productCode: `${styleCode}-${color.name.substring(0, 3).toUpperCase()}`,
+              folderUrl: color.folderUrl,
+            }))
           }
         })
       },

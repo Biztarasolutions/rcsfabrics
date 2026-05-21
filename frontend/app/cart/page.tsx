@@ -56,7 +56,7 @@ export default function CartPage() {
                     <div className="flex flex-1 flex-col gap-2 min-w-0">
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <p className="text-xs font-medium uppercase tracking-wider text-primary-600 dark:text-primary-400">{item.product.material}</p>
+                          <p className="text-xs font-medium uppercase tracking-wider text-primary-600 dark:text-primary-400">{item.product.bestFor?.join(', ') || item.product.category?.name}</p>
                           <h3 className="font-semibold text-gray-900 dark:text-white leading-tight">{item.product.name}</h3>
                           <p className="text-sm text-gray-500 dark:text-gray-400">{formatPrice(price)}/m</p>
                         </div>

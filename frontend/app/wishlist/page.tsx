@@ -47,7 +47,7 @@ export default function WishlistPage() {
                 </div>
                 {/* Content */}
                 <div className="p-4">
-                  <p className="text-xs font-medium uppercase tracking-wider text-primary-600 dark:text-primary-400">{item.product.material}</p>
+                  <p className="text-xs font-medium uppercase tracking-wider text-primary-600 dark:text-primary-400">{item.product.bestFor?.join(', ') || item.product.category?.name}</p>
                   <h3 className="mt-1 font-semibold text-gray-900 dark:text-white">{item.product.name}</h3>
                   <div className="mt-2 flex items-center justify-between">
                     <span className="font-bold text-primary-700 dark:text-primary-400">

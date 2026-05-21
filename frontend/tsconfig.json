@@ -25,31 +25,30 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "baseUrl": ".",
     "paths": {
       "@/*": [
         "./*"
       ],
       "@/app/*": [
-        "app/*"
+        "./app/*"
       ],
       "@/components/*": [
-        "components/*"
+        "./components/*"
       ],
       "@/hooks/*": [
-        "hooks/*"
+        "./hooks/*"
       ],
       "@/lib/*": [
-        "lib/*"
+        "./lib/*"
       ],
       "@/types/*": [
-        "types/*"
+        "./types/*"
       ],
       "@/styles/*": [
-        "styles/*"
+        "./styles/*"
       ],
       "@/public/*": [
-        "public/*"
+        "./public/*"
       ]
     },
     "allowJs": true,

@@ -9,7 +9,6 @@ const ProductForm = () => {
     name: '',
     categoryId: '',
     basePrice: '',
-    material: '',
     stretchability: '',
     stock: '',
     colors: [{ name: '', hexCode: '', folderUrl: '' }],
@@ -23,7 +22,6 @@ const mutation = useMutation<any, Error, any>({
       name: '',
       categoryId: '',
       basePrice: '',
-      material: '',
       stretchability: '',
       stock: '',
       colors: [{ name: '', hexCode: '', folderUrl: '' }],
@@ -84,14 +82,6 @@ const mutation = useMutation<any, Error, any>({
         value={formData.basePrice}
         onChange={handleChange}
         placeholder="Base Price"
-        required
-      />
-      <input
-        type="text"
-        name="material"
-        value={formData.material}
-        onChange={handleChange}
-        placeholder="Material"
         required
       />
       <input
