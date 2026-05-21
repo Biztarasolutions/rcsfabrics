@@ -623,6 +623,35 @@ export const getCategories = async (
   }
 };
 
+// Reusable helper to process category images from Google Drive links to Supabase
+const processCategoryImage = async (imageUrl: string | null | undefined): Promise<string | null> => {
+  if (!imageUrl) return null;
+
+  const driveRegex = /(?:https?:\/\/)?(?:drive\.google\.com\/file\/d\/|drive\.google\.com\/open\?id=)([^\/\?]+)/;
+  const match = imageUrl.match(driveRegex);
+  if (match && match[1]) {
+    try {
+      const fileId = match[1];
+      console.log(`[Category Image Sync] Google Drive file detected. File ID: ${fileId}`);
+      const streamRes = await getDriveImageStream(fileId);
+      
+      const mimeType = streamRes.headers['content-type'] || 'image/jpeg';
+      const ext = mimeType.split('/')[1] || 'jpg';
+      const filename = `category_${fileId}.${ext}`;
+      
+      const buffer = await streamToBuffer(streamRes.data);
+      const publicUrl = await uploadImageToSupabase(buffer, filename, mimeType);
+      
+      console.log(`[Category Image Sync] Successfully uploaded category image from Drive to Supabase: ${publicUrl}`);
+      return publicUrl;
+    } catch (err: any) {
+      console.error('[Category Image Sync] Failed to download/upload image from Google Drive:', err);
+      return imageUrl;
+    }
+  }
+  return imageUrl;
+};
+
 export const createCategory = async (
   req: AuthRequest,
   res: Response
@@ -640,6 +669,11 @@ export const createCategory = async (
     } = req.body;
     if (!name || !slug) throw new ApiError(400, 'Name and slug are required');
 
+    let processedImageUrl = imageUrl || null;
+    if (imageUrl) {
+      processedImageUrl = await processCategoryImage(imageUrl);
+    }
+
     const category = await prisma.category.create({
       data: {
         name,
@@ -649,7 +683,7 @@ export const createCategory = async (
         gender: gender || 'women',
         bestFor: bestFor || [],
         properties: properties || [],
-        imageUrl: imageUrl || null,
+        imageUrl: processedImageUrl,
       },
     });
 
@@ -673,6 +707,11 @@ export const updateCategory = async (
   try {
     const { id } = req.params;
     const data = req.body;
+
+    if (data.imageUrl) {
+      data.imageUrl = await processCategoryImage(data.imageUrl);
+    }
+
     const category = await prisma.category.update({ where: { id }, data });
 
     res.json({ success: true, message: 'Category updated', data: category, statusCode: 200 } as ApiResponse);

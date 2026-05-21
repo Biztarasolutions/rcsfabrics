@@ -106,14 +106,19 @@ export default function AdminCategoriesPage() {
       properties: form.properties ? form.properties.split(',').map((s: string) => s.trim()).filter(Boolean) : [],
     };
 
-    // If an image link is provided, upload it to Supabase first
+    // If an image link is provided, upload it to Supabase first (or pass Google Drive link directly to backend)
     if (form.imageLink) {
-      try {
-        const imageUrl = await uploadCategoryImage(form.imageLink);
-        baseData['imageUrl'] = imageUrl;
-      } catch (err:any) {
-        toast.error(`Image upload failed: ${err.message}`);
-        return;
+      const isDriveLink = form.imageLink.includes('drive.google.com');
+      if (isDriveLink) {
+        baseData['imageUrl'] = form.imageLink;
+      } else {
+        try {
+          const imageUrl = await uploadCategoryImage(form.imageLink);
+          baseData['imageUrl'] = imageUrl;
+        } catch (err:any) {
+          toast.error(`Image upload failed: ${err.message}`);
+          return;
+        }
       }
     }
 
