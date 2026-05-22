@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { CreateProductInput, UpdateProductInput } from '../types';
 
 const prisma = new PrismaClient();
@@ -125,11 +125,20 @@ export class ProductService {
   async updateProduct(id: string, data: UpdateProductInput) {
     const { images, colors, ...productData } = data;
     const updatePayload: any = {
+      // Convert Decimal fields (if present) to Prisma.Decimal instances
       ...productData,
+      ...(productData.basePrice !== undefined && { basePrice: new Prisma.Decimal(productData.basePrice) }),
+      ...(productData.discountPrice !== undefined && { discountPrice: productData.discountPrice !== null ? new Prisma.Decimal(productData.discountPrice) : null }),
+      ...(productData.discountValue !== undefined && { discountValue: new Prisma.Decimal(productData.discountValue) }),
+      ...(productData.minOrderQty !== undefined && { minOrderQty: new Prisma.Decimal(productData.minOrderQty) }),
+
+      // Images handling (replace existing images)
       images: images ? {
         deleteMany: {},
         create: images,
       } : undefined,
+
+      // Colors relation handling – create new colours while removing old ones
       colors: colors ? {
         deleteMany: {},
         create: colors.map((color) => ({
