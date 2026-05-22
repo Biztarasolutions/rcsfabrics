@@ -172,19 +172,18 @@ export const updateProduct = async (
       ...updateData 
     } = req.body;
 
-    // Build the update payload with proper Decimal casting and nested writes
-    const { Prisma } = await import('@prisma/client');
-
+    // Build the update payload, ensuring numeric fields are properly parsed
     const dataPayload: any = {
       ...updateData,
       folderUrl,
-      // Wrap Decimal fields so Prisma doesn't reject plain JS numbers
-      ...(updateData.basePrice     !== undefined && { basePrice:     new Prisma.Decimal(updateData.basePrice) }),
-      ...(updateData.discountValue !== undefined && { discountValue: new Prisma.Decimal(updateData.discountValue) }),
-      ...(updateData.minOrderQty   !== undefined && { minOrderQty:   new Prisma.Decimal(updateData.minOrderQty) }),
+      // Convert to numbers so Prisma Float doesn't reject string inputs
+      ...(updateData.basePrice     !== undefined && { basePrice:     Number(updateData.basePrice) }),
+      ...(updateData.discountValue !== undefined && { discountValue: Number(updateData.discountValue) }),
+      ...(updateData.minOrderQty   !== undefined && { minOrderQty:   Number(updateData.minOrderQty) }),
+      ...(updateData.totalStock    !== undefined && { totalStock:    Number(updateData.totalStock) }),
       ...(updateData.discountPrice !== undefined && {
-        discountPrice: updateData.discountPrice !== null
-          ? new Prisma.Decimal(updateData.discountPrice)
+        discountPrice: updateData.discountPrice !== null && updateData.discountPrice !== ""
+          ? Number(updateData.discountPrice)
           : null,
       }),
       // Handle colors as a nested Prisma relation write
@@ -192,8 +191,8 @@ export const updateProduct = async (
         colors: {
           deleteMany: {},   // remove existing colours
           create: colors.map((c: any) => ({
-            name:        c.name,
-            hexCode:     c.hexCode,
+            name:        c.name?.trim(),
+            hexCode:     c.hexCode ? (c.hexCode.startsWith('#') ? c.hexCode : `#${c.hexCode}`) : '#000000',
             folderUrl:   c.folderUrl,
             productCode: c.productCode ?? null,
           })),

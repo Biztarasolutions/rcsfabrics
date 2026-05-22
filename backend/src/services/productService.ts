@@ -1,4 +1,4 @@
-import { PrismaClient, Prisma } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { CreateProductInput, UpdateProductInput } from '../types';
 
 const prisma = new PrismaClient();
@@ -125,13 +125,13 @@ export class ProductService {
   async updateProduct(id: string, data: UpdateProductInput) {
     const { images, colors, ...productData } = data;
     const updatePayload: any = {
-      // Convert Decimal fields (if present) to Prisma.Decimal instances
+      // Parse numeric fields for Prisma Float
       ...productData,
-      ...(productData.basePrice     != null && { basePrice:     new Prisma.Decimal(productData.basePrice) }),
-      ...(productData.discountPrice != null && { discountPrice: new Prisma.Decimal(productData.discountPrice) }),
+      ...(productData.basePrice     != null && { basePrice:     Number(productData.basePrice) }),
+      ...(productData.discountPrice != null && { discountPrice: Number(productData.discountPrice) }),
       ...(productData.discountPrice === null  && { discountPrice: null }),
-      ...(productData.discountValue != null && { discountValue: new Prisma.Decimal(productData.discountValue) }),
-      ...(productData.minOrderQty   != null && { minOrderQty:   new Prisma.Decimal(productData.minOrderQty) }),
+      ...(productData.discountValue != null && { discountValue: Number(productData.discountValue) }),
+      ...(productData.minOrderQty   != null && { minOrderQty:   Number(productData.minOrderQty) }),
 
       // Images handling (replace existing images)
       images: images ? {
@@ -143,8 +143,8 @@ export class ProductService {
       colors: colors ? {
         deleteMany: {},
         create: colors.map((color) => ({
-          name: color.name,
-          hexCode: color.hexCode,
+          name: color.name?.trim(),
+          hexCode: color.hexCode ? (color.hexCode.startsWith('#') ? color.hexCode : `#${color.hexCode}`) : '#000000',
           folderUrl: color.folderUrl,
           productCode: color.productCode,
         })),
