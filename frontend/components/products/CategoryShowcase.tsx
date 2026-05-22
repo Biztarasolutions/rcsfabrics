@@ -33,10 +33,10 @@ export default function CategoryShowcase() {
                   <Link href={`/products?category=${cat.slug}`}
                     className="group relative block overflow-hidden rounded-2xl">
                     {/* Image */}
-                    <div className="relative h-52 overflow-hidden">
+                    <div className="relative h-52 overflow-hidden bg-white dark:bg-dark-800">
                       <img src={cat.imageUrl || cat.image} alt={cat.name}
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"/>
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"/>
+                        className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-105"/>
+                      <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/80 via-black/30 to-transparent"/>
                     </div>
                     {/* Content */}
                     <div className="absolute inset-0 flex flex-col justify-end p-5">
