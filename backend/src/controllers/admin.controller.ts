@@ -4,7 +4,7 @@ import { AuthRequest, ApiResponse } from '@/types';
 import { generateSlug, generateSKU } from '@/utils/string.util';
 import { parsePagination, createPaginationMeta } from '@/utils/pagination.util';
 import { ApiError } from '@/middleware/errorHandler';
-import { extractFolderId, getDriveImageStream, fetchFolderImageDetails } from '@/utils/googleDrive.util';
+import { extractFolderId, getDriveImageStream, fetchFolderImageDetails, findFolderIdByName } from '@/utils/googleDrive.util';
 import { uploadImageToSupabase } from '@/utils/supabase.util';
 import { invalidateCache } from '@/middleware/cache';
 
@@ -85,8 +85,28 @@ export const createProduct = async (
       throw new ApiError(404, 'Category not found');
     }
 
-    // Generate styleCode as Code-Name-Category
-    const styleCode = `${code}-${name.substring(0, 3).toUpperCase()}-${category.name.substring(0, 3).toUpperCase()}`;
+    // Generate styleCode as Code-Category-Pattern
+    const catStr = category.name ? category.name.substring(0, 3).toUpperCase() : 'UNK';
+    const patStr = pattern ? pattern.substring(0, 3).toUpperCase() : name.substring(0, 3).toUpperCase();
+    const styleCode = `${code}-${catStr}-${patStr}`;
+
+    let processedColors: any[] = [];
+    if (colors && Array.isArray(colors) && colors.length > 0) {
+      processedColors = await Promise.all(colors.map(async (color: any) => {
+        const pCode = `${styleCode}-${(color.name || 'UNK').substring(0, 3).toUpperCase()}`;
+        let fUrl = color.folderUrl;
+        if (!fUrl) {
+          const fId = await findFolderIdByName(pCode);
+          if (fId) fUrl = `https://drive.google.com/drive/folders/${fId}`;
+        }
+        return {
+          name: color.name,
+          hexCode: color.hexCode,
+          productCode: pCode,
+          folderUrl: fUrl,
+        };
+      }));
+    }
 
     const product = await prisma.product.create({
       data: {
@@ -112,14 +132,9 @@ export const createProduct = async (
         sku: generateSKU('FAB'),
         bestFor: category.bestFor,
         properties: category.properties,
-        ...(colors && Array.isArray(colors) && colors.length > 0 && {
+        ...(processedColors.length > 0 && {
           colors: {
-            create: colors.map((color: any) => ({
-              name: color.name,
-              hexCode: color.hexCode,
-              productCode: `${styleCode}-${color.name.substring(0, 3).toUpperCase()}`,
-              folderUrl: color.folderUrl,
-            }))
+            create: processedColors
           }
         })
       },
@@ -173,6 +188,34 @@ export const updateProduct = async (
     } = req.body;
 
     // Build the update payload, ensuring numeric fields are properly parsed
+    const existingProduct = await prisma.product.findUnique({ where: { id }, include: { category: true } });
+    
+    let processedColors: any[] | undefined = undefined;
+    if (colors !== undefined && Array.isArray(colors)) {
+      processedColors = await Promise.all(colors.map(async (c: any) => {
+        let pCode = c.productCode;
+        if (!pCode && existingProduct) {
+          const catStr = existingProduct.category?.name ? existingProduct.category.name.substring(0, 3).toUpperCase() : 'UNK';
+          const patStr = updateData.pattern ? updateData.pattern.substring(0, 3).toUpperCase() : (existingProduct.pattern || existingProduct.name).substring(0, 3).toUpperCase();
+          const sCode = `${updateData.code || existingProduct.code || '000'}-${catStr}-${patStr}`;
+          pCode = `${sCode}-${(c.name || 'UNK').substring(0, 3).toUpperCase()}`;
+        }
+        
+        let fUrl = c.folderUrl;
+        if (!fUrl && pCode) {
+          const fId = await findFolderIdByName(pCode);
+          if (fId) fUrl = `https://drive.google.com/drive/folders/${fId}`;
+        }
+        
+        return {
+          name:        c.name?.trim(),
+          hexCode:     c.hexCode ? (c.hexCode.startsWith('#') ? c.hexCode : `#${c.hexCode}`) : '#000000',
+          folderUrl:   fUrl,
+          productCode: pCode,
+        };
+      }));
+    }
+
     const dataPayload: any = {
       ...updateData,
       folderUrl,
@@ -187,15 +230,10 @@ export const updateProduct = async (
           : null,
       }),
       // Handle colors as a nested Prisma relation write
-      ...(colors !== undefined && Array.isArray(colors) && {
+      ...(processedColors !== undefined && {
         colors: {
           deleteMany: {},   // remove existing colours
-          create: colors.map((c: any) => ({
-            name:        c.name?.trim(),
-            hexCode:     c.hexCode ? (c.hexCode.startsWith('#') ? c.hexCode : `#${c.hexCode}`) : '#000000',
-            folderUrl:   c.folderUrl,
-            productCode: c.productCode ?? null,
-          })),
+          create: processedColors,
         },
       }),
     };

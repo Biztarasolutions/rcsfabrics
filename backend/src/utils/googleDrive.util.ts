@@ -50,6 +50,26 @@ export const extractFolderId = (url: string): string | null => {
 };
 
 /**
+ * Searches for a folder by name in Google Drive and returns its ID.
+ */
+export const findFolderIdByName = async (folderName: string): Promise<string | null> => {
+  try {
+    const res = await drive.files.list({
+      q: `mimeType = 'application/vnd.google-apps.folder' and name = '${folderName}' and trashed = false`,
+      fields: 'files(id, name)',
+      pageSize: 1,
+    });
+    if (res.data.files && res.data.files.length > 0) {
+      return res.data.files[0].id as string;
+    }
+    return null;
+  } catch (error) {
+    console.error(`Error finding folder by name ${folderName}:`, error);
+    return null;
+  }
+};
+
+/**
  * Fetches all image files from a Google Drive folder, sorts them by the number after the last hyphen in the filename,
  * and returns their direct URLs.
  */
