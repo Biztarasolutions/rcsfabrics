@@ -42,7 +42,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
   const specs = [
     { label: 'Best For', value: PRODUCT.bestFor?.join(', ') || 'N/A' },
     { label: 'Properties', value: PRODUCT.properties?.join(', ') || 'N/A' },
-    { label: 'GSM', value: PRODUCT.gsm ? `${PRODUCT.gsm} gsm` : 'N/A' },
+
     { label: 'Width', value: PRODUCT.width ? `${PRODUCT.width} inches` : 'N/A' },
     { label: 'Pattern', value: PRODUCT.pattern || 'N/A' },
     { label: 'Color', value: PRODUCT.color || 'N/A' },

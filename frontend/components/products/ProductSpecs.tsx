@@ -11,7 +11,7 @@ export default function ProductSpecs({ product }: ProductSpecsProps) {
   const specs = [
     { label: 'Best For', value: product.bestFor?.join(', ') || 'N/A' },
     { label: 'Properties', value: product.properties?.join(', ') || 'N/A' },
-    { label: 'Weight (GSM)', value: product.gsm ? `${product.gsm} gsm` : 'N/A' },
+
     { label: 'Width', value: product.width ? `${product.width} cm` : 'N/A' },
     { label: 'Pattern', value: product.pattern || 'Plain' },
     { label: 'Color', value: product.color },

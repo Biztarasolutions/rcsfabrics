@@ -46,14 +46,13 @@ const EMPTY_FORM = {
   basePrice: '',
   discountType: 'percentage',
   discountValue: '',
-  gsm: '',
   width: '',
   pattern: '',
   workType: 'Plain',
   stretchability: 'Non-Stretch',
   totalStock: '',
   minOrderQty: '0.5',
-  colors: [{ name: '', hexCode: '#000000', folderUrl: '' }],
+  colors: [{ name: '', hexCode: '#000000' }],
 };
 
 interface ProductFormAdvancedProps {
@@ -76,7 +75,7 @@ export default function ProductFormAdvanced({ initialData, onClose }: ProductFor
         ...EMPTY_FORM,
         ...initialData,
         // Ensure colors array exists
-        colors: initialData.colors?.map((c: any) => ({ name: c.name, hexCode: c.hexCode, folderUrl: c.folderUrl })) || [{ name: '', hexCode: '#000000', folderUrl: '' }],
+        colors: initialData.colors?.map((c: any) => ({ name: c.name, hexCode: c.hexCode })) || [{ name: '', hexCode: '#000000' }],
       });
     }
   }, [initialData]);
@@ -157,7 +156,7 @@ export default function ProductFormAdvanced({ initialData, onClose }: ProductFor
   const addColor = () => {
     setForm((prev: any) => ({
       ...prev,
-      colors: [...prev.colors, { name: '', hexCode: '#000000', folderUrl: '' }],
+      colors: [...prev.colors, { name: '', hexCode: '#000000' }],
     }));
   };
 
@@ -175,7 +174,6 @@ export default function ProductFormAdvanced({ initialData, onClose }: ProductFor
       basePrice: Number(form.basePrice),
       discountValue: form.discountValue ? Number(form.discountValue) : undefined,
       totalStock: Number(form.totalStock),
-      gsm: form.gsm ? Number(form.gsm) : undefined,
       width: form.width ? Number(form.width) : undefined,
       code: form.code ? Number(form.code) : undefined,
       minOrderQty: Number(form.minOrderQty),
@@ -238,11 +236,6 @@ export default function ProductFormAdvanced({ initialData, onClose }: ProductFor
           <div>
             <label className="mb-1.5 block text-sm font-medium">Width (inches)</label>
             <input name="width" type="number" step="0.1" value={form.width} onChange={handleChange} placeholder="e.g., 44" className="input-field" />
-          </div>
-          {/* GSM */}
-          <div>
-            <label className="mb-1.5 block text-sm font-medium">GSM</label>
-            <input name="gsm" type="number" value={form.gsm} onChange={handleChange} placeholder="e.g., 120" className="input-field" />
           </div>
           {/* Work Type */}
           <div>
@@ -337,12 +330,6 @@ export default function ProductFormAdvanced({ initialData, onClose }: ProductFor
                   <label className="mb-1 block text-xs font-medium">Product Code</label>
                   <input type="text" value={styleCode && color.name ? `${styleCode}-${color.name.substring(0, 3).toUpperCase()}` : ''} readOnly placeholder={`e.g., ${styleCode}-RED`} className="input-field bg-gray-100 dark:bg-dark-700" required />
                   <p className="mt-1 text-xs text-gray-500">Auto-generated from Code and Color name.</p>
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label className="mb-1 block text-xs font-medium">Google Drive Folder URL (Images for this color) *</label>
-                  <input type="text" value={color.folderUrl} onChange={(e) => handleColorChange(index, 'folderUrl', e.target.value)} placeholder="https://drive.google.com/drive/folders/..." className="input-field" required />
-                  <p className="mt-1 text-xs text-gray-500">Upload folder URL with images for this color variant</p>
                 </div>
               </div>
             </div>

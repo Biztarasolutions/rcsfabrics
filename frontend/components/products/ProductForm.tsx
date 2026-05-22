@@ -11,7 +11,7 @@ const ProductForm = () => {
     basePrice: '',
     stretchability: '',
     stock: '',
-    colors: [{ name: '', hexCode: '', folderUrl: '' }],
+    colors: [{ name: '', hexCode: '' }],
   });
 
 const mutation = useMutation<any, Error, any>({
@@ -24,7 +24,7 @@ const mutation = useMutation<any, Error, any>({
       basePrice: '',
       stretchability: '',
       stock: '',
-      colors: [{ name: '', hexCode: '', folderUrl: '' }],
+      colors: [{ name: '', hexCode: '' }],
     });
   },
   onError: (error: any) => {
@@ -49,7 +49,7 @@ const mutation = useMutation<any, Error, any>({
   const addColor = () => {
     setFormData((prev) => ({
       ...prev,
-      colors: [...prev.colors, { name: '', hexCode: '', folderUrl: '' }],
+      colors: [...prev.colors, { name: '', hexCode: '' }],
     }));
   };
 
@@ -118,13 +118,6 @@ const mutation = useMutation<any, Error, any>({
             onChange={(e) => handleColorChange(index, e)}
             placeholder="Hex Code"
             required
-          />
-          <input
-            type="text"
-            name="folderUrl"
-            value={color.folderUrl}
-            onChange={(e) => handleColorChange(index, e)}
-            placeholder="Google Drive Folder URL"
           />
         </div>
       ))}
