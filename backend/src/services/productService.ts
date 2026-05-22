@@ -127,10 +127,11 @@ export class ProductService {
     const updatePayload: any = {
       // Convert Decimal fields (if present) to Prisma.Decimal instances
       ...productData,
-      ...(productData.basePrice !== undefined && { basePrice: new Prisma.Decimal(productData.basePrice) }),
-      ...(productData.discountPrice !== undefined && { discountPrice: productData.discountPrice !== null ? new Prisma.Decimal(productData.discountPrice) : null }),
-      ...(productData.discountValue !== undefined && { discountValue: new Prisma.Decimal(productData.discountValue) }),
-      ...(productData.minOrderQty !== undefined && { minOrderQty: new Prisma.Decimal(productData.minOrderQty) }),
+      ...(productData.basePrice     != null && { basePrice:     new Prisma.Decimal(productData.basePrice) }),
+      ...(productData.discountPrice != null && { discountPrice: new Prisma.Decimal(productData.discountPrice) }),
+      ...(productData.discountPrice === null  && { discountPrice: null }),
+      ...(productData.discountValue != null && { discountValue: new Prisma.Decimal(productData.discountValue) }),
+      ...(productData.minOrderQty   != null && { minOrderQty:   new Prisma.Decimal(productData.minOrderQty) }),
 
       // Images handling (replace existing images)
       images: images ? {
