@@ -167,16 +167,44 @@ export const updateProduct = async (
       category, 
       reviews,
       imageUrls, 
-      folderUrl, 
+      folderUrl,
+      colors,      // extract colors so we can handle it as a relation
       ...updateData 
     } = req.body;
 
+    // Build the update payload with proper Decimal casting and nested writes
+    const { Prisma } = await import('@prisma/client');
+
+    const dataPayload: any = {
+      ...updateData,
+      folderUrl,
+      // Wrap Decimal fields so Prisma doesn't reject plain JS numbers
+      ...(updateData.basePrice     !== undefined && { basePrice:     new Prisma.Decimal(updateData.basePrice) }),
+      ...(updateData.discountValue !== undefined && { discountValue: new Prisma.Decimal(updateData.discountValue) }),
+      ...(updateData.minOrderQty   !== undefined && { minOrderQty:   new Prisma.Decimal(updateData.minOrderQty) }),
+      ...(updateData.discountPrice !== undefined && {
+        discountPrice: updateData.discountPrice !== null
+          ? new Prisma.Decimal(updateData.discountPrice)
+          : null,
+      }),
+      // Handle colors as a nested Prisma relation write
+      ...(colors !== undefined && Array.isArray(colors) && {
+        colors: {
+          deleteMany: {},   // remove existing colours
+          create: colors.map((c: any) => ({
+            name:        c.name,
+            hexCode:     c.hexCode,
+            folderUrl:   c.folderUrl,
+            productCode: c.productCode ?? null,
+          })),
+        },
+      }),
+    };
+
     const product = await prisma.product.update({
       where: { id },
-      data: {
-        ...updateData,
-        folderUrl,
-      },
+      data: dataPayload,
+      include: { colors: true },
     });
 
     let finalImageUrls: string[] | null = null;
