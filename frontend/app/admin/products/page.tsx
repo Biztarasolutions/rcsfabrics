@@ -68,7 +68,7 @@ export default function AdminProductsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 w-full max-w-full space-y-6">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
@@ -107,10 +107,10 @@ export default function AdminProductsPage() {
         </div>
       </div>
 
-      {/* Products Table — scroll horizontally within this panel only */}
-      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-dark-700 dark:bg-dark-800 max-w-full">
-        <div className="overflow-x-auto overscroll-x-contain">
-          <table className="min-w-[1080px] w-full text-sm whitespace-nowrap">
+      {/* Products Table — horizontal scroll only inside this card */}
+      <div className="min-w-0 w-full max-w-full rounded-2xl border border-gray-200 bg-white dark:border-dark-700 dark:bg-dark-800">
+        <div className="w-full max-w-full overflow-x-auto overflow-y-visible overscroll-x-contain">
+          <table className="w-max min-w-full text-sm whitespace-nowrap sm:min-w-[1080px]">
             <thead className="border-b border-gray-100 dark:border-dark-700 bg-gray-50 dark:bg-dark-700/50">
               <tr className="text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                 <th className="px-3 py-2.5 min-w-[280px]">Product</th>
