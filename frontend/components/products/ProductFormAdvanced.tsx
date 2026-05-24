@@ -98,9 +98,9 @@ export default function ProductFormAdvanced({ initialData, onClose }: ProductFor
 
   const createMutation = useMutation({
     mutationFn: (data: any) => adminApi.createProduct(data),
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['admin-products'], exact: false });
-      toast.success('Product created successfully!');
+      toast.success(data?.message || 'Product created successfully!');
       setForm(EMPTY_FORM);
       setStyleCode('');
       onClose?.();

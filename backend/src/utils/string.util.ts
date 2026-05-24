@@ -61,3 +61,48 @@ export const buildProductCode = (
   code: number | string
 ): string =>
   `${name.trim()}-${categoryName.trim()}-${colorName.trim()}-${formatProductCodeSuffix(code)}`;
+
+/** Legacy style code: 101-SAT-POL */
+export const buildLegacyStyleCode = (
+  code: number | string,
+  categoryName: string,
+  productName: string
+): string => {
+  const catStr = categoryName.trim().substring(0, 3).toUpperCase() || 'UNK';
+  const patStr = productName.trim().substring(0, 3).toUpperCase() || 'UNK';
+  return `${code}-${catStr}-${patStr}`;
+};
+
+/** Legacy product code: 101-SAT-POL-WHI */
+export const buildLegacyProductCode = (legacyStyle: string, colorName: string): string =>
+  `${legacyStyle}-${colorName.trim().substring(0, 3).toUpperCase()}`;
+
+/** Candidate Drive folder names to try (new + legacy formats). */
+export const getDriveFolderNameCandidates = (opts: {
+  name: string;
+  categoryName: string;
+  code: number | string;
+  colorName?: string;
+}): string[] => {
+  const { name, categoryName, code, colorName } = opts;
+  const seen = new Set<string>();
+  const add = (value?: string) => {
+    const trimmed = value?.trim();
+    if (trimmed) seen.add(trimmed);
+  };
+
+  const style = buildStyleCode(name, categoryName, code);
+  const legacyStyle = buildLegacyStyleCode(code, categoryName, name);
+
+  add(style);
+  add(legacyStyle);
+  add(formatProductCodeSuffix(code));
+  add(String(code));
+
+  if (colorName) {
+    add(buildProductCode(name, categoryName, colorName, code));
+    add(buildLegacyProductCode(legacyStyle, colorName));
+  }
+
+  return [...seen];
+};

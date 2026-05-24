@@ -15,11 +15,13 @@ export default function AdminProductsPage() {
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-  const { data: productsData = { products: [] }, isLoading } = useQuery({
+  const { data: productsData = { products: [], total: 0 }, isLoading } = useQuery({
     queryKey: ['admin-products', search],
-    queryFn: () => adminApi.getAdminProducts({ search }).then(res => res.data.data),
+    queryFn: () => adminApi.getAdminProducts({ search, limit: 100 }).then(res => res.data.data),
+    staleTime: 0,
   });
   const products = productsData.products;
+  const totalProducts = productsData.total ?? products.length;
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => adminApi.deleteProduct(id),
@@ -33,19 +35,20 @@ export default function AdminProductsPage() {
 
   const syncSingleMutation = useMutation({
     mutationFn: (id: string) => adminApi.syncProduct(id),
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
-      toast.success('Sync completed!');
+      toast.success(res?.data?.message || 'Images synced successfully!');
     },
-    onError: (err: any) => toast.error(err.message),
+    onError: (err: any) => toast.error(err.message || 'Failed to sync images'),
   });
 
   const syncAllMutation = useMutation({
     mutationFn: () => adminApi.syncAllProducts(),
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
-      toast.success('All products synced!');
+      toast.success(res?.data?.message || 'All products synced!');
     },
+    onError: (err: any) => toast.error(err.message || 'Failed to sync all images'),
   });
 
   const handleSyncSingle = (id: string) => {
@@ -62,7 +65,7 @@ export default function AdminProductsPage() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Products</h2>
-          <p className="text-sm text-gray-500">{products.length} fabrics in catalog</p>
+          <p className="text-sm text-gray-500">{totalProducts} fabrics in catalog</p>
         </div>
         <div className="flex gap-3">
           <button 
@@ -233,17 +236,17 @@ export default function AdminProductsPage() {
                     {/* Actions */}
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        {(product.folderUrl || product.colors?.some((c: any) => c.folderUrl)) && (
-                          <button 
-                            onClick={() => handleSyncSingle(product.id)} 
-                            disabled={syncSingleMutation.isPending}
-                            className="rounded-lg border border-blue-200 px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 dark:border-blue-900 dark:text-blue-400 dark:hover:bg-blue-950/30 transition-colors flex items-center gap-1 active:scale-[0.97]"
-                          >
-                            <svg className={`h-3 w-3 ${syncSingleMutation.variables === product.id && syncSingleMutation.isPending ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.228 5.6M22 7h-6v6" />
-                            </svg>
-                          </button>
-                        )}
+                        <button
+                          onClick={() => handleSyncSingle(product.id)}
+                          disabled={syncSingleMutation.isPending}
+                          title="Sync images from Google Drive"
+                          className="rounded-lg border border-blue-200 px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 dark:border-blue-900 dark:text-blue-400 dark:hover:bg-blue-950/30 transition-colors flex items-center gap-1 active:scale-[0.97]"
+                        >
+                          <svg className={`h-3 w-3 ${syncSingleMutation.variables === product.id && syncSingleMutation.isPending ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.228 5.6M22 7h-6v6" />
+                          </svg>
+                          Sync
+                        </button>
                         <button 
                           onClick={() => { setEditingProduct(product); setShowModal(true); }} 
                           className="rounded-lg border border-green-200 px-2 py-1 text-xs font-medium text-green-600 hover:bg-green-50 dark:border-green-900 dark:text-green-400 dark:hover:bg-green-950/30 transition-colors"

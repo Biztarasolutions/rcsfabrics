@@ -4,6 +4,18 @@ import NodeCache from 'node-cache';
 // Create cache with 10-minute TTL
 export const cache = new NodeCache({ stdTTL: 600 });
 
+/** Routes that must always return fresh data (admin panels, user-specific data). */
+const NO_CACHE_PREFIXES = [
+  '/api/admin',
+  '/api/orders',
+  '/api/cart',
+  '/api/wishlist',
+  '/api/users',
+];
+
+const shouldSkipCache = (url: string) =>
+  NO_CACHE_PREFIXES.some((prefix) => url.startsWith(prefix));
+
 /**
  * Middleware to cache GET requests
  * Cache key is built from method + URL + query string
@@ -18,8 +30,14 @@ export const cacheMiddleware = (
     return next();
   }
 
+  const url = req.originalUrl || req.url;
+
+  if (shouldSkipCache(url)) {
+    return next();
+  }
+
   // Build cache key from URL and query
-  const key = `${req.originalUrl || req.url}`;
+  const key = url;
 
   // Try to get from cache
   const cachedResponse = cache.get(key);
@@ -64,4 +82,9 @@ export const invalidateCache = (pattern?: string) => {
  */
 export const invalidateCachePatterns = (patterns: string[]) => {
   patterns.forEach((pattern) => invalidateCache(pattern));
+};
+
+/** Clear storefront and admin product list caches after mutations. */
+export const invalidateProductCaches = () => {
+  invalidateCachePatterns(['/api/products', '/api/admin/products']);
 };

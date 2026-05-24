@@ -1,12 +1,24 @@
 import { Response } from 'express';
 import { prisma } from '@/index';
 import { AuthRequest, ApiResponse } from '@/types';
-import { generateSlug, generateSKU, buildStyleCode, buildProductCode } from '@/utils/string.util';
+import {
+  generateSlug,
+  generateSKU,
+  buildStyleCode,
+  buildProductCode,
+  getDriveFolderNameCandidates,
+} from '@/utils/string.util';
 import { parsePagination, createPaginationMeta } from '@/utils/pagination.util';
 import { ApiError } from '@/middleware/errorHandler';
-import { extractFolderId, getDriveImageStream, fetchFolderImageDetails, findFolderIdByName } from '@/utils/googleDrive.util';
+import {
+  extractFolderId,
+  getDriveImageStream,
+  fetchFolderImageDetails,
+  findFolderIdByNames,
+  folderUrlFromId,
+} from '@/utils/googleDrive.util';
 import { uploadImageToSupabase } from '@/utils/supabase.util';
-import { invalidateCache } from '@/middleware/cache';
+import { invalidateProductCaches } from '@/middleware/cache';
 
 // Reusable function to convert a stream to a buffer
 const streamToBuffer = (stream: any): Promise<Buffer> => {
@@ -46,6 +58,133 @@ const uploadDriveImagesToSupabase = async (folderId: string): Promise<string[]> 
     console.error('[Supabase Upload] Error syncing images:', error);
     throw error;
   }
+};
+
+type ProductWithColors = {
+  id: string;
+  name: string;
+  code?: number | null;
+  styleCode?: string | null;
+  folderUrl?: string | null;
+  colors: Array<{
+    id: string;
+    name: string;
+    productCode?: string | null;
+    folderUrl?: string | null;
+  }>;
+};
+
+const saveSyncedImages = async (productId: string, supabaseUrls: string[]) => {
+  await prisma.$transaction([
+    prisma.productImage.deleteMany({ where: { productId } }),
+    ...(supabaseUrls.length > 0
+      ? [
+          prisma.productImage.createMany({
+            data: supabaseUrls.map((url, index) => ({
+              productId,
+              url,
+              isMain: index === 0,
+              order: index,
+            })),
+          }),
+        ]
+      : []),
+  ]);
+};
+
+const collectFolderIdsForProduct = async (
+  product: ProductWithColors,
+  categoryName: string
+): Promise<Set<string>> => {
+  const folders = new Set<string>();
+
+  const addFromUrl = (url?: string | null) => {
+    const folderId = url ? extractFolderId(url) : null;
+    if (folderId) folders.add(folderId);
+  };
+
+  addFromUrl(product.folderUrl);
+  product.colors.forEach((color) => addFromUrl(color.folderUrl));
+
+  const code = product.code ?? '000';
+  const styleCandidates = getDriveFolderNameCandidates({
+    name: product.name,
+    categoryName,
+    code,
+  });
+
+  if (!product.folderUrl) {
+    const styleLookupNames = product.styleCode
+      ? [product.styleCode, ...styleCandidates]
+      : styleCandidates;
+    const styleMatch = await findFolderIdByNames(styleLookupNames);
+    if (styleMatch) {
+      folders.add(styleMatch.folderId);
+      await prisma.product.update({
+        where: { id: product.id },
+        data: { folderUrl: folderUrlFromId(styleMatch.folderId) },
+      });
+    }
+  }
+
+  for (const color of product.colors) {
+    if (color.folderUrl) continue;
+
+    const candidates = [
+      ...(color.productCode ? [color.productCode] : []),
+      ...getDriveFolderNameCandidates({
+        name: product.name,
+        categoryName,
+        code,
+        colorName: color.name,
+      }),
+    ];
+
+    const match = await findFolderIdByNames(candidates);
+    if (match) {
+      folders.add(match.folderId);
+      await prisma.productColor.update({
+        where: { id: color.id },
+        data: { folderUrl: folderUrlFromId(match.folderId) },
+      });
+    }
+  }
+
+  return folders;
+};
+
+const syncImagesForProduct = async (
+  product: ProductWithColors,
+  categoryName: string
+): Promise<number> => {
+  const foldersToSync = await collectFolderIdsForProduct(product, categoryName);
+
+  if (foldersToSync.size === 0) {
+    throw new ApiError(
+      400,
+      'No Google Drive folder found. Name your folder to match the product code (e.g. Polka Dot-Satin-White-P10001), share it with the service account, then sync again.'
+    );
+  }
+
+  const supabaseUrls: string[] = [];
+  for (const folderId of foldersToSync) {
+    try {
+      const urls = await uploadDriveImagesToSupabase(folderId);
+      supabaseUrls.push(...urls);
+    } catch (err: any) {
+      console.error(`[Sync] Failed to sync folder ${folderId}:`, err.message || err);
+    }
+  }
+
+  if (supabaseUrls.length === 0) {
+    throw new ApiError(
+      400,
+      'Drive folder was found but no images could be uploaded. Check that the folder contains images and is shared with the service account.'
+    );
+  }
+
+  await saveSyncedImages(product.id, supabaseUrls);
+  return supabaseUrls.length;
 };
 
 export const createProduct = async (
@@ -92,8 +231,14 @@ export const createProduct = async (
         const pCode = buildProductCode(name, category.name, color.name || 'Unknown', code);
         let fUrl = color.folderUrl;
         if (!fUrl) {
-          const fId = await findFolderIdByName(pCode);
-          if (fId) fUrl = `https://drive.google.com/drive/folders/${fId}`;
+          const candidates = getDriveFolderNameCandidates({
+            name,
+            categoryName: category.name,
+            code,
+            colorName: color.name || 'Unknown',
+          });
+          const match = await findFolderIdByNames([pCode, ...candidates]);
+          if (match) fUrl = folderUrlFromId(match.folderId);
         }
         return {
           name: color.name,
@@ -136,10 +281,27 @@ export const createProduct = async (
       include: { colors: true }
     });
 
+    let syncedImageCount = 0;
+    try {
+      syncedImageCount = await syncImagesForProduct(product, category.name);
+    } catch (syncErr: any) {
+      console.warn(`[Create] Image auto-sync skipped for "${name}":`, syncErr.message || syncErr);
+    }
+
+    const productWithImages = await prisma.product.findUnique({
+      where: { id: product.id },
+      include: { colors: true, images: { orderBy: { order: 'asc' } } },
+    });
+
+    invalidateProductCaches();
+
     res.status(201).json({
       success: true,
-      message: 'Product created successfully',
-      data: product,
+      message:
+        syncedImageCount > 0
+          ? `Product created and ${syncedImageCount} image(s) synced from Google Drive.`
+          : 'Product created successfully. Add a matching Drive folder and use Sync Images to import photos.',
+      data: productWithImages || product,
       statusCode: 201,
     } as ApiResponse);
   } catch (error: any) {
@@ -197,9 +359,15 @@ export const updateProduct = async (
         }
         
         let fUrl = c.folderUrl;
-        if (!fUrl && pCode) {
-          const fId = await findFolderIdByName(pCode);
-          if (fId) fUrl = `https://drive.google.com/drive/folders/${fId}`;
+        if (!fUrl && pCode && existingProduct) {
+          const candidates = getDriveFolderNameCandidates({
+            name: updateData.name || existingProduct.name,
+            categoryName: existingProduct.category?.name || 'Unknown',
+            code: updateData.code ?? existingProduct.code ?? '000',
+            colorName: c.name || 'Unknown',
+          });
+          const match = await findFolderIdByNames([pCode, ...candidates]);
+          if (match) fUrl = folderUrlFromId(match.folderId);
         }
         
         return {
@@ -265,6 +433,8 @@ export const updateProduct = async (
       await prisma.productImage.deleteMany({ where: { productId: id } });
     }
 
+    invalidateProductCaches();
+
     res.json({
       success: true,
       message: 'Product updated successfully',
@@ -302,6 +472,8 @@ export const deleteProduct = async (
     await prisma.product.delete({
       where: { id },
     });
+
+    invalidateProductCaches();
 
     res.json({
       success: true,
@@ -953,61 +1125,22 @@ export const syncProductImages = async (
     const { id } = req.params;
     const product = await prisma.product.findUnique({
       where: { id },
-      include: { colors: true },
+      include: { colors: true, category: { select: { name: true } } },
     });
 
     if (!product) {
       throw new ApiError(404, 'Product not found');
     }
 
-    const foldersToSync = new Set<string>();
-    if (product.folderUrl) {
-      const folderId = extractFolderId(product.folderUrl);
-      if (folderId) foldersToSync.add(folderId);
-    }
-    for (const color of product.colors) {
-      if (color.folderUrl) {
-        const folderId = extractFolderId(color.folderUrl);
-        if (folderId) foldersToSync.add(folderId);
-      }
-    }
+    console.log(`[Sync] Starting image sync for product: ${product.name} (${product.id})`);
 
-    if (foldersToSync.size === 0) {
-      throw new ApiError(400, 'This product does not have any Google Drive folder links saved (either on product level or color variant level).');
-    }
+    const imageCount = await syncImagesForProduct(product, product.category.name);
 
-    console.log(`[Sync] Starting image sync for product: ${product.name} (${product.id}) across ${foldersToSync.size} folders`);
-    
-    // Upload files to Supabase from all folders
-    const supabaseUrls: string[] = [];
-    for (const folderId of foldersToSync) {
-      try {
-        const urls = await uploadDriveImagesToSupabase(folderId);
-        supabaseUrls.push(...urls);
-      } catch (err: any) {
-        console.error(`[Sync] Failed to sync folder ${folderId}:`, err);
-      }
-    }
-
-    // Clear existing images and replace with the newly synced ones (even if 0 images remain)
-    await prisma.$transaction([
-      prisma.productImage.deleteMany({ where: { productId: id } }),
-      prisma.productImage.createMany({
-        data: supabaseUrls.map((url, index) => ({
-          productId: id,
-          url,
-          isMain: index === 0,
-          order: index,
-        })),
-      }),
-    ]);
-
-    // Invalidate product cache to show updates instantly
-    invalidateCache('/api/products');
+    invalidateProductCaches();
 
     res.json({
       success: true,
-      message: `Successfully synced ${supabaseUrls.length} images for product: ${product.name}`,
+      message: `Successfully synced ${imageCount} image(s) for product: ${product.name}`,
       statusCode: 200,
     } as ApiResponse);
   } catch (error: any) {
@@ -1034,7 +1167,7 @@ export const syncAllProductImages = async (
 
     // Find all products
     const products = await prisma.product.findMany({
-      include: { colors: true },
+      include: { colors: true, category: { select: { name: true } } },
     });
 
     console.log(`[Sync All] Found ${products.length} products to sync.`);
@@ -1042,44 +1175,9 @@ export const syncAllProductImages = async (
     const errors: string[] = [];
 
     for (const product of products) {
-      const foldersToSync = new Set<string>();
-      if (product.folderUrl) {
-        const folderId = extractFolderId(product.folderUrl);
-        if (folderId) foldersToSync.add(folderId);
-      }
-      for (const color of product.colors) {
-        if (color.folderUrl) {
-          const folderId = extractFolderId(color.folderUrl);
-          if (folderId) foldersToSync.add(folderId);
-        }
-      }
-
-      if (foldersToSync.size === 0) continue;
-
       try {
-        console.log(`[Sync All] Syncing product: ${product.name} across ${foldersToSync.size} folders`);
-        const supabaseUrls: string[] = [];
-        for (const folderId of foldersToSync) {
-          try {
-            const urls = await uploadDriveImagesToSupabase(folderId);
-            supabaseUrls.push(...urls);
-          } catch (err: any) {
-            console.error(`[Sync All] Failed syncing folder ${folderId} for product "${product.name}":`, err.message);
-          }
-        }
-
-        // Clear existing images and replace with the newly synced ones (even if 0 images remain)
-        await prisma.$transaction([
-          prisma.productImage.deleteMany({ where: { productId: product.id } }),
-          prisma.productImage.createMany({
-            data: supabaseUrls.map((url, index) => ({
-              productId: product.id,
-              url,
-              isMain: index === 0,
-              order: index,
-            })),
-          }),
-        ]);
+        console.log(`[Sync All] Syncing product: ${product.name}`);
+        await syncImagesForProduct(product, product.category.name);
         syncCount++;
       } catch (err: any) {
         console.error(`[Sync All] Failed syncing product "${product.name}":`, err.message);
@@ -1087,8 +1185,7 @@ export const syncAllProductImages = async (
       }
     }
 
-    // Invalidate product cache to show updates instantly
-    invalidateCache('/api/products');
+    invalidateProductCaches();
 
     res.json({
       success: true,

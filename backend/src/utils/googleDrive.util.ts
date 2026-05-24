@@ -49,13 +49,23 @@ export const extractFolderId = (url: string): string | null => {
   return null;
 };
 
+const escapeDriveQueryValue = (value: string) =>
+  value.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+
+export const folderUrlFromId = (folderId: string) =>
+  `https://drive.google.com/drive/folders/${folderId}`;
+
 /**
- * Searches for a folder by name in Google Drive and returns its ID.
+ * Searches for a folder by exact name in Google Drive and returns its ID.
  */
 export const findFolderIdByName = async (folderName: string): Promise<string | null> => {
+  const trimmed = folderName?.trim();
+  if (!trimmed) return null;
+
   try {
+    const escaped = escapeDriveQueryValue(trimmed);
     const res = await drive.files.list({
-      q: `mimeType = 'application/vnd.google-apps.folder' and name = '${folderName}' and trashed = false`,
+      q: `mimeType = 'application/vnd.google-apps.folder' and name = '${escaped}' and trashed = false`,
       fields: 'files(id, name)',
       pageSize: 1,
     });
@@ -67,6 +77,19 @@ export const findFolderIdByName = async (folderName: string): Promise<string | n
     console.error(`Error finding folder by name ${folderName}:`, error);
     return null;
   }
+};
+
+/**
+ * Tries multiple folder names and returns the first match.
+ */
+export const findFolderIdByNames = async (
+  folderNames: string[]
+): Promise<{ folderId: string; matchedName: string } | null> => {
+  for (const name of folderNames) {
+    const folderId = await findFolderIdByName(name);
+    if (folderId) return { folderId, matchedName: name };
+  }
+  return null;
 };
 
 /**
