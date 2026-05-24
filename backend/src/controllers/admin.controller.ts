@@ -15,10 +15,10 @@ import {
   getDriveImageStream,
   DriveFileDetails,
   fetchFolderImageDetails,
-  fetchFolderImagesByProductCode,
   findFolderIdByNames,
   findImageFilesByProductCode,
   folderUrlFromId,
+  verifyFolderAccess,
 } from '@/utils/googleDrive.util';
 import { uploadImageToSupabase } from '@/utils/supabase.util';
 import { invalidateProductCaches } from '@/middleware/cache';
@@ -51,16 +51,16 @@ const uploadDriveFilesToSupabase = async (files: DriveFileDetails[]): Promise<st
 };
 
 /**
- * Downloads Google Drive images from a folder (optionally filtered by product code filename).
+ * Downloads all images from a product-code-named Drive folder.
+ * Image filenames inside the folder can be anything (e.g. Stretchable-1.png).
  */
-const uploadDriveImagesToSupabase = async (
-  folderId: string,
-  productCode?: string
-): Promise<string[]> => {
+const uploadAllImagesFromFolder = async (folderId: string): Promise<string[]> => {
   try {
-    const files = productCode
-      ? await fetchFolderImagesByProductCode(folderId, productCode)
-      : await fetchFolderImageDetails(folderId);
+    const accessible = await verifyFolderAccess(folderId);
+    if (!accessible) {
+      throw new Error(`Cannot access folder ${folderId}. Share it with the service account.`);
+    }
+    const files = await fetchFolderImageDetails(folderId);
     return uploadDriveFilesToSupabase(files);
   } catch (error) {
     console.error('[Supabase Upload] Error syncing images:', error);
@@ -106,13 +106,17 @@ const collectFolderIdsForProduct = async (
 ): Promise<Set<string>> => {
   const folders = new Set<string>();
 
-  const addFromUrl = (url?: string | null) => {
+  const addFromUrl = async (url?: string | null) => {
     const folderId = url ? extractFolderId(url) : null;
-    if (folderId) folders.add(folderId);
+    if (!folderId) return;
+    const accessible = await verifyFolderAccess(folderId);
+    if (accessible) folders.add(folderId);
   };
 
-  addFromUrl(product.folderUrl);
-  product.colors.forEach((color) => addFromUrl(color.folderUrl));
+  await addFromUrl(product.folderUrl);
+  for (const color of product.colors) {
+    await addFromUrl(color.folderUrl);
+  }
 
   const code = product.code ?? '000';
   const styleCandidates = getDriveFolderNameCandidates({
@@ -199,58 +203,66 @@ const syncImagesForProduct = async (
   categoryName: string
 ): Promise<number> => {
   const productCodes = collectProductCodesForSync(product, categoryName);
-  const foldersToSync = await collectFolderIdsForProduct(product, categoryName);
+  const folderIds = await collectFolderIdsForProduct(product, categoryName);
   const supabaseUrls: string[] = [];
   const uploadedFileIds = new Set<string>();
+  const syncedFolderIds = new Set<string>();
 
-  for (const productCode of productCodes) {
-    // 1) Folder named like product code — images inside must match filename to product code
-    const folderMatch = await findFolderIdByNames([
-      productCode,
+  const syncFolderOnce = async (folderId: string) => {
+    if (syncedFolderIds.has(folderId)) return;
+    syncedFolderIds.add(folderId);
+    const urls = await uploadAllImagesFromFolder(folderId);
+    supabaseUrls.push(...urls);
+  };
+
+  // 1) Folders from saved URLs or name search — sync every image inside
+  for (const folderId of folderIds) {
+    try {
+      await syncFolderOnce(folderId);
+    } catch (err: any) {
+      console.error(`[Sync] Failed folder ${folderId}:`, err.message || err);
+    }
+  }
+
+  // 2) Try discovering folders by product code name
+  for (const color of product.colors) {
+    const candidates = [
+      ...(color.productCode ? [color.productCode] : []),
       ...getDriveFolderNameCandidates({
         name: product.name,
         categoryName,
         code: product.code ?? '000',
+        colorName: color.name,
       }),
-    ]);
+    ];
+    const folderMatch = await findFolderIdByNames(candidates);
+    if (!folderMatch) continue;
 
-    if (folderMatch) {
-      foldersToSync.add(folderMatch.folderId);
-      try {
-        const urls = await uploadDriveImagesToSupabase(folderMatch.folderId, productCode);
-        supabaseUrls.push(...urls);
-      } catch (err: any) {
-        console.error(`[Sync] Failed folder "${folderMatch.matchedName}":`, err.message || err);
-      }
+    folderIds.add(folderMatch.folderId);
+    if (!color.folderUrl) {
+      await prisma.productColor.update({
+        where: { id: color.id },
+        data: { folderUrl: folderUrlFromId(folderMatch.folderId) },
+      });
     }
-
-    // 2) Image files anywhere in Drive whose filename matches product code
-    const matchedFiles = await findImageFilesByProductCode(productCode);
-    const newFiles = matchedFiles.filter((f) => !uploadedFileIds.has(f.id));
-    if (newFiles.length > 0) {
-      newFiles.forEach((f) => uploadedFileIds.add(f.id));
-      try {
-        const urls = await uploadDriveFilesToSupabase(newFiles);
-        supabaseUrls.push(...urls);
-      } catch (err: any) {
-        console.error(`[Sync] Failed uploading files for code "${productCode}":`, err.message || err);
-      }
+    try {
+      await syncFolderOnce(folderMatch.folderId);
+    } catch (err: any) {
+      console.error(`[Sync] Failed folder "${folderMatch.matchedName}":`, err.message || err);
     }
   }
 
-  // 3) Linked folders — only images matching a product code filename
-  for (const folderId of foldersToSync) {
-    for (const productCode of productCodes) {
-      try {
-        const files = await fetchFolderImagesByProductCode(folderId, productCode);
-        const newFiles = files.filter((f) => !uploadedFileIds.has(f.id));
-        if (newFiles.length === 0) continue;
-        newFiles.forEach((f) => uploadedFileIds.add(f.id));
-        const urls = await uploadDriveFilesToSupabase(newFiles);
-        supabaseUrls.push(...urls);
-      } catch (err: any) {
-        console.error(`[Sync] Failed folder ${folderId} for code "${productCode}":`, err.message || err);
-      }
+  // 3) Standalone image files named like product code (not inside a product folder)
+  for (const productCode of productCodes) {
+    const matchedFiles = await findImageFilesByProductCode(productCode);
+    const newFiles = matchedFiles.filter((f) => !uploadedFileIds.has(f.id));
+    if (newFiles.length === 0) continue;
+    newFiles.forEach((f) => uploadedFileIds.add(f.id));
+    try {
+      const urls = await uploadDriveFilesToSupabase(newFiles);
+      supabaseUrls.push(...urls);
+    } catch (err: any) {
+      console.error(`[Sync] Failed uploading files for code "${productCode}":`, err.message || err);
     }
   }
 
@@ -260,7 +272,7 @@ const syncImagesForProduct = async (
     const codesHint = productCodes.slice(0, 3).join(', ');
     throw new ApiError(
       400,
-      `No images found for product code(s): ${codesHint}. Use a Drive folder or image files named like the product code (e.g. Lachka-Stretchable-Orange-P10002.jpg), and share with the service account.`
+      `No images found for product code(s): ${codesHint}. Add the Google Drive folder link on the product (folder name should match the product code), put images inside, and share the folder with the service account.`
     );
   }
 
@@ -310,8 +322,13 @@ export const createProduct = async (
     if (colors && Array.isArray(colors) && colors.length > 0) {
       processedColors = await Promise.all(colors.map(async (color: any) => {
         const pCode = buildProductCode(name, category.name, color.name || 'Unknown', code);
-        let fUrl = color.folderUrl;
-        if (!fUrl) {
+        let fUrl = color.folderUrl?.trim() || '';
+        if (fUrl) {
+          const folderId = extractFolderId(fUrl);
+          if (folderId && (await verifyFolderAccess(folderId))) {
+            fUrl = folderUrlFromId(folderId);
+          }
+        } else {
           const candidates = getDriveFolderNameCandidates({
             name,
             categoryName: category.name,
@@ -439,8 +456,13 @@ export const updateProduct = async (
           pCode = buildProductCode(productName, categoryName, c.name || 'Unknown', productCode);
         }
         
-        let fUrl = c.folderUrl;
-        if (!fUrl && pCode && existingProduct) {
+        let fUrl = c.folderUrl?.trim() || '';
+        if (fUrl) {
+          const folderId = extractFolderId(fUrl);
+          if (folderId && (await verifyFolderAccess(folderId))) {
+            fUrl = folderUrlFromId(folderId);
+          }
+        } else if (pCode && existingProduct) {
           const candidates = getDriveFolderNameCandidates({
             name: updateData.name || existingProduct.name,
             categoryName: existingProduct.category?.name || 'Unknown',
@@ -492,7 +514,7 @@ export const updateProduct = async (
     if (folderUrl) {
       const folderId = extractFolderId(folderUrl);
       if (folderId) {
-        finalImageUrls = await uploadDriveImagesToSupabase(folderId);
+        finalImageUrls = await uploadAllImagesFromFolder(folderId);
       }
     } else if (imageUrls && Array.isArray(imageUrls)) {
       finalImageUrls = imageUrls.filter((url: string) => url);

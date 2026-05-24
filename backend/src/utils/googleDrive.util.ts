@@ -35,7 +35,26 @@ const drive = google.drive({ version: 'v3', auth });
 const driveListParams = {
   supportsAllDrives: true,
   includeItemsFromAllDrives: true,
-} as const;
+  corpora: 'allDrives' as const,
+};
+
+/** Verify the service account can access a folder by ID (works when search does not). */
+export const verifyFolderAccess = async (folderId: string): Promise<{ id: string; name: string } | null> => {
+  try {
+    const res = await drive.files.get({
+      fileId: folderId,
+      fields: 'id, name, mimeType',
+      supportsAllDrives: true,
+    });
+    if (res.data.mimeType === 'application/vnd.google-apps.folder' && res.data.id) {
+      return { id: res.data.id, name: res.data.name || '' };
+    }
+    return null;
+  } catch (error) {
+    console.error(`Error accessing folder ${folderId}:`, error);
+    return null;
+  }
+};
 
 /** Image base name matches product code (e.g. Lachka-Stretchable-Orange-P10002.jpg or ...-1.jpg) */
 export const filenameMatchesProductCode = (filename: string, productCode: string): boolean => {
@@ -182,6 +201,7 @@ export const findImageFilesByProductCode = async (
 export const fetchAndSortFolderImages = async (folderId: string): Promise<string[]> => {
   try {
     const res = await drive.files.list({
+      ...driveListParams,
       q: `'${folderId}' in parents and mimeType contains 'image/' and trashed = false`,
       fields: 'files(id, name)',
       pageSize: 1000,

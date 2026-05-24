@@ -53,7 +53,8 @@ const EMPTY_FORM = {
   stretchability: 'Non-Stretch',
   totalStock: '',
   minOrderQty: '0.5',
-  colors: [{ name: '', hexCode: '#000000' }],
+  folderUrl: '',
+  colors: [{ name: '', hexCode: '#000000', folderUrl: '' }],
 };
 
 interface ProductFormAdvancedProps {
@@ -76,7 +77,11 @@ export default function ProductFormAdvanced({ initialData, onClose }: ProductFor
         ...EMPTY_FORM,
         ...initialData,
         // Ensure colors array exists
-        colors: initialData.colors?.map((c: any) => ({ name: c.name, hexCode: c.hexCode })) || [{ name: '', hexCode: '#000000' }],
+        colors: initialData.colors?.map((c: any) => ({
+          name: c.name,
+          hexCode: c.hexCode,
+          folderUrl: c.folderUrl || '',
+        })) || [{ name: '', hexCode: '#000000', folderUrl: '' }],
       });
     }
   }, [initialData]);
@@ -151,7 +156,7 @@ export default function ProductFormAdvanced({ initialData, onClose }: ProductFor
   const addColor = () => {
     setForm((prev: any) => ({
       ...prev,
-      colors: [...prev.colors, { name: '', hexCode: '#000000' }],
+      colors: [...prev.colors, { name: '', hexCode: '#000000', folderUrl: '' }],
     }));
   };
 
@@ -336,6 +341,20 @@ export default function ProductFormAdvanced({ initialData, onClose }: ProductFor
                     required
                   />
                   <p className="mt-1 text-xs text-gray-500">Format: Name-Category-Color-Code (auto-generated)</p>
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="mb-1 block text-xs font-medium">Google Drive Folder URL</label>
+                  <input
+                    type="url"
+                    value={color.folderUrl || ''}
+                    onChange={(e) => handleColorChange(index, 'folderUrl', e.target.value)}
+                    placeholder="https://drive.google.com/drive/folders/..."
+                    className="input-field"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Folder name should match the product code. Images inside can use any filename (e.g. Stretchable-1.png).
+                  </p>
                 </div>
               </div>
             </div>
