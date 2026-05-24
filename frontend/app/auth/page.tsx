@@ -5,6 +5,7 @@ import { useAuthStore } from '@/lib/store';
 import { useRouter } from 'next/navigation';
 import { authApi } from '@/lib/api';
 import toast from 'react-hot-toast';
+import Image from 'next/image';
 
 export default function AuthPage() {
   const [mode, setMode] = useState<'login' | 'register'>('login');
@@ -51,7 +52,7 @@ export default function AuthPage() {
     <div className="flex min-h-screen">
       {/* Left — image panel */}
       <div className="hidden w-1/2 relative overflow-hidden lg:block">
-        <img src="https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=1200&q=80" alt="Luxury Fabric" className="h-full w-full object-cover"/>
+        <Image src="https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=1200&q=80" alt="Luxury Fabric" fill priority sizes="50vw" className="object-cover"/>
         <div className="absolute inset-0 bg-gradient-to-br from-primary-900/80 to-dark-900/60"/>
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-12">
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm">

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useCartStore } from '@/lib/store';
 import { formatPrice } from '@/lib/utils';
 import toast from 'react-hot-toast';
+import Image from 'next/image';
 
 export default function CartPage() {
   const { items, removeItem, updateQty, clearCart, totalPrice } = useCartStore();
@@ -48,8 +49,8 @@ export default function CartPage() {
                     {/* Image */}
                     <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-gray-50 dark:bg-dark-700 sm:h-28 sm:w-28">
                       {item.product.images?.[0] && (
-                        <img src={item.product.images[0].url} alt={item.product.name}
-                          className="h-full w-full object-cover"/>
+                        <Image src={item.product.images[0].url} alt={item.product.name}
+                          fill sizes="112px" className="object-cover"/>
                       )}
                     </div>
                     {/* Details */}

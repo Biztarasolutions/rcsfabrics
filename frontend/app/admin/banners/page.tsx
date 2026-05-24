@@ -5,6 +5,7 @@ const EMPTY = { title: '', subtitle: '', link: '', image: '', isActive: true };
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api';
 import toast from 'react-hot-toast';
+import Image from 'next/image';
 
 export default function AdminBannersPage() {
   const queryClient = useQueryClient();
@@ -78,7 +79,7 @@ export default function AdminBannersPage() {
             <div className="flex flex-col sm:flex-row">
               {/* Preview */}
               <div className="relative h-32 w-full overflow-hidden bg-gray-100 dark:bg-dark-700 sm:h-auto sm:w-48">
-                <img src={banner.image} alt={banner.title} className="h-full w-full object-cover"/>
+                <Image src={banner.image} alt={banner.title} fill sizes="192px" className="object-cover"/>
                 <div className="absolute inset-0 bg-gradient-to-r from-black/50 to-transparent flex items-center px-4">
                   <span className="text-xs font-bold text-white bg-black/30 px-2 py-1 rounded-md">#{banner.order}</span>
                 </div>
@@ -124,7 +125,7 @@ export default function AdminBannersPage() {
                 <div><label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Subtitle</label><input value={form.subtitle} onChange={(e) => setForm({ ...form, subtitle: e.target.value })} className="input-field" placeholder="Tagline text..."/></div>
                 <div><label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Link URL</label><input value={form.link} onChange={(e) => setForm({ ...form, link: e.target.value })} className="input-field" placeholder="/products?sale=true"/></div>
                 <div><label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Image URL</label><input value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} className="input-field" placeholder="https://..."/></div>
-                {form.image && <img src={form.image} alt="Preview" className="h-32 w-full rounded-xl object-cover"/>}
+                {form.image && <div className="relative h-32 w-full rounded-xl overflow-hidden"><Image src={form.image} alt="Preview" fill sizes="100vw" className="object-cover"/></div>}
                 <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={form.isActive} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} className="accent-primary-600 h-4 w-4"/><span className="text-sm text-gray-700 dark:text-gray-300">Active</span></label>
               </div>
               <div className="mt-5 flex gap-3">

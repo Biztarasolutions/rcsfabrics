@@ -5,6 +5,7 @@ import { productApi } from '@/lib/api';
 import { useCartStore, useWishlistStore } from '@/lib/store';
 import { formatPrice, calculateDiscount } from '@/lib/utils';
 import toast from 'react-hot-toast';
+import Image from 'next/image';
 
 export default function ProductDetailPage({ params }: { params: { slug: string } }) {
   const [activeImg, setActiveImg] = useState(0);
@@ -69,8 +70,8 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
           <div className="space-y-4">
             <div className="relative overflow-hidden rounded-2xl bg-gray-50 dark:bg-dark-800" style={{ aspectRatio: '1' }}
               onMouseEnter={() => setZoomed(true)} onMouseLeave={() => setZoomed(false)}>
-              <img src={PRODUCT.images?.[activeImg]?.url || 'https://via.placeholder.com/800'} alt={PRODUCT.name}
-                className={`h-full w-full object-cover transition-transform duration-500 ${zoomed ? 'scale-125' : 'scale-100'}`}/>
+              <Image src={PRODUCT.images?.[activeImg]?.url || 'https://via.placeholder.com/800'} alt={PRODUCT.name}
+                fill priority sizes="(max-width: 1024px) 100vw, 50vw" className={`object-cover transition-transform duration-500 ${zoomed ? 'scale-125' : 'scale-100'}`}/>
               {PRODUCT.discountPrice && (
                 <div className="absolute left-4 top-4 rounded-full bg-red-500 px-3 py-1 text-sm font-bold text-white">
                   -{discount}%
@@ -85,7 +86,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
               {PRODUCT.images?.map((img: any, i: number) => (
                 <button key={img.id} onClick={() => setActiveImg(i)}
                   className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border-2 transition-all ${i === activeImg ? 'border-primary-500 shadow-md' : 'border-gray-200 dark:border-dark-700 hover:border-primary-300'}`}>
-                  <img src={img.url} alt={`View ${i + 1}`} className="h-full w-full object-cover"/>
+                  <Image src={img.url} alt={`View ${i + 1}`} fill sizes="80px" className="object-cover"/>
                 </button>
               ))}
             </div>

@@ -2,6 +2,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 
 const TEAM = [
   { name: 'Rajesh Choudhary', role: 'Founder & CEO', image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&q=80', bio: '25+ years in the textile industry' },
@@ -13,8 +14,8 @@ export default function AboutPage() {
   return (
     <div className="min-h-screen bg-white dark:bg-dark-950">
       {/* Hero */}
-      <div className="relative overflow-hidden">
-        <img src="https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=1600&q=80" alt="About RCS Fabrics" className="h-80 w-full object-cover object-center lg:h-[500px]"/>
+      <div className="relative overflow-hidden h-80 lg:h-[500px]">
+        <Image src="https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=1600&q=80" alt="About RCS Fabrics" fill priority sizes="100vw" className="object-cover object-center"/>
         <div className="absolute inset-0 bg-gradient-to-r from-dark-900/80 via-dark-900/50 to-transparent"/>
         <div className="absolute inset-0 flex items-center">
           <div className="container-main">
@@ -49,10 +50,10 @@ export default function AboutPage() {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <img src="https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?w=500&q=80" alt="Fabric weaving" className="rounded-2xl object-cover h-48 w-full"/>
-            <img src="https://images.unsplash.com/photo-1584992236310-6edddc08acff?w=500&q=80" alt="Premium silk" className="rounded-2xl object-cover h-48 w-full mt-8"/>
-            <img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500&q=80" alt="Velvet fabric" className="rounded-2xl object-cover h-48 w-full"/>
-            <img src="https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=500&q=80" alt="Cotton rolls" className="rounded-2xl object-cover h-48 w-full mt-8"/>
+            <div className="relative h-48 rounded-2xl overflow-hidden"><Image src="https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?w=500&q=80" alt="Fabric weaving" fill sizes="(max-width: 768px) 100vw, 25vw" className="object-cover"/></div>
+            <div className="relative h-48 rounded-2xl overflow-hidden mt-8"><Image src="https://images.unsplash.com/photo-1584992236310-6edddc08acff?w=500&q=80" alt="Premium silk" fill sizes="(max-width: 768px) 100vw, 25vw" className="object-cover"/></div>
+            <div className="relative h-48 rounded-2xl overflow-hidden"><Image src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500&q=80" alt="Velvet fabric" fill sizes="(max-width: 768px) 100vw, 25vw" className="object-cover"/></div>
+            <div className="relative h-48 rounded-2xl overflow-hidden mt-8"><Image src="https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=500&q=80" alt="Cotton rolls" fill sizes="(max-width: 768px) 100vw, 25vw" className="object-cover"/></div>
           </div>
         </div>
       </section>
@@ -87,7 +88,7 @@ export default function AboutPage() {
           <div className="mt-12 grid gap-8 sm:grid-cols-3 max-w-3xl mx-auto">
             {TEAM.map((member) => (
               <div key={member.name} className="text-center">
-                <img src={member.image} alt={member.name} className="mx-auto h-24 w-24 rounded-full object-cover shadow-md"/>
+                <Image src={member.image} alt={member.name} width={96} height={96} className="mx-auto rounded-full object-cover shadow-md"/>
                 <h3 className="mt-4 font-semibold text-gray-900 dark:text-white">{member.name}</h3>
                 <p className="text-sm font-medium text-primary-600 dark:text-primary-400">{member.role}</p>
                 <p className="mt-1 text-sm text-gray-500">{member.bio}</p>

@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
 import toast from 'react-hot-toast';
+import Image from 'next/image';
 import ProductFormAdvanced from '@/components/products/ProductFormAdvanced';
 
 export default function AdminProductsPage() {
@@ -130,10 +131,12 @@ export default function AdminProductsPage() {
                     {/* Product Name */}
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3 min-w-fit">
-                        <img 
+                        <Image 
                           src={product.images?.[0]?.url || 'https://via.placeholder.com/40'} 
                           alt={product.name} 
-                          className="h-10 w-10 rounded-lg object-cover"
+                          width={40}
+                          height={40}
+                          className="rounded-lg object-cover"
                         />
                         <div>
                           <div className="font-semibold text-gray-900 dark:text-white text-xs sm:text-sm">

@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { useWishlistStore, useCartStore } from '@/lib/store';
 import { formatPrice } from '@/lib/utils';
 import toast from 'react-hot-toast';
+import Image from 'next/image';
 
 export default function WishlistPage() {
   const { items, removeItem } = useWishlistStore();
@@ -37,8 +38,8 @@ export default function WishlistPage() {
                 className="group relative overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm dark:border-dark-700 dark:bg-dark-800">
                 {/* Image */}
                 <div className="relative overflow-hidden" style={{ aspectRatio: '4/5' }}>
-                  <img src={item.product.images?.[0]?.url || ''} alt={item.product.name}
-                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"/>
+                  <Image src={item.product.images?.[0]?.url || '/placeholder.png'} alt={item.product.name}
+                    fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" className="object-cover transition-transform duration-300 group-hover:scale-105"/>
                   {/* Remove */}
                   <button onClick={() => { removeItem(item.productId); toast('Removed from wishlist'); }}
                     className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-red-500 shadow-sm backdrop-blur-sm transition-colors hover:bg-red-500 hover:text-white dark:bg-dark-800/90 dark:text-red-400">

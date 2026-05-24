@@ -11,6 +11,7 @@ import CategoryShowcase from '@/components/products/CategoryShowcase';
 import FeaturedCollections from '@/components/products/FeaturedCollections';
 import Testimonials from '@/components/common/Testimonials';
 import NewsletterSignup from '@/components/common/NewsletterSignup';
+import Image from 'next/image';
 
 export default function HomePage() {
   return (
@@ -61,9 +62,9 @@ export default function HomePage() {
         <div className="container-main">
           <motion.div initial={{ opacity: 0, scale: 0.98 }} whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
-            className="relative overflow-hidden rounded-3xl">
-            <img src="https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=1600&q=80"
-              alt="Bulk Order Banner" className="h-64 w-full object-cover object-top lg:h-80"/>
+            className="relative overflow-hidden rounded-3xl h-64 lg:h-80">
+            <Image src="https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=1600&q=80"
+              alt="Bulk Order Banner" fill sizes="100vw" className="object-cover object-top"/>
             <div className="absolute inset-0 bg-gradient-to-r from-dark-900/90 to-dark-900/40"/>
             <div className="absolute inset-0 flex items-center">
               <div className="container-main">

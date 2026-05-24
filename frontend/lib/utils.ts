@@ -41,3 +41,19 @@ export const debounce = <T extends (...args: any[]) => any>(
 export const cn = (...classes: (string | undefined | null | boolean)[]): string => {
   return classes.filter(Boolean).join(' ');
 };
+
+/** e.g. 10001 → P10001 */
+export const formatProductCodeSuffix = (code: number | string): string => `P${code}`;
+
+/** Style code: Name-Category-Code (e.g. Polka Dot-Satin-P10001) */
+export const buildStyleCode = (name: string, categoryName: string, code: number | string): string =>
+  `${name.trim()}-${categoryName.trim()}-${formatProductCodeSuffix(code)}`;
+
+/** Product code: Name-Category-Color-Code (e.g. Polka Dot-Satin-White-P10001) */
+export const buildProductCode = (
+  name: string,
+  categoryName: string,
+  colorName: string,
+  code: number | string
+): string =>
+  `${name.trim()}-${categoryName.trim()}-${colorName.trim()}-${formatProductCodeSuffix(code)}`;

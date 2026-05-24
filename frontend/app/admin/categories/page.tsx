@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi, uploadCategoryImage } from '@/lib/api';
 import { toast } from 'react-hot-toast';
+import Image from 'next/image';
 
 export default function AdminCategoriesPage() {
   const queryClient = useQueryClient();
@@ -164,10 +165,12 @@ export default function AdminCategoriesPage() {
               className="flex items-center justify-between rounded-2xl border border-gray-200 bg-white p-4 dark:border-dark-700 dark:bg-dark-800"
             >
               <div className="flex items-center gap-4">
-                <img
+                <Image
                   src={cat.imageUrl || cat.image || 'https://via.placeholder.com/60'}
                   alt={cat.name}
-                  className="h-14 w-14 rounded-xl object-cover border border-gray-100 dark:border-dark-700"
+                  width={56}
+                  height={56}
+                  className="rounded-xl object-cover border border-gray-100 dark:border-dark-700"
                 />
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">

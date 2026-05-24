@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useCartStore } from '@/lib/store';
 import { formatPrice } from '@/lib/utils';
 import toast from 'react-hot-toast';
+import Image from 'next/image';
 
 export default function CartSidebar() {
   const { items, isOpen, closeCart, removeItem, updateQty, totalPrice } = useCartStore();
@@ -78,10 +79,10 @@ export default function CartSidebar() {
                           exit={{ opacity: 0, height: 0 }} layout
                           className="flex gap-3 rounded-xl border border-gray-100 bg-gray-50 p-3 dark:border-dark-700 dark:bg-dark-800">
                           {/* Thumbnail */}
-                          <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-dark-700">
+                          <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-dark-700">
                             {item.product.images?.[0] && (
-                              <img src={item.product.images[0].url} alt={item.product.name}
-                                className="h-full w-full object-cover"/>
+                              <Image src={item.product.images[0].url} alt={item.product.name}
+                                fill sizes="64px" className="object-cover"/>
                             )}
                           </div>
                           {/* Info */}

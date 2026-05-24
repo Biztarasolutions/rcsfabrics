@@ -6,6 +6,7 @@ import { Product } from '@/types';
 import { formatPrice, calculateDiscount } from '@/lib/utils';
 import { useCartStore, useWishlistStore } from '@/lib/store';
 import toast from 'react-hot-toast';
+import Image from 'next/image';
 
 interface ProductCardProps { product: Product; }
 
@@ -37,8 +38,8 @@ export default function ProductCard({ product }: ProductCardProps) {
         className="group relative flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-product dark:border-dark-700 dark:bg-dark-800">
         {/* Image */}
         <div className="relative overflow-hidden bg-gray-50 dark:bg-dark-700" style={{ aspectRatio: '4/5' }}>
-          {mainImage && <img src={mainImage.url} alt={product.name} className={`absolute inset-0 h-full w-full object-cover transition-all duration-500 ${hovered && secondImage ? 'opacity-0' : 'opacity-100'}`}/>}
-          {secondImage && <img src={secondImage.url} alt={product.name} className={`absolute inset-0 h-full w-full object-cover transition-all duration-500 ${hovered ? 'opacity-100' : 'opacity-0'}`}/>}
+          {mainImage && <Image src={mainImage.url} alt={product.name} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" className={`object-cover transition-all duration-500 ${hovered && secondImage ? 'opacity-0' : 'opacity-100'}`}/>}
+          {secondImage && <Image src={secondImage.url} alt={product.name} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" className={`object-cover transition-all duration-500 ${hovered ? 'opacity-100' : 'opacity-0'}`}/>}
           <div className="absolute left-3 top-3 flex flex-col gap-1.5">
             {discountPercent > 0 && <span className="badge-sale">{discountPercent}% OFF</span>}
             {product.isNew && <span className="badge-new">New</span>}

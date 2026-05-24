@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 
 const SLIDES = [
   {
@@ -53,8 +54,8 @@ export default function HeroBanner() {
       {SLIDES.map((s, i: number) => (
         <div key={s.id}
           className={`absolute inset-0 transition-opacity duration-1000 ${i === current ? 'opacity-100' : 'opacity-0'}`}>
-          <img src={s.image} alt={s.tag} className="h-full w-full object-cover scale-105 animate-float"
-            style={{ animationDuration: '8s' }}/>
+          <Image src={s.image} alt={s.tag} fill priority={i === 0} sizes="100vw"
+            className="object-cover scale-105 animate-float" style={{ animationDuration: '8s' }}/>
           <div className={`absolute inset-0 bg-gradient-to-r ${s.accent}`}/>
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"/>
         </div>

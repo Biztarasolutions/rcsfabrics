@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { orderApi } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
 import { Suspense } from 'react';
+import Image from 'next/image';
 
 const STATUS_COLORS: Record<string, string> = {
   PENDING: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
@@ -70,9 +71,9 @@ function OrdersContent() {
                 {order.items.map((item: any) => (
                   <div key={item.id} className="flex items-center justify-between py-4">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 dark:bg-primary-950/30">
+                      <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 dark:bg-primary-950/30 overflow-hidden">
                         {item.product?.images?.[0]?.url ? (
-                           <img src={item.product.images[0].url} alt={item.product.name} className="h-full w-full object-cover rounded-xl"/>
+                           <Image src={item.product.images[0].url} alt={item.product.name} fill sizes="40px" className="object-cover"/>
                         ) : (
                           <span className="text-lg">🧵</span>
                         )}

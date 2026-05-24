@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useHomepageData } from '@/hooks/useHomepageData';
+import Image from 'next/image';
 
 export default function FeaturedCollections() {
   const { data: homepageData, isLoading } = useHomepageData();
@@ -33,8 +34,8 @@ export default function FeaturedCollections() {
                   viewport={{ once: true }} className="lg:col-span-2 lg:row-span-2">
                   <Link href={`/collections/${collections[0].slug}`}
                     className="group relative block h-80 overflow-hidden rounded-2xl lg:h-full">
-                    <img src={collections[0].image} alt={collections[0].name}
-                      className="h-full w-full object-contain bg-white dark:bg-dark-800 transition-transform duration-700 group-hover:scale-105"/>
+                    <Image src={collections[0].image} alt={collections[0].name}
+                      fill sizes="(max-width: 1024px) 100vw, 66vw" className="object-contain bg-white dark:bg-dark-800 transition-transform duration-700 group-hover:scale-105"/>
                     <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/80 via-black/30 to-transparent"/>
                     <div className="absolute inset-0 flex flex-col justify-end p-8">
                       <h3 className="font-display text-4xl font-bold text-white">{collections[0].name}</h3>
@@ -59,8 +60,8 @@ export default function FeaturedCollections() {
                   viewport={{ once: true }} transition={{ delay: i * 0.1 }}>
                   <Link href={`/collections/${col.slug}`}
                     className="group relative block h-64 overflow-hidden rounded-2xl">
-                    <img src={col.image} alt={col.name}
-                      className="h-full w-full object-contain bg-white dark:bg-dark-800 transition-transform duration-700 group-hover:scale-105"/>
+                    <Image src={col.image} alt={col.name}
+                      fill sizes="(max-width: 1024px) 100vw, 33vw" className="object-contain bg-white dark:bg-dark-800 transition-transform duration-700 group-hover:scale-105"/>
                     <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/80 via-black/30 to-transparent"/>
                     <div className="absolute inset-0 flex flex-col justify-end p-6">
                       <h3 className="font-display text-2xl font-bold text-white">{col.name}</h3>

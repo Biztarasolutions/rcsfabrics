@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api';
 import toast from 'react-hot-toast';
+import { buildStyleCode, buildProductCode } from '@/lib/utils';
 
 const COLOR_NAME_TO_HEX: Record<string, string> = {
   RED: '#FF0000',
@@ -88,15 +89,9 @@ export default function ProductFormAdvanced({ initialData, onClose }: ProductFor
   const selectedCategory = categories.find((c: any) => c.id === form.categoryId);
 
   useEffect(() => {
-    if (form.name && form.categoryId) {
-      if (selectedCategory) {
-        const codePrefix = form.code ? `${form.code}-` : '';
-        const computed = `${codePrefix}${form.name.substring(0, 3).toUpperCase()}-${selectedCategory.name
-          .substring(0, 3)
-          .toUpperCase()}`;
-        setStyleCode(computed);
-        return;
-      }
+    if (form.name && form.categoryId && form.code && selectedCategory) {
+      setStyleCode(buildStyleCode(form.name, selectedCategory.name, form.code));
+      return;
     }
     setStyleCode('');
   }, [form.name, form.categoryId, form.code, selectedCategory]);
@@ -225,7 +220,7 @@ export default function ProductFormAdvanced({ initialData, onClose }: ProductFor
           <div className="sm:col-span-2">
             <label className="mb-1.5 block text-sm font-medium">Style Code (Auto-generated)</label>
             <input type="text" value={styleCode} readOnly placeholder="Generated automatically" className="input-field bg-gray-50 dark:bg-dark-700" />
-            <p className="mt-1 text-xs text-gray-500">Format: Code-Name-Category (auto-generated)</p>
+            <p className="mt-1 text-xs text-gray-500">Format: Name-Category-Code (e.g. Polka Dot-Satin-P10001)</p>
           </div>
           {/* Pattern */}
           <div>
@@ -289,12 +284,12 @@ export default function ProductFormAdvanced({ initialData, onClose }: ProductFor
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h3 className="text-lg font-bold">Color Variants</h3>
-            <p className="text-sm text-gray-500">Add product colors after Code and Category are set.</p>
+            <p className="text-sm text-gray-500">Add product colors after Name, Category, and Code are set.</p>
           </div>
           <button
             type="button"
             onClick={addColor}
-            disabled={!form.code || !styleCode}
+            disabled={!form.name || !form.categoryId || !form.code}
             className="button-secondary px-3 py-1.5 text-sm disabled:cursor-not-allowed disabled:opacity-50"
           >
             + Add Color
@@ -328,8 +323,19 @@ export default function ProductFormAdvanced({ initialData, onClose }: ProductFor
 
                 <div className="sm:col-span-2">
                   <label className="mb-1 block text-xs font-medium">Product Code</label>
-                  <input type="text" value={styleCode && color.name ? `${styleCode}-${color.name.substring(0, 3).toUpperCase()}` : ''} readOnly placeholder={`e.g., ${styleCode}-RED`} className="input-field bg-gray-100 dark:bg-dark-700" required />
-                  <p className="mt-1 text-xs text-gray-500">Auto-generated from Code and Color name.</p>
+                  <input
+                    type="text"
+                    value={
+                      form.name && selectedCategory && form.code && color.name
+                        ? buildProductCode(form.name, selectedCategory.name, color.name, form.code)
+                        : ''
+                    }
+                    readOnly
+                    placeholder="e.g. Polka Dot-Satin-White-P10001"
+                    className="input-field bg-gray-100 dark:bg-dark-700"
+                    required
+                  />
+                  <p className="mt-1 text-xs text-gray-500">Format: Name-Category-Color-Code (auto-generated)</p>
                 </div>
               </div>
             </div>

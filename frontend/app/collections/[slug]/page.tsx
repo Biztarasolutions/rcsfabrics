@@ -4,6 +4,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import ProductCard from '@/components/products/ProductCard';
+import Image from 'next/image';
 
 const COLLECTIONS: Record<string, {
   title: string; subtitle: string; description: string;
@@ -72,7 +73,7 @@ export default function CollectionPage() {
     <div className="min-h-screen bg-white dark:bg-dark-950">
       {/* Hero */}
       <div className="relative h-[50vh] min-h-80 overflow-hidden">
-        <img src={collection.image} alt={collection.title} className="h-full w-full object-cover object-center"/>
+        <Image src={collection.image} alt={collection.title} fill priority sizes="100vw" className="object-cover object-center"/>
         <div className={`absolute inset-0 bg-gradient-to-r ${collection.color}`}/>
         <div className="absolute inset-0 flex items-center">
           <div className="container-main">
@@ -129,7 +130,7 @@ export default function CollectionPage() {
             {ALL_COLLECTIONS.filter((c) => c.slug !== slug).map((col) => (
               <Link key={col.slug} href={`/collections/${col.slug}`}
                 className="group relative h-40 overflow-hidden rounded-2xl">
-                <img src={col.image} alt={col.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"/>
+                <Image src={col.image} alt={col.title} fill sizes="(max-width: 640px) 100vw, 33vw" className="object-cover transition-transform duration-500 group-hover:scale-105"/>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"/>
                 <div className="absolute bottom-0 p-4">
                   <p className="text-xs font-semibold uppercase tracking-wider text-primary-300">{col.subtitle}</p>

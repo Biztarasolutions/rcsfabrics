@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { prisma } from '@/index';
 import { AuthRequest, ApiResponse } from '@/types';
-import { generateSlug, generateSKU } from '@/utils/string.util';
+import { generateSlug, generateSKU, buildStyleCode, buildProductCode } from '@/utils/string.util';
 import { parsePagination, createPaginationMeta } from '@/utils/pagination.util';
 import { ApiError } from '@/middleware/errorHandler';
 import { extractFolderId, getDriveImageStream, fetchFolderImageDetails, findFolderIdByName } from '@/utils/googleDrive.util';
@@ -84,15 +84,12 @@ export const createProduct = async (
       throw new ApiError(404, 'Category not found');
     }
 
-    // Generate styleCode as Code-Category-Pattern
-    const catStr = category.name ? category.name.substring(0, 3).toUpperCase() : 'UNK';
-    const patStr = pattern ? pattern.substring(0, 3).toUpperCase() : name.substring(0, 3).toUpperCase();
-    const styleCode = `${code}-${catStr}-${patStr}`;
+    const styleCode = buildStyleCode(name, category.name, code);
 
     let processedColors: any[] = [];
     if (colors && Array.isArray(colors) && colors.length > 0) {
       processedColors = await Promise.all(colors.map(async (color: any) => {
-        const pCode = `${styleCode}-${(color.name || 'UNK').substring(0, 3).toUpperCase()}`;
+        const pCode = buildProductCode(name, category.name, color.name || 'Unknown', code);
         let fUrl = color.folderUrl;
         if (!fUrl) {
           const fId = await findFolderIdByName(pCode);
@@ -193,10 +190,10 @@ export const updateProduct = async (
       processedColors = await Promise.all(colors.map(async (c: any) => {
         let pCode = c.productCode;
         if (!pCode && existingProduct) {
-          const catStr = existingProduct.category?.name ? existingProduct.category.name.substring(0, 3).toUpperCase() : 'UNK';
-          const patStr = updateData.pattern ? updateData.pattern.substring(0, 3).toUpperCase() : (existingProduct.pattern || existingProduct.name).substring(0, 3).toUpperCase();
-          const sCode = `${updateData.code || existingProduct.code || '000'}-${catStr}-${patStr}`;
-          pCode = `${sCode}-${(c.name || 'UNK').substring(0, 3).toUpperCase()}`;
+          const productName = updateData.name || existingProduct.name;
+          const categoryName = existingProduct.category?.name || 'Unknown';
+          const productCode = updateData.code ?? existingProduct.code ?? '000';
+          pCode = buildProductCode(productName, categoryName, c.name || 'Unknown', productCode);
         }
         
         let fUrl = c.folderUrl;
