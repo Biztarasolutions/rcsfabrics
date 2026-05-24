@@ -32,6 +32,40 @@ if (process.env.GOOGLE_CREDS_JSON) {
 
 const drive = google.drive({ version: 'v3', auth });
 
+const driveListParams = {
+  supportsAllDrives: true,
+  includeItemsFromAllDrives: true,
+} as const;
+
+/** Image base name matches product code (e.g. Lachka-Stretchable-Orange-P10002.jpg or ...-1.jpg) */
+export const filenameMatchesProductCode = (filename: string, productCode: string): boolean => {
+  const base = (filename || '').replace(/\.[^.]+$/, '').trim().toLowerCase();
+  const code = productCode.trim().toLowerCase();
+  if (!base || !code) return false;
+  return base === code || base.startsWith(`${code}-`) || base.startsWith(`${code}_`);
+};
+
+const sortImageFiles = (files: DriveFileDetails[]) => {
+  files.sort((a, b) => {
+    const getNumber = (filename: string | null | undefined): number => {
+      if (!filename) return 0;
+      const nameWithoutExt = filename.substring(0, filename.lastIndexOf('.')) || filename;
+      const lastHyphenIndex = nameWithoutExt.lastIndexOf('-');
+      if (lastHyphenIndex !== -1) {
+        const numStr = nameWithoutExt.substring(lastHyphenIndex + 1);
+        const num = parseInt(numStr, 10);
+        if (!isNaN(num)) return num;
+      }
+      return 0;
+    };
+    const numA = getNumber(a.name);
+    const numB = getNumber(b.name);
+    if (numA !== numB) return numA - numB;
+    return (a.name || '').localeCompare(b.name || '');
+  });
+  return files;
+};
+
 /**
  * Extracts the folder ID from a Google Drive folder URL.
  */
@@ -65,13 +99,29 @@ export const findFolderIdByName = async (folderName: string): Promise<string | n
   try {
     const escaped = escapeDriveQueryValue(trimmed);
     const res = await drive.files.list({
+      ...driveListParams,
       q: `mimeType = 'application/vnd.google-apps.folder' and name = '${escaped}' and trashed = false`,
       fields: 'files(id, name)',
-      pageSize: 1,
+      pageSize: 10,
     });
-    if (res.data.files && res.data.files.length > 0) {
-      return res.data.files[0].id as string;
+    const files = res.data.files || [];
+    if (files.length > 0) {
+      return files[0].id as string;
     }
+
+    // Fuzzy: contains search then pick case-insensitive exact match
+    const fuzzyRes = await drive.files.list({
+      ...driveListParams,
+      q: `mimeType = 'application/vnd.google-apps.folder' and name contains '${escaped}' and trashed = false`,
+      fields: 'files(id, name)',
+      pageSize: 25,
+    });
+    const fuzzyFiles = fuzzyRes.data.files || [];
+    const normalized = trimmed.toLowerCase();
+    const exact = fuzzyFiles.find((f) => f.name?.trim().toLowerCase() === normalized);
+    if (exact?.id) return exact.id as string;
+    if (fuzzyFiles[0]?.id) return fuzzyFiles[0].id as string;
+
     return null;
   } catch (error) {
     console.error(`Error finding folder by name ${folderName}:`, error);
@@ -85,11 +135,44 @@ export const findFolderIdByName = async (folderName: string): Promise<string | n
 export const findFolderIdByNames = async (
   folderNames: string[]
 ): Promise<{ folderId: string; matchedName: string } | null> => {
+  const tried = new Set<string>();
   for (const name of folderNames) {
-    const folderId = await findFolderIdByName(name);
-    if (folderId) return { folderId, matchedName: name };
+    const key = name?.trim();
+    if (!key || tried.has(key)) continue;
+    tried.add(key);
+    const folderId = await findFolderIdByName(key);
+    if (folderId) return { folderId, matchedName: key };
   }
   return null;
+};
+
+/**
+ * Finds image files anywhere in Drive whose filename matches the product code.
+ */
+export const findImageFilesByProductCode = async (
+  productCode: string
+): Promise<DriveFileDetails[]> => {
+  const trimmed = productCode?.trim();
+  if (!trimmed) return [];
+
+  try {
+    const escaped = escapeDriveQueryValue(trimmed);
+    const rootFolderId = process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID;
+    const parentClause = rootFolderId ? ` and '${rootFolderId}' in parents` : '';
+
+    const res = await drive.files.list({
+      ...driveListParams,
+      q: `mimeType contains 'image/' and name contains '${escaped}' and trashed = false${parentClause}`,
+      fields: 'files(id, name, mimeType)',
+      pageSize: 100,
+    });
+
+    const files = (res.data.files || []) as DriveFileDetails[];
+    return sortImageFiles(files.filter((f) => filenameMatchesProductCode(f.name, trimmed)));
+  } catch (error) {
+    console.error(`Error finding images by product code ${productCode}:`, error);
+    return [];
+  }
 };
 
 /**
@@ -162,40 +245,27 @@ export interface DriveFileDetails {
 export const fetchFolderImageDetails = async (folderId: string): Promise<DriveFileDetails[]> => {
   try {
     const res = await drive.files.list({
+      ...driveListParams,
       q: `'${folderId}' in parents and mimeType contains 'image/' and trashed = false`,
       fields: 'files(id, name, mimeType)',
       pageSize: 1000,
     });
 
-    const files = (res.data.files || []) as DriveFileDetails[];
-
-    // Sort files based on the number after the last hyphen (e.g., fabric-name-1.jpg, fabric-name-2.jpg)
-    files.sort((a, b) => {
-      const getNumber = (filename: string | null | undefined): number => {
-        if (!filename) return 0;
-        const nameWithoutExt = filename.substring(0, filename.lastIndexOf('.')) || filename;
-        const lastHyphenIndex = nameWithoutExt.lastIndexOf('-');
-        if (lastHyphenIndex !== -1) {
-          const numStr = nameWithoutExt.substring(lastHyphenIndex + 1);
-          const num = parseInt(numStr, 10);
-          if (!isNaN(num)) return num;
-        }
-        return 0;
-      };
-
-      const numA = getNumber(a.name);
-      const numB = getNumber(b.name);
-
-      if (numA !== numB) {
-        return numA - numB;
-      }
-      return (a.name || '').localeCompare(b.name || '');
-    });
-
-    return files;
+    return sortImageFiles((res.data.files || []) as DriveFileDetails[]);
   } catch (error) {
     console.error('Error fetching Google Drive folder image details:', error);
     throw new Error('Failed to fetch details from the provided Google Drive folder. Ensure the folder is shared with the service account.');
   }
+};
+
+/**
+ * Fetches images in a folder that match the product code in the filename.
+ */
+export const fetchFolderImagesByProductCode = async (
+  folderId: string,
+  productCode: string
+): Promise<DriveFileDetails[]> => {
+  const all = await fetchFolderImageDetails(folderId);
+  return all.filter((f) => filenameMatchesProductCode(f.name, productCode));
 };
 

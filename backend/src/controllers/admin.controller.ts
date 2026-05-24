@@ -13,8 +13,11 @@ import { ApiError } from '@/middleware/errorHandler';
 import {
   extractFolderId,
   getDriveImageStream,
+  DriveFileDetails,
   fetchFolderImageDetails,
+  fetchFolderImagesByProductCode,
   findFolderIdByNames,
+  findImageFilesByProductCode,
   folderUrlFromId,
 } from '@/utils/googleDrive.util';
 import { uploadImageToSupabase } from '@/utils/supabase.util';
@@ -30,30 +33,35 @@ const streamToBuffer = (stream: any): Promise<Buffer> => {
   });
 };
 
+const uploadDriveFilesToSupabase = async (files: DriveFileDetails[]): Promise<string[]> => {
+  const publicUrls: string[] = [];
+  for (const file of files) {
+    console.log(`[Supabase Upload] Downloading file: ${file.name} (${file.id})`);
+    const streamRes = await getDriveImageStream(file.id);
+    const buffer = await streamToBuffer(streamRes.data);
+    const publicUrl = await uploadImageToSupabase(
+      buffer,
+      file.name,
+      file.mimeType || 'image/jpeg'
+    );
+    publicUrls.push(publicUrl);
+    console.log(`[Supabase Upload] Uploaded successfully: ${file.name} -> ${publicUrl}`);
+  }
+  return publicUrls;
+};
+
 /**
- * Downloads Google Drive images as streams, converts them to buffers, and uploads them to Supabase Storage
+ * Downloads Google Drive images from a folder (optionally filtered by product code filename).
  */
-const uploadDriveImagesToSupabase = async (folderId: string): Promise<string[]> => {
+const uploadDriveImagesToSupabase = async (
+  folderId: string,
+  productCode?: string
+): Promise<string[]> => {
   try {
-    const files = await fetchFolderImageDetails(folderId);
-    const publicUrls: string[] = [];
-
-    for (const file of files) {
-      console.log(`[Supabase Upload] Downloading file: ${file.name} (${file.id})`);
-      const streamRes = await getDriveImageStream(file.id);
-      const buffer = await streamToBuffer(streamRes.data);
-      
-      const publicUrl = await uploadImageToSupabase(
-        buffer,
-        file.name,
-        file.mimeType || 'image/jpeg'
-      );
-      
-      publicUrls.push(publicUrl);
-      console.log(`[Supabase Upload] Uploaded successfully: ${file.name} -> ${publicUrl}`);
-    }
-
-    return publicUrls;
+    const files = productCode
+      ? await fetchFolderImagesByProductCode(folderId, productCode)
+      : await fetchFolderImageDetails(folderId);
+    return uploadDriveFilesToSupabase(files);
   } catch (error) {
     console.error('[Supabase Upload] Error syncing images:', error);
     throw error;
@@ -153,38 +161,111 @@ const collectFolderIdsForProduct = async (
   return folders;
 };
 
+const collectProductCodesForSync = (
+  product: ProductWithColors,
+  categoryName: string
+): string[] => {
+  const codes = new Set<string>();
+  const numericCode = product.code ?? '000';
+
+  if (product.styleCode) codes.add(product.styleCode.trim());
+
+  for (const color of product.colors) {
+    if (color.productCode?.trim()) {
+      codes.add(color.productCode.trim());
+    } else {
+      getDriveFolderNameCandidates({
+        name: product.name,
+        categoryName,
+        code: numericCode,
+        colorName: color.name,
+      }).forEach((c) => codes.add(c));
+    }
+  }
+
+  if (product.colors.length === 0) {
+    getDriveFolderNameCandidates({
+      name: product.name,
+      categoryName,
+      code: numericCode,
+    }).forEach((c) => codes.add(c));
+  }
+
+  return [...codes];
+};
+
 const syncImagesForProduct = async (
   product: ProductWithColors,
   categoryName: string
 ): Promise<number> => {
+  const productCodes = collectProductCodesForSync(product, categoryName);
   const foldersToSync = await collectFolderIdsForProduct(product, categoryName);
-
-  if (foldersToSync.size === 0) {
-    throw new ApiError(
-      400,
-      'No Google Drive folder found. Name your folder to match the product code (e.g. Polka Dot-Satin-White-P10001), share it with the service account, then sync again.'
-    );
-  }
-
   const supabaseUrls: string[] = [];
-  for (const folderId of foldersToSync) {
-    try {
-      const urls = await uploadDriveImagesToSupabase(folderId);
-      supabaseUrls.push(...urls);
-    } catch (err: any) {
-      console.error(`[Sync] Failed to sync folder ${folderId}:`, err.message || err);
+  const uploadedFileIds = new Set<string>();
+
+  for (const productCode of productCodes) {
+    // 1) Folder named like product code — images inside must match filename to product code
+    const folderMatch = await findFolderIdByNames([
+      productCode,
+      ...getDriveFolderNameCandidates({
+        name: product.name,
+        categoryName,
+        code: product.code ?? '000',
+      }),
+    ]);
+
+    if (folderMatch) {
+      foldersToSync.add(folderMatch.folderId);
+      try {
+        const urls = await uploadDriveImagesToSupabase(folderMatch.folderId, productCode);
+        supabaseUrls.push(...urls);
+      } catch (err: any) {
+        console.error(`[Sync] Failed folder "${folderMatch.matchedName}":`, err.message || err);
+      }
+    }
+
+    // 2) Image files anywhere in Drive whose filename matches product code
+    const matchedFiles = await findImageFilesByProductCode(productCode);
+    const newFiles = matchedFiles.filter((f) => !uploadedFileIds.has(f.id));
+    if (newFiles.length > 0) {
+      newFiles.forEach((f) => uploadedFileIds.add(f.id));
+      try {
+        const urls = await uploadDriveFilesToSupabase(newFiles);
+        supabaseUrls.push(...urls);
+      } catch (err: any) {
+        console.error(`[Sync] Failed uploading files for code "${productCode}":`, err.message || err);
+      }
     }
   }
 
-  if (supabaseUrls.length === 0) {
+  // 3) Linked folders — only images matching a product code filename
+  for (const folderId of foldersToSync) {
+    for (const productCode of productCodes) {
+      try {
+        const files = await fetchFolderImagesByProductCode(folderId, productCode);
+        const newFiles = files.filter((f) => !uploadedFileIds.has(f.id));
+        if (newFiles.length === 0) continue;
+        newFiles.forEach((f) => uploadedFileIds.add(f.id));
+        const urls = await uploadDriveFilesToSupabase(newFiles);
+        supabaseUrls.push(...urls);
+      } catch (err: any) {
+        console.error(`[Sync] Failed folder ${folderId} for code "${productCode}":`, err.message || err);
+      }
+    }
+  }
+
+  const uniqueUrls = [...new Set(supabaseUrls)];
+
+  if (uniqueUrls.length === 0) {
+    const codesHint = productCodes.slice(0, 3).join(', ');
     throw new ApiError(
       400,
-      'Drive folder was found but no images could be uploaded. Check that the folder contains images and is shared with the service account.'
+      `No images found for product code(s): ${codesHint}. Use a Drive folder or image files named like the product code (e.g. Lachka-Stretchable-Orange-P10002.jpg), and share with the service account.`
     );
   }
 
-  await saveSyncedImages(product.id, supabaseUrls);
-  return supabaseUrls.length;
+  await saveSyncedImages(product.id, uniqueUrls);
+  return uniqueUrls.length;
 };
 
 export const createProduct = async (
