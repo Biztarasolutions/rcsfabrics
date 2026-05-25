@@ -6,6 +6,7 @@ import { adminApi } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
+import Link from 'next/link';
 import ProductFormAdvanced from '@/components/products/ProductFormAdvanced';
 
 export default function AdminProductsPage() {
@@ -86,9 +87,9 @@ export default function AdminProductsPage() {
             </svg>
             {syncAllMutation.isPending ? 'Syncing...' : 'Sync All Images'}
           </button>
-          <button onClick={() => setShowModal(true)} className="button-primary flex items-center gap-2 px-5 py-2.5">
-            <span className="text-lg">+</span> Add Product
-          </button>
+          <Link href="/admin/products/create-family" className="button-primary flex items-center gap-2 px-5 py-2.5">
+            <span className="text-lg">+</span> Add Product Family
+          </Link>
         </div>
       </div>
 

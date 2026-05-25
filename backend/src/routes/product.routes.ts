@@ -8,6 +8,7 @@ import {
   getHomepageData,
   proxyProductImage,
 } from '@/controllers/product.controller';
+import { getProductGroup } from '@/controllers/productGroupController';
 
 const router = Router();
 
@@ -18,6 +19,7 @@ router.get('/', getProducts);
 router.get('/featured', getFeaturedProducts);
 router.get('/new-arrivals', getNewArrivals);
 router.get('/image/:fileId', proxyProductImage);
+router.get('/group/:styleCode', getProductGroup);
 router.get('/:id', getProductById);
 router.get('/slug/:slug', getProductBySlug);
 

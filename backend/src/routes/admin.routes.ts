@@ -23,6 +23,7 @@ import {
   syncProductImages,
   syncAllProductImages,
 } from '@/controllers/admin.controller';
+import { createProductGroup } from '@/controllers/productGroupController';
 
 const router = Router();
 
@@ -30,6 +31,7 @@ const router = Router();
 router.use(authorizeRole(['ADMIN']));
 
 // Product Management
+router.post('/products/group', createProductGroup);
 router.post('/products', createProduct);
 router.get('/products', getProducts);
 router.put('/products/:id', updateProduct);

@@ -51,6 +51,7 @@ export const productApi = {
   getNewArrivals: () => api.get('products/new-arrivals'),
   getHomepageData: () => api.get('products/batch/homepage'),
   getBySlug: (slug: string) => api.get(`products/slug/${slug}`),
+  getGroup: (styleCode: string) => api.get(`products/group/${styleCode}`),
   getRelated: (id: string, categoryId: string) => api.get(`products/related/${id}/${categoryId}`),
   search: (query: string) => api.get(`products/search?q=${query}`),
 };
@@ -66,6 +67,10 @@ export const orderApi = {
 export const adminApi = {
   getStats: () => api.get('admin/dashboard/stats'),
   getAdminProducts: (params?: any) => api.get('admin/products', { params }),
+  createProductGroup: async (data: any) => {
+    const res = await api.post('admin/products/group', data);
+    return res.data;
+  },
   createProduct: async (data: any) => {
     const res = await api.post('admin/products', data);
     return res.data;
