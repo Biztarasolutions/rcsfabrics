@@ -13,7 +13,7 @@ const EMPTY_FORM = {
   basePrice: '',
   description: '',
   minOrderQty: '0.5',
-  variants: [{ color: '', inventory: '', folderUrl: '' }],
+  variants: [{ color: '', inventory: '' }],
 };
 
 export default function CreateProductFamilyPage() {
@@ -61,7 +61,7 @@ export default function CreateProductFamilyPage() {
   const addVariant = () => {
     setForm((prev: any) => ({
       ...prev,
-      variants: [...prev.variants, { color: '', inventory: '', folderUrl: '' }],
+      variants: [...prev.variants, { color: '', inventory: '' }],
     }));
   };
 
@@ -110,7 +110,7 @@ export default function CreateProductFamilyPage() {
             </div>
             
             <div>
-              <label className="mb-1.5 block text-sm font-medium">Code (Number) *</label>
+              <label className="mb-1.5 block text-sm font-medium">Code *</label>
               <input name="code" type="number" value={form.code} onChange={handleChange} placeholder="e.g. 10001" className="input-field w-full" required />
             </div>
             
@@ -153,10 +153,6 @@ export default function CreateProductFamilyPage() {
                   <div>
                     <label className="mb-1 block text-sm font-medium">Inventory (m) *</label>
                     <input type="number" value={variant.inventory} onChange={(e) => handleVariantChange(index, 'inventory', e.target.value)} placeholder="e.g. 15" className="input-field w-full" required />
-                  </div>
-                  <div className="sm:col-span-3">
-                    <label className="mb-1 block text-sm font-medium">Google Drive Folder URL</label>
-                    <input type="url" value={variant.folderUrl} onChange={(e) => handleVariantChange(index, 'folderUrl', e.target.value)} placeholder="https://drive.google.com/..." className="input-field w-full" />
                   </div>
                 </div>
               </div>

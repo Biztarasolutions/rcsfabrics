@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { extractFolderId, getDriveImageStream, fetchFolderImageDetails } from '../utils/googleDrive.util';
+import { getDriveImageStream, fetchFolderImageDetails, findFolderIdByName } from '../utils/googleDrive.util';
 import { uploadImageToSupabase } from '../utils/supabase.util';
 
 const prisma = new PrismaClient();
@@ -40,12 +40,12 @@ const uploadDriveImagesToSupabase = async (folderId: string): Promise<string[]> 
   }
 };
 
-export const syncImagesForProduct = async (productId: string, folderUrl: string) => {
+export const syncImagesForProduct = async (productId: string, productName: string) => {
   try {
-    console.log(`Starting background sync for product ID: ${productId} from folder: ${folderUrl}`);
-    const folderId = extractFolderId(folderUrl);
+    console.log(`Starting background sync for product ID: ${productId} with name: ${productName}`);
+    const folderId = await findFolderIdByName(productName);
     if (!folderId) {
-      console.error(`Invalid folder URL for product ID: ${productId}`);
+      console.error(`Folder not found in Google Drive for product name: ${productName}`);
       return;
     }
 

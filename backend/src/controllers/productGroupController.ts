@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { generateSlug, buildStyleCode } from '../utils/string.util';
+import { generateSlug, buildStyleCode, buildProductCode } from '../utils/string.util';
 import { syncImagesForProduct } from '../services/driveService';
 
 const prisma = new PrismaClient();
@@ -27,7 +27,7 @@ export const createProductGroup = async (req: Request, res: Response): Promise<v
     
     for (const variant of variants) {
       // Name-Category-ProductCode-Color
-      const productName = `${name.trim()}-${categoryName.trim()}-${code ? `P${code}` : styleCode}-${variant.color.trim()}`;
+      const productName = buildProductCode(name, categoryName, variant.color, code);
       const slug = generateSlug(productName);
       
       const newProduct = await prisma.product.create({
@@ -42,17 +42,14 @@ export const createProductGroup = async (req: Request, res: Response): Promise<v
           color: variant.color,
           totalStock: parseFloat(variant.inventory),
           minOrderQty: parseFloat(minOrderQty),
-          folderUrl: variant.folderUrl,
           stretchability: 'Medium', // default or required fields
         }
       });
 
-      // Background Sync for Google Drive
-      if (variant.folderUrl) {
-        syncImagesForProduct(newProduct.id, variant.folderUrl).catch(err => {
-          console.error('Background sync failed:', err);
-        });
-      }
+      // Background Sync for Google Drive by product name
+      syncImagesForProduct(newProduct.id, productName).catch(err => {
+        console.error('Background sync failed:', err);
+      });
 
       // Also create ProductColor record for consistency if needed
       await prisma.productColor.create({

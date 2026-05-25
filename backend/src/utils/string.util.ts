@@ -53,14 +53,14 @@ export const formatProductCodeSuffix = (code: number | string): string => `P${co
 export const buildStyleCode = (name: string, categoryName: string, code: number | string): string =>
   `${name.trim()}-${categoryName.trim()}-${formatProductCodeSuffix(code)}`;
 
-/** Product code: Name-Category-Color-Code (e.g. Polka Dot-Satin-White-P10001) */
+/** Product code: Name-Category-Code-Color (e.g. Polka Dot-Satin-P10001-White) */
 export const buildProductCode = (
   name: string,
   categoryName: string,
   colorName: string,
   code: number | string
 ): string =>
-  `${name.trim()}-${categoryName.trim()}-${colorName.trim()}-${formatProductCodeSuffix(code)}`;
+  `${name.trim()}-${categoryName.trim()}-${formatProductCodeSuffix(code)}-${colorName.trim()}`;
 
 /** Legacy style code: 101-SAT-POL */
 export const buildLegacyStyleCode = (
