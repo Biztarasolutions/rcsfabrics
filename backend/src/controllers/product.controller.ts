@@ -90,6 +90,7 @@ export const getProducts = async (
       statusCode: 200,
     } as ApiResponse);
   } catch (error) {
+    console.error('Error in getProducts:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to retrieve products',
