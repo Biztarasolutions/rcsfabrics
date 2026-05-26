@@ -195,7 +195,7 @@ export default function AdminProductsPage() {
                               key={idx}
                               className="h-5 w-5 rounded-full border border-gray-300"
                               style={{ backgroundColor: color.hexCode }}
-                              title={`${color.name} (${product.variants?.[idx]?.totalStock || 0}m)`}
+                              title={`${color.name} (${color.inventory || 0}m)`}
                             />
                           ))}
                         </div>
