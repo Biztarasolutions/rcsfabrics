@@ -36,14 +36,23 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
     }
   }, [initialProduct]);
 
-  // Sync selected variant with URL
+  // Load full data for selected variant if needed
+  useEffect(() => {
+    if (selectedVariant && (!selectedVariant.images || selectedVariant.images.length === 0) && selectedVariant.slug) {
+      productApi.getBySlug(selectedVariant.slug).then(res => {
+        setSelectedVariant(res.data.data);
+      }).catch(err => console.error('Failed to fetch variant data:', err));
+    }
+  }, [selectedVariant?.slug]);
+
+  // Sync selected variant with URL using Next.js router
   useEffect(() => {
     if (selectedVariant && selectedVariant.slug !== params.slug) {
-      window.history.replaceState(null, '', `/products/${selectedVariant.slug}`);
+      router.replace(`/products/${selectedVariant.slug}`);
     }
     // reset active image on variant switch
     setActiveImg(0);
-  }, [selectedVariant, params.slug]);
+  }, [selectedVariant, params.slug, router]);
 
   const { addItem } = useCartStore();
   const { addItem: addWish, removeItem: removeWish, hasItem } = useWishlistStore();
@@ -52,6 +61,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
   if (isProductError || !initialProduct) return <div className="flex min-h-screen items-center justify-center text-center py-20"><div><p className="text-6xl">🧶</p><h2 className="mt-4 text-2xl font-bold">Product not found</h2><button onClick={() => router.back()} className="button-primary mt-6 px-8 py-3">Go Back</button></div></div>;
 
   const PRODUCT = selectedVariant || initialProduct;
+  const images = PRODUCT.images ?? [];
   const isWishlisted = hasItem(PRODUCT.id);
   const price = PRODUCT.discountPrice || PRODUCT.basePrice;
   const discount = PRODUCT.discountPrice ? calculateDiscount(PRODUCT.basePrice, PRODUCT.discountPrice) : 0;
@@ -101,7 +111,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
           <div className="space-y-4">
             <div className="relative overflow-hidden rounded-2xl bg-gray-50 dark:bg-dark-800" style={{ aspectRatio: '1' }}
               onMouseEnter={() => setZoomed(true)} onMouseLeave={() => setZoomed(false)}>
-              <Image src={PRODUCT.images?.[activeImg]?.url || 'https://via.placeholder.com/800'} alt={PRODUCT.name}
+              <Image src={images?.[activeImg]?.url || 'https://via.placeholder.com/800'} alt={PRODUCT.name}
                 fill priority sizes="(max-width: 1024px) 100vw, 50vw" className={`object-cover transition-transform duration-500 ${zoomed ? 'scale-125' : 'scale-100'}`}/>
               {PRODUCT.discountPrice && (
                 <div className="absolute left-4 top-4 rounded-full bg-red-500 px-3 py-1 text-sm font-bold text-white">
@@ -114,7 +124,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
             </div>
             {/* Thumbnails */}
             <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-              {PRODUCT.images?.map((img: any, i: number) => (
+              {images?.map((img: any, i: number) => (
                 <button key={img.id} onClick={() => setActiveImg(i)}
                   className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border-2 transition-all ${i === activeImg ? 'border-primary-500 shadow-md' : 'border-gray-200 dark:border-dark-700 hover:border-primary-300'}`}>
                   <Image src={img.url} alt={`View ${i + 1}`} fill sizes="80px" className="object-cover"/>

@@ -394,7 +394,7 @@ export const createProduct = async (
 
       // Sync images automatically using productCode folder matching
       try {
-        await syncImagesForProduct(product, category.name);
+        await syncImagesForProduct(product.id, product.productCode || product.name);
       } catch (syncErr: any) {
         console.warn(`[Create] Image auto-sync skipped for variant "${colorVar.productCode}":`, syncErr.message || syncErr);
       }
