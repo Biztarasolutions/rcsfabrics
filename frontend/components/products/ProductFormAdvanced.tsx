@@ -327,7 +327,7 @@ export default function ProductFormAdvanced({ initialData, onClose }: ProductFor
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-xs font-medium">Hex Code</label>
+                  <label className="mb-1 block text-xs font-medium">Hex Code ({color.hexCode})</label>
                   <div className="flex gap-2">
                     <input type="color" value={color.hexCode} onChange={(e) => handleColorChange(index, 'hexCode', e.target.value)} className="h-10 w-12 rounded-lg border border-gray-200 dark:border-dark-600" />
                     <input type="text" value={color.hexCode} onChange={(e) => handleColorChange(index, 'hexCode', e.target.value)} placeholder="#000000" className="input-field flex-1" />
