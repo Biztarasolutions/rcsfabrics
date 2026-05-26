@@ -192,6 +192,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
                         className="flex h-11 w-11 items-center justify-center text-lg font-bold text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-dark-700 transition-colors">−</button>
                       <input type="number" value={qty} min={PRODUCT.minOrderQty || 0.5} step={0.5}
                         onChange={(e) => setQty(Math.max(PRODUCT.minOrderQty || 0.5, parseFloat(e.target.value) || PRODUCT.minOrderQty || 0.5))}
+                        onWheel={(e) => (e.target as HTMLInputElement).blur()}
                         className="h-11 w-20 bg-white text-center text-base font-semibold dark:bg-dark-800 dark:text-white focus:outline-none"/>
                       <button onClick={() => setQty(Math.min(PRODUCT.totalStock, qty + 0.5))}
                         className="flex h-11 w-11 items-center justify-center text-lg font-bold text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-dark-700 transition-colors">+</button>

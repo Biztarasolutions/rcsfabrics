@@ -81,6 +81,7 @@ const mutation = useMutation<any, Error, any>({
         name="basePrice"
         value={formData.basePrice}
         onChange={handleChange}
+        onWheel={(e) => (e.target as HTMLInputElement).blur()}
         placeholder="Base Price"
         required
       />
@@ -97,6 +98,7 @@ const mutation = useMutation<any, Error, any>({
         name="stock"
         value={formData.stock}
         onChange={handleChange}
+        onWheel={(e) => (e.target as HTMLInputElement).blur()}
         placeholder="Stock"
         required
       />

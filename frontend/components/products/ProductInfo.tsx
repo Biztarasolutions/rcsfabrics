@@ -87,6 +87,7 @@ export default function ProductInfo({
             step="0.5"
             value={quantity}
             onChange={(e) => onQuantityChange(parseFloat(e.target.value))}
+            onWheel={(e) => (e.target as HTMLInputElement).blur()}
             className="w-24 rounded-lg border border-gray-300 px-4 py-2 dark:border-dark-700 dark:bg-dark-800"
           />
           <span className="text-sm text-gray-600 dark:text-gray-400">
