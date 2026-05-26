@@ -31,7 +31,10 @@ const COLOR_NAME_TO_HEX: Record<string, string> = {
 };
 
 const HEX_TO_COLOR_NAME = Object.fromEntries(
-  Object.entries(COLOR_NAME_TO_HEX).map(([name, hex]) => [hex.toUpperCase(), name])
+  Object.entries(COLOR_NAME_TO_HEX).map(([name, hex]) => [
+    hex.toUpperCase(), 
+    name.charAt(0) + name.slice(1).toLowerCase()
+  ])
 );
 
 const normalizeHex = (value: string) => {
