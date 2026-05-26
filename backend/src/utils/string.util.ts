@@ -106,3 +106,17 @@ export const getDriveFolderNameCandidates = (opts: {
 
   return [...seen];
 };
+
+/**
+ * Extracts and cleans the core design/product name by removing category, code and color suffixes.
+ * E.g., "Polka Dot-Satin-P10001-White" -> "Polka Dot"
+ */
+export const extractDesignName = (name: string, categoryName: string, code: number | string): string => {
+  let cleaned = name.trim();
+  const suffix = `-${categoryName.trim()}-${formatProductCodeSuffix(code)}`;
+  if (cleaned.includes(suffix)) {
+    cleaned = cleaned.split(suffix)[0];
+  }
+  return cleaned.trim();
+};
+

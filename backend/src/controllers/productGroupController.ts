@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { generateSlug, buildStyleCode, buildProductCode } from '../utils/string.util';
+import { generateSlug, buildStyleCode, buildProductCode, extractDesignName } from '../utils/string.util';
 import { syncImagesForProduct } from '../services/driveService';
 
 const prisma = new PrismaClient();
@@ -20,24 +20,26 @@ export const createProductGroup = async (req: Request, res: Response): Promise<v
     }
 
     const categoryName = category.name;
-    const styleCode = code ? buildStyleCode(name, categoryName, code) : `P${Date.now()}`; // Or however styleCode is meant to be derived if code is absent
+    const cleanedName = extractDesignName(name, categoryName, code);
+    const styleCode = code ? buildStyleCode(cleanedName, categoryName, code) : `P${Date.now()}`; // Or however styleCode is meant to be derived if code is absent
 
     // Create a product for each variant
     const createdProducts = [];
     
     for (const variant of variants) {
       // Name-Category-ProductCode-Color
-      const productName = buildProductCode(name, categoryName, variant.color, code);
+      const productName = buildProductCode(cleanedName, categoryName, variant.color, code);
       const slug = generateSlug(productName);
       
       const newProduct = await prisma.product.create({
         data: {
-          name: productName,
+          name: cleanedName,
           slug,
           description,
           categoryId,
           code: code ? parseInt(code, 10) : null,
           styleCode,
+          productCode: productName,
           basePrice: parseFloat(basePrice),
           color: variant.color,
           totalStock: parseFloat(variant.inventory),
@@ -57,6 +59,7 @@ export const createProductGroup = async (req: Request, res: Response): Promise<v
           productId: newProduct.id,
           name: variant.color,
           hexCode: '#000000', // Default, should be updated or provided
+          productCode: productName,
           folderUrl: variant.folderUrl
         }
       });

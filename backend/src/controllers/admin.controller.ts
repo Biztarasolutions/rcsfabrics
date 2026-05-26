@@ -7,6 +7,7 @@ import {
   buildStyleCode,
   buildProductCode,
   getDriveFolderNameCandidates,
+  extractDesignName,
 } from '@/utils/string.util';
 import { parsePagination, createPaginationMeta } from '@/utils/pagination.util';
 import { ApiError } from '@/middleware/errorHandler';
@@ -316,12 +317,13 @@ export const createProduct = async (
       throw new ApiError(404, 'Category not found');
     }
 
-    const styleCode = buildStyleCode(name, category.name, code);
+    const cleanedName = extractDesignName(name, category.name, code);
+    const styleCode = buildStyleCode(cleanedName, category.name, code);
 
     let processedColors: any[] = [];
     if (colors && Array.isArray(colors) && colors.length > 0) {
       processedColors = await Promise.all(colors.map(async (color: any) => {
-        const pCode = buildProductCode(name, category.name, color.name || 'Unknown', code);
+        const pCode = buildProductCode(cleanedName, category.name, color.name || 'Unknown', code);
         let fUrl = color.folderUrl?.trim() || '';
         if (fUrl) {
           const folderId = extractFolderId(fUrl);
@@ -330,7 +332,7 @@ export const createProduct = async (
           }
         } else {
           const candidates = getDriveFolderNameCandidates({
-            name,
+            name: cleanedName,
             categoryName: category.name,
             code,
             colorName: color.name || 'Unknown',
@@ -349,12 +351,13 @@ export const createProduct = async (
 
     const product = await prisma.product.create({
       data: {
-        name,
-        slug: generateSlug(name),
+        name: cleanedName,
+        slug: generateSlug(cleanedName),
         description: category.description,
         categoryId,
         code,
         styleCode,
+        productCode: processedColors.length > 0 ? processedColors[0].productCode : null,
         basePrice,
         discountPrice,
         discountType,
@@ -444,17 +447,31 @@ export const updateProduct = async (
 
     // Build the update payload, ensuring numeric fields are properly parsed
     const existingProduct = await prisma.product.findUnique({ where: { id }, include: { category: true } });
+    if (!existingProduct) {
+      throw new ApiError(404, 'Product not found');
+    }
+
+    const categoryName = existingProduct.category?.name || 'Unknown';
+    const productCode = updateData.code ?? existingProduct.code ?? '000';
+
+    // Clean name in case it contains category, code, or color variants
+    let name = updateData.name || existingProduct.name;
+    const cleanedName = extractDesignName(name, categoryName, productCode);
+    if (updateData.name !== undefined) {
+      updateData.name = cleanedName;
+      updateData.slug = generateSlug(cleanedName);
+    }
+
+    // styleCode should also be updated if name or code changes
+    if (updateData.name !== undefined || updateData.code !== undefined) {
+      updateData.styleCode = buildStyleCode(cleanedName, categoryName, productCode);
+    }
     
     let processedColors: any[] | undefined = undefined;
     if (colors !== undefined && Array.isArray(colors)) {
       processedColors = await Promise.all(colors.map(async (c: any) => {
-        let pCode = c.productCode;
-        if (!pCode && existingProduct) {
-          const productName = updateData.name || existingProduct.name;
-          const categoryName = existingProduct.category?.name || 'Unknown';
-          const productCode = updateData.code ?? existingProduct.code ?? '000';
-          pCode = buildProductCode(productName, categoryName, c.name || 'Unknown', productCode);
-        }
+        const colorName = c.name?.trim() || 'Unknown';
+        const pCode = buildProductCode(cleanedName, categoryName, colorName, productCode);
         
         let fUrl = c.folderUrl?.trim() || '';
         if (fUrl) {
@@ -462,19 +479,19 @@ export const updateProduct = async (
           if (folderId && (await verifyFolderAccess(folderId))) {
             fUrl = folderUrlFromId(folderId);
           }
-        } else if (pCode && existingProduct) {
+        } else {
           const candidates = getDriveFolderNameCandidates({
-            name: updateData.name || existingProduct.name,
-            categoryName: existingProduct.category?.name || 'Unknown',
-            code: updateData.code ?? existingProduct.code ?? '000',
-            colorName: c.name || 'Unknown',
+            name: cleanedName,
+            categoryName: categoryName,
+            code: productCode,
+            colorName: colorName,
           });
           const match = await findFolderIdByNames([pCode, ...candidates]);
           if (match) fUrl = folderUrlFromId(match.folderId);
         }
         
         return {
-          name:        c.name?.trim(),
+          name:        colorName,
           hexCode:     c.hexCode ? (c.hexCode.startsWith('#') ? c.hexCode : `#${c.hexCode}`) : '#000000',
           folderUrl:   fUrl,
           productCode: pCode,
@@ -490,6 +507,9 @@ export const updateProduct = async (
       ...(updateData.discountValue !== undefined && { discountValue: Number(updateData.discountValue) }),
       ...(updateData.minOrderQty   !== undefined && { minOrderQty:   Number(updateData.minOrderQty) }),
       ...(updateData.totalStock    !== undefined && { totalStock:    Number(updateData.totalStock) }),
+      ...(processedColors !== undefined && {
+        productCode: processedColors.length > 0 ? processedColors[0].productCode : null,
+      }),
       ...(updateData.discountPrice !== undefined && {
         discountPrice: updateData.discountPrice !== null && updateData.discountPrice !== ""
           ? Number(updateData.discountPrice)

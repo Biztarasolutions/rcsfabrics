@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api';
 import toast from 'react-hot-toast';
-import { buildStyleCode, buildProductCode } from '@/lib/utils';
+import { buildStyleCode, buildProductCode, extractDesignName } from '@/lib/utils';
 
 const COLOR_NAME_TO_HEX: Record<string, string> = {
   RED: '#FF0000',
@@ -69,27 +69,37 @@ export default function ProductFormAdvanced({ initialData, onClose }: ProductFor
   const [form, setForm] = useState<any>(EMPTY_FORM);
   const [styleCode, setStyleCode] = useState('');
 
-  // Load initial data for edit mode
-  useEffect(() => {
-    if (initialData) {
-      // Populate form with existing product fields (excluding read‑only derived fields)
-      setForm({
-        ...EMPTY_FORM,
-        ...initialData,
-        // Ensure colors array exists
-        colors: initialData.colors?.map((c: any) => ({
-          name: c.name,
-          hexCode: c.hexCode,
-          folderUrl: c.folderUrl || '',
-        })) || [{ name: '', hexCode: '#000000', folderUrl: '' }],
-      });
-    }
-  }, [initialData]);
-
   const { data: categories = [] } = useQuery({
     queryKey: ['admin-categories-list'],
     queryFn: () => adminApi.getCategories().then(res => res.data.data || []),
   });
+
+  // Load initial data for edit mode
+  useEffect(() => {
+    if (initialData) {
+      // Find the category to clean the name if needed
+      const cat = categories.find((c: any) => c.id === initialData.categoryId);
+      const catName = cat?.name || '';
+      let cleanedName = initialData.name || '';
+      if (catName && initialData.code) {
+        cleanedName = extractDesignName(cleanedName, catName, initialData.code);
+      }
+
+      // Populate form with existing product fields (excluding read‑only derived fields)
+      setForm({
+        ...EMPTY_FORM,
+        ...initialData,
+        name: cleanedName,
+        // Ensure colors array exists and includes productCode
+        colors: initialData.colors?.map((c: any) => ({
+          name: c.name,
+          hexCode: c.hexCode,
+          productCode: c.productCode,
+          folderUrl: c.folderUrl || '',
+        })) || [{ name: '', hexCode: '#000000', folderUrl: '' }],
+      });
+    }
+  }, [initialData, categories]);
 
   const selectedCategory = categories.find((c: any) => c.id === form.categoryId);
 

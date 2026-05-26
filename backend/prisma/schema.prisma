@@ -119,6 +119,7 @@ model Product {
   bestFor         String[]            @default([])
   properties      String[]            @default([])
   sku             String?             @unique @db.VarChar(100)
+  productCode     String?             @db.VarChar(150)
   folderUrl       String?
   rating          Float               @default(0)
   ratingCount     Int                 @default(0)
