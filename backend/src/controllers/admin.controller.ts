@@ -199,6 +199,13 @@ const collectProductCodesForSync = (
   return [...codes];
 };
 
+const syncImagesForProduct = async (
+  product: ProductWithColors,
+  categoryName: string
+): Promise<number> => {
+  const folderIds = await collectFolderIdsForProduct(product, categoryName);
+  const productCodes = collectProductCodesForSync(product, categoryName);
+
   const supabaseUrls: string[] = [];
   const uploadedFileIds = new Set<string>();
   const syncedFolderIds = new Set<string>();
@@ -462,6 +469,39 @@ export const updateProduct = async (
       ...updateData 
     } = req.body;
 
+    // Whitelist allowed fields to prevent extra properties like workType or variants from reaching Prisma
+    const allowedFields = [
+      'name', 'categoryId', 'code', 'basePrice', 'discountPrice', 'discountPercent', 'discountType',
+      'discountValue', 'width', 'pattern', 'occasion', 'color', 'stretchability',
+      'totalStock', 'minOrderQty', 'bestFor', 'properties', 'sku', 'productCode', 'folderUrl',
+      'rating', 'ratingCount', 'isActive', 'isFeatured', 'isNew', 'description', 'styleCode', 'slug'
+    ];
+
+    const cleanedUpdateData = {} as any;
+    for (const key of allowedFields) {
+      if (key in updateData) {
+        let value = updateData[key];
+        
+        // Skip null/undefined/empty-string for required fields to avoid database constraint violations
+        if (['name', 'categoryId', 'code', 'basePrice', 'width', 'pattern', 'color', 'stretchability', 'totalStock', 'minOrderQty'].includes(key)) {
+          if (value === null || value === undefined || value === '') {
+            continue;
+          }
+        }
+        
+        // Convert numeric fields
+        if (['code', 'basePrice', 'discountPrice', 'discountPercent', 'discountValue', 'width', 'totalStock', 'minOrderQty', 'rating', 'ratingCount'].includes(key)) {
+          if (value !== null && value !== undefined && value !== '') {
+            value = Number(value);
+          } else {
+            value = null;
+          }
+        }
+        
+        cleanedUpdateData[key] = value;
+      }
+    }
+
     // Build the update payload, ensuring numeric fields are properly parsed
     const existingProduct = await prisma.product.findUnique({ where: { id }, include: { category: true } });
     if (!existingProduct) {
@@ -469,19 +509,19 @@ export const updateProduct = async (
     }
 
     const categoryName = existingProduct.category?.name || 'Unknown';
-    const productCode = updateData.code ?? existingProduct.code ?? '000';
+    const productCode = cleanedUpdateData.code ?? existingProduct.code ?? '000';
 
     // Clean name in case it contains category, code, or color variants
-    let name = updateData.name || existingProduct.name;
+    let name = cleanedUpdateData.name || existingProduct.name;
     const cleanedName = extractDesignName(name, categoryName, productCode);
-    if (updateData.name !== undefined) {
-      updateData.name = cleanedName;
-      updateData.slug = generateSlug(cleanedName);
+    if (cleanedUpdateData.name !== undefined) {
+      cleanedUpdateData.name = cleanedName;
+      cleanedUpdateData.slug = generateSlug(cleanedName);
     }
 
     // styleCode should also be updated if name or code changes
-    if (updateData.name !== undefined || updateData.code !== undefined) {
-      updateData.styleCode = buildStyleCode(cleanedName, categoryName, productCode);
+    if (cleanedUpdateData.name !== undefined || cleanedUpdateData.code !== undefined) {
+      cleanedUpdateData.styleCode = buildStyleCode(cleanedName, categoryName, productCode);
     }
     
     let processedColors: any[] | undefined = undefined;
@@ -510,7 +550,7 @@ export const updateProduct = async (
       }));
     }
 
-    const styleCodeToUpdate = updateData.styleCode || existingProduct.styleCode;
+    const styleCodeToUpdate = cleanedUpdateData.styleCode || existingProduct.styleCode;
 
     if (processedColors !== undefined && styleCodeToUpdate) {
       // Synchronize all variants for this styleCode
@@ -528,16 +568,8 @@ export const updateProduct = async (
 
       // Base payload common to all variants
       const basePayload: any = {
-        ...updateData,
+        ...cleanedUpdateData,
         folderUrl,
-        ...(updateData.basePrice     !== undefined && { basePrice:     Number(updateData.basePrice) }),
-        ...(updateData.discountValue !== undefined && { discountValue: Number(updateData.discountValue) }),
-        ...(updateData.minOrderQty   !== undefined && { minOrderQty:   Number(updateData.minOrderQty) }),
-        ...(updateData.discountPrice !== undefined && {
-          discountPrice: updateData.discountPrice !== null && updateData.discountPrice !== ""
-            ? Number(updateData.discountPrice)
-            : null,
-        }),
       };
 
       // Update existing or create new variants
@@ -582,29 +614,9 @@ export const updateProduct = async (
       }
     } else {
       // Fallback for single product update without colors array
-      // Build a whitelist of allowed fields and convert numeric values
-      const allowedFields = [
-        'name', 'categoryId', 'code', 'basePrice', 'discountPrice', 'discountPercent', 'discountType',
-        'discountValue', 'width', 'pattern', 'occasion', 'color', 'stretchability',
-        'totalStock', 'minOrderQty', 'bestFor', 'properties', 'sku', 'productCode', 'folderUrl',
-        'rating', 'ratingCount', 'isActive', 'isFeatured', 'isNew', 'description', 'styleCode'
-      ];
-      const cleanedData = {} as any;
-      for (const key of allowedFields) {
-        if (key in updateData) {
-          let value = (updateData as any)[key];
-          if (value === null || value === undefined) continue; // skip nulls
-          // Convert known numeric fields
-          if (['code', 'basePrice', 'discountPrice', 'discountPercent', 'discountValue', 'width', 'totalStock', 'minOrderQty', 'rating', 'ratingCount'].includes(key)) {
-            value = Number(value);
-          }
-          cleanedData[key] = value;
-        }
-      }
-
       await prisma.product.update({
         where: { id },
-        data: cleanedData,
+        data: cleanedUpdateData,
       });
     }
 

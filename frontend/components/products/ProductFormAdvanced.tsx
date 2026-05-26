@@ -85,10 +85,18 @@ export default function ProductFormAdvanced({ initialData, onClose }: ProductFor
         cleanedName = extractDesignName(cleanedName, catName, initialData.code);
       }
 
+      // Sanitize fields from initialData to prevent null values for required keys
+      const sanitizedInitialData = { ...initialData };
+      for (const key of Object.keys(EMPTY_FORM)) {
+        if (sanitizedInitialData[key] === null || sanitizedInitialData[key] === undefined) {
+          sanitizedInitialData[key] = (EMPTY_FORM as any)[key];
+        }
+      }
+
       // Populate form with existing product fields (excluding read‑only derived fields)
       setForm({
         ...EMPTY_FORM,
-        ...initialData,
+        ...sanitizedInitialData,
         name: cleanedName,
         // Ensure colors array exists and includes productCode and inventory from all variants
         colors: initialData.variants?.map((v: any) => ({
@@ -180,13 +188,18 @@ export default function ProductFormAdvanced({ initialData, onClose }: ProductFor
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const payload = {
-      ...form,
+      name: form.name,
+      categoryId: form.categoryId,
+      code: form.code ? Number(form.code) : undefined,
       basePrice: Number(form.basePrice),
+      discountType: form.discountType || undefined,
       discountValue: form.discountValue ? Number(form.discountValue) : undefined,
       width: form.width ? Number(form.width) : undefined,
-      code: form.code ? Number(form.code) : undefined,
+      pattern: form.pattern,
+      stretchability: form.stretchability,
       minOrderQty: Number(form.minOrderQty),
       styleCode,
+      colors: form.colors,
     };
     if (initialData) {
       updateMutation.mutate(payload);
