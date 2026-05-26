@@ -505,46 +505,97 @@ export const updateProduct = async (
       }));
     }
 
-    // Map first variant's color/inventory/productCode onto the Product row
-    const firstColor = processedColors && processedColors.length > 0 ? processedColors[0] : null;
+    const styleCodeToUpdate = updateData.styleCode || existingProduct.styleCode;
 
-    const dataPayload: any = {
-      ...updateData,
-      folderUrl,
-      // Convert to numbers so Prisma Float doesn't reject string inputs
-      ...(updateData.basePrice     !== undefined && { basePrice:     Number(updateData.basePrice) }),
-      ...(updateData.discountValue !== undefined && { discountValue: Number(updateData.discountValue) }),
-      ...(updateData.minOrderQty   !== undefined && { minOrderQty:   Number(updateData.minOrderQty) }),
-      // Use variant inventory as totalStock
-      ...(firstColor !== null && {
-        totalStock:  firstColor.inventory,
-        color:       firstColor.name,
-        productCode: firstColor.productCode,
-      }),
-      ...(updateData.discountPrice !== undefined && {
-        discountPrice: updateData.discountPrice !== null && updateData.discountPrice !== ""
-          ? Number(updateData.discountPrice)
-          : null,
-      }),
-      // Handle colors as a nested Prisma relation write
-      ...(processedColors !== undefined && {
-        colors: {
-          deleteMany: {},   // remove existing colours
-          create: processedColors.map(c => ({
-            name: c.name,
-            hexCode: c.hexCode,
-            folderUrl: c.folderUrl,
-            productCode: c.productCode,
-          })),
-        },
-      }),
-    };
+    if (processedColors !== undefined && styleCodeToUpdate) {
+      // Synchronize all variants for this styleCode
+      const existingVariants = await prisma.product.findMany({
+        where: { styleCode: styleCodeToUpdate }
+      });
 
-    const product = await prisma.product.update({
-      where: { id },
-      data: dataPayload,
-      include: { colors: true },
-    });
+      const processedProductCodes = processedColors.map(c => c.productCode);
+
+      // Delete variants that were removed
+      const variantsToDelete = existingVariants.filter(v => !processedProductCodes.includes(v.productCode));
+      for (const v of variantsToDelete) {
+        await prisma.product.delete({ where: { id: v.id } });
+      }
+
+      // Base payload common to all variants
+      const basePayload: any = {
+        ...updateData,
+        folderUrl,
+        ...(updateData.basePrice     !== undefined && { basePrice:     Number(updateData.basePrice) }),
+        ...(updateData.discountValue !== undefined && { discountValue: Number(updateData.discountValue) }),
+        ...(updateData.minOrderQty   !== undefined && { minOrderQty:   Number(updateData.minOrderQty) }),
+        ...(updateData.discountPrice !== undefined && {
+          discountPrice: updateData.discountPrice !== null && updateData.discountPrice !== ""
+            ? Number(updateData.discountPrice)
+            : null,
+        }),
+      };
+
+      // Update existing or create new variants
+      for (const c of processedColors) {
+        const existing = existingVariants.find(v => v.productCode === c.productCode);
+        const variantData = {
+          ...basePayload,
+          totalStock: c.inventory,
+          color: c.name,
+          productCode: c.productCode,
+          colors: {
+            deleteMany: {},
+            create: [{
+              name: c.name,
+              hexCode: c.hexCode,
+              folderUrl: c.folderUrl,
+              productCode: c.productCode,
+            }]
+          }
+        };
+
+        if (existing) {
+          await prisma.product.update({
+            where: { id: existing.id },
+            data: variantData
+          });
+        } else {
+          // Create new variant
+          const newSlug = generateSlug(buildProductCode(cleanedName, categoryName, c.name, productCode));
+          await prisma.product.create({
+            data: {
+              ...variantData,
+              name: cleanedName,
+              categoryId: existingProduct.categoryId,
+              code: Number(productCode),
+              styleCode: styleCodeToUpdate,
+              slug: newSlug,
+              stretchability: existingProduct.stretchability || 'Non-Stretch',
+            }
+          });
+        }
+      }
+    } else {
+      // Fallback for single product update without colors array
+      const dataPayload: any = {
+        ...updateData,
+        folderUrl,
+        ...(updateData.basePrice     !== undefined && { basePrice:     Number(updateData.basePrice) }),
+        ...(updateData.discountValue !== undefined && { discountValue: Number(updateData.discountValue) }),
+        ...(updateData.minOrderQty   !== undefined && { minOrderQty:   Number(updateData.minOrderQty) }),
+        ...(updateData.discountPrice !== undefined && {
+          discountPrice: updateData.discountPrice !== null && updateData.discountPrice !== ""
+            ? Number(updateData.discountPrice)
+            : null,
+        }),
+      };
+      await prisma.product.update({
+        where: { id },
+        data: dataPayload,
+      });
+    }
+
+    const product = await prisma.product.findUnique({ where: { id }, include: { colors: true } });
 
     let finalImageUrls: string[] | null = null;
     if (folderUrl) {
@@ -659,25 +710,65 @@ export const getAdminProducts = async (
       ];
     }
 
-    const [products, total] = await Promise.all([
-      prisma.product.findMany({
-        where,
-        include: {
-          images: {
-            where: { isMain: true },
-            take: 1,
-          },
-          category: {
-            select: { name: true, id: true },
-          },
-          colors: true,
+    // Step 1: Paginate by styleCode
+    const groupedStyles = await prisma.product.groupBy({
+      by: ['styleCode'],
+      where: {
+        ...where,
+        styleCode: { not: null },
+      },
+      _min: { createdAt: true },
+      orderBy: { _min: { createdAt: 'desc' } },
+      skip,
+      take: parsedLimit,
+    });
+
+    const styleCodes = groupedStyles.map(g => g.styleCode).filter(Boolean) as string[];
+
+    const totalGroups = await prisma.product.groupBy({
+      by: ['styleCode'],
+      where: {
+        ...where,
+        styleCode: { not: null },
+      },
+    });
+    const total = totalGroups.length;
+
+    // Step 2: Fetch all variants for these styleCodes
+    const flatProducts = await prisma.product.findMany({
+      where: { styleCode: { in: styleCodes } },
+      include: {
+        images: {
+          where: { isMain: true },
+          take: 1,
         },
-        skip,
-        take: parsedLimit,
-        orderBy: { createdAt: 'desc' },
-      }),
-      prisma.product.count({ where }),
-    ]);
+        category: {
+          select: { name: true, id: true },
+        },
+        colors: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Step 3: Group them into a single row per styleCode
+    const groupedProductsMap = new Map();
+    for (const p of flatProducts) {
+      if (!p.styleCode) continue;
+      if (!groupedProductsMap.has(p.styleCode)) {
+        groupedProductsMap.set(p.styleCode, {
+          ...p,
+          variants: [p],
+          colors: [...p.colors], // start with its own color
+        });
+      } else {
+        const group = groupedProductsMap.get(p.styleCode);
+        group.variants.push(p);
+        group.totalStock += p.totalStock; // Aggregate stock
+        group.colors.push(...p.colors); // Aggregate colors
+      }
+    }
+
+    const products = Array.from(groupedProductsMap.values());
 
     const meta = createPaginationMeta(total, parsedPage, parsedLimit);
 

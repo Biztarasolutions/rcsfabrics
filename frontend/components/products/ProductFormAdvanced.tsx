@@ -88,12 +88,12 @@ export default function ProductFormAdvanced({ initialData, onClose }: ProductFor
         ...EMPTY_FORM,
         ...initialData,
         name: cleanedName,
-        // Ensure colors array exists and includes productCode and inventory
-        colors: initialData.colors?.map((c: any) => ({
-          name: c.name,
-          hexCode: c.hexCode,
-          productCode: c.productCode,
-          inventory: String(initialData.totalStock || ''),
+        // Ensure colors array exists and includes productCode and inventory from all variants
+        colors: initialData.variants?.map((v: any) => ({
+          name: v.colors?.[0]?.name || v.color,
+          hexCode: v.colors?.[0]?.hexCode || '#000000',
+          productCode: v.productCode,
+          inventory: String(v.totalStock || '0'),
         })) || [{ name: '', hexCode: '#000000', inventory: '' }],
       });
     }
@@ -293,19 +293,17 @@ export default function ProductFormAdvanced({ initialData, onClose }: ProductFor
           <div>
             <h3 className="text-lg font-bold">Color Variants</h3>
             <p className="text-sm text-gray-500">
-              {initialData ? "Editing the current variant." : "Add product colors after Name, Category, and Code are set."}
+              {initialData ? "Editing the variants for this style group." : "Add product colors after Name, Category, and Code are set."}
             </p>
           </div>
-          {!initialData && (
-            <button
-              type="button"
-              onClick={addColor}
-              disabled={!form.name || !form.categoryId || !form.code}
-              className="button-secondary px-3 py-1.5 text-sm disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              + Add Color
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={addColor}
+            disabled={!form.name || !form.categoryId || !form.code}
+            className="button-secondary px-3 py-1.5 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            + Add Color
+          </button>
         </div>
         <div className="space-y-4">
           {form.colors.map((color: any, index: number) => (

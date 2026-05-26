@@ -60,13 +60,7 @@ export default function AdminProductsPage() {
     syncAllMutation.mutate();
   };
 
-  const getStoredProductCodes = (product: any): string => {
-    const codes = (product.colors || [])
-      .map((c: any) => c.productCode)
-      .filter((c: string | undefined) => Boolean(c));
-    if (codes.length === 0) return '—';
-    return codes.join(', ');
-  };
+
 
   return (
     <div className="min-w-0 w-full max-w-full space-y-6">
@@ -115,7 +109,6 @@ export default function AdminProductsPage() {
             <thead className="border-b border-gray-100 dark:border-dark-700 bg-gray-50 dark:bg-dark-700/50">
               <tr className="text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                 <th className="px-3 py-2.5 min-w-[280px]">Product</th>
-                <th className="px-3 py-2.5 min-w-[200px]">Product Code</th>
                 <th className="px-3 py-2.5 min-w-[120px]">Style Code</th>
                 <th className="px-3 py-2.5 min-w-[100px]">Category</th>
                 <th className="px-3 py-2.5 min-w-[90px]">Price</th>
@@ -127,13 +120,13 @@ export default function AdminProductsPage() {
             <tbody className="divide-y divide-gray-50 dark:divide-dark-700">
               {isLoading ? (
                 <tr>
-                  <td colSpan={8} className="py-10 text-center text-gray-500">
+                  <td colSpan={7} className="py-10 text-center text-gray-500">
                     Loading products...
                   </td>
                 </tr>
               ) : products.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-10 text-center text-gray-500">
+                  <td colSpan={7} className="py-10 text-center text-gray-500">
                     No products found. Create your first product!
                   </td>
                 </tr>
@@ -164,11 +157,7 @@ export default function AdminProductsPage() {
                       </div>
                     </td>
 
-                    <td className="px-3 py-2 text-xs text-gray-700 dark:text-gray-300 max-w-[200px]">
-                      <span className="block truncate" title={getStoredProductCodes(product)}>
-                        {getStoredProductCodes(product)}
-                      </span>
-                    </td>
+
 
                     <td className="px-3 py-2 text-xs">
                       <span className="block truncate max-w-[200px] text-blue-700 dark:text-blue-400" title={product.styleCode || ''}>
@@ -209,7 +198,7 @@ export default function AdminProductsPage() {
                               key={idx}
                               className="h-5 w-5 rounded-full border border-gray-300"
                               style={{ backgroundColor: color.hexCode }}
-                              title={color.name}
+                              title={`${color.name} (${product.variants?.[idx]?.totalStock || 0}m)`}
                             />
                           ))}
                         </div>
