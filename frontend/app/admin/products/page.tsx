@@ -110,7 +110,6 @@ export default function AdminProductsPage() {
               <tr className="text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                 <th className="px-3 py-2.5 min-w-[280px]">Product</th>
                 <th className="px-3 py-2.5 min-w-[120px]">Style Code</th>
-                <th className="px-3 py-2.5 min-w-[120px]">Hex Code</th>
                 <th className="px-3 py-2.5 min-w-[90px]">Price</th>
                 <th className="px-3 py-2.5 min-w-[80px]">Stock</th>
                 <th className="px-3 py-2.5 min-w-[70px]">Colors</th>
@@ -120,13 +119,13 @@ export default function AdminProductsPage() {
             <tbody className="divide-y divide-gray-50 dark:divide-dark-700">
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="py-10 text-center text-gray-500">
+                  <td colSpan={6} className="py-10 text-center text-gray-500">
                     Loading products...
                   </td>
                 </tr>
               ) : products.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-10 text-center text-gray-500">
+                  <td colSpan={6} className="py-10 text-center text-gray-500">
                     No products found. Create your first product!
                   </td>
                 </tr>
@@ -165,15 +164,7 @@ export default function AdminProductsPage() {
                       </span>
                     </td>
 
-                    <td className="px-3 py-2.5 text-xs">
-                      <span className="font-semibold text-gray-900 dark:text-white">
-                        {product.colors.map((c: any, idx: number) => (
-                          <span key={idx} className="block" title={c.name}>
-                            {c.hexCode}
-                          </span>
-                        ))}
-                      </span>
-                    </td>
+
 
                     <td className="px-3 py-2 text-xs">
                       <span className="font-semibold text-gray-900 dark:text-white">
