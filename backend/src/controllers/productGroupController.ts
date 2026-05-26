@@ -45,6 +45,8 @@ export const createProductGroup = async (req: Request, res: Response): Promise<v
           totalStock: parseFloat(variant.inventory),
           minOrderQty: parseFloat(minOrderQty),
           stretchability: 'Medium', // default or required fields
+          width: variant.width ? parseFloat(variant.width) : 0,
+          pattern: variant.pattern || 'Standard',
         }
       });
 
