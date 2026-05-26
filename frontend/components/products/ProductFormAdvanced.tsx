@@ -226,7 +226,7 @@ export default function ProductFormAdvanced({ initialData, onClose }: ProductFor
           {/* Code */}
           <div>
             <label className="mb-1.5 block text-sm font-medium">Code (Number) *</label>
-            <input name="code" type="number" value={form.code} onChange={handleChange} placeholder="e.g., 101" className="input-field" required />
+            <input name="code" type="number" value={form.code} onChange={handleChange} onWheel={(e) => (e.target as HTMLInputElement).blur()} placeholder="e.g., 101" className="input-field" required />
           </div>
           {/* Style Code Display */}
           <div className="sm:col-span-2">
@@ -242,7 +242,7 @@ export default function ProductFormAdvanced({ initialData, onClose }: ProductFor
           {/* Width */}
           <div>
             <label className="mb-1.5 block text-sm font-medium">Width (inches)</label>
-            <input name="width" type="number" step="0.1" value={form.width} onChange={handleChange} placeholder="e.g., 44" className="input-field" />
+            <input name="width" type="number" step="0.1" value={form.width} onChange={handleChange} onWheel={(e) => (e.target as HTMLInputElement).blur()} placeholder="e.g., 44" className="input-field" />
           </div>
           {/* Work Type */}
           <div>
@@ -264,7 +264,7 @@ export default function ProductFormAdvanced({ initialData, onClose }: ProductFor
           {/* Base Price */}
           <div>
             <label className="mb-1.5 block text-sm font-medium">Base Price (₹/m) *</label>
-            <input name="basePrice" type="number" step="0.01" value={form.basePrice} onChange={handleChange} placeholder="e.g., 1850" className="input-field" required />
+            <input name="basePrice" type="number" step="0.01" value={form.basePrice} onChange={handleChange} onWheel={(e) => (e.target as HTMLInputElement).blur()} placeholder="e.g., 1850" className="input-field" required />
           </div>
           {/* Discount Type & Value */}
           <div>
@@ -276,13 +276,13 @@ export default function ProductFormAdvanced({ initialData, onClose }: ProductFor
           </div>
           <div>
             <label className="mb-1.5 block text-sm font-medium">Discount Value</label>
-            <input name="discountValue" type="number" step="0.01" value={form.discountValue} onChange={handleChange} placeholder={form.discountType === 'percentage' ? 'e.g., 20' : 'e.g., 300'} className="input-field" />
+            <input name="discountValue" type="number" step="0.01" value={form.discountValue} onChange={handleChange} onWheel={(e) => (e.target as HTMLInputElement).blur()} placeholder={form.discountType === 'percentage' ? 'e.g., 20' : 'e.g., 300'} className="input-field" />
           </div>
 
           {/* Min Order */}
           <div>
             <label className="mb-1.5 block text-sm font-medium">Min Order (m)</label>
-            <input name="minOrderQty" type="number" step="0.5" value={form.minOrderQty} onChange={handleChange} placeholder="e.g., 0.5" className="input-field" />
+            <input name="minOrderQty" type="number" step="0.5" value={form.minOrderQty} onChange={handleChange} onWheel={(e) => (e.target as HTMLInputElement).blur()} placeholder="e.g., 0.5" className="input-field" />
           </div>
         </div>
       </div>
@@ -333,7 +333,7 @@ export default function ProductFormAdvanced({ initialData, onClose }: ProductFor
 
                 <div>
                   <label className="mb-1 block text-xs font-medium">Inventory (m) *</label>
-                  <input type="number" step="0.5" value={color.inventory || ''} onChange={(e) => handleColorChange(index, 'inventory', e.target.value)} placeholder="e.g., 25" className="input-field" required />
+                  <input type="number" step="0.5" value={color.inventory || ''} onChange={(e) => handleColorChange(index, 'inventory', e.target.value)} onWheel={(e) => (e.target as HTMLInputElement).blur()} placeholder="e.g., 25" className="input-field" required />
                 </div>
               </div>
             </div>

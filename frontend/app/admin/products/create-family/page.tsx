@@ -111,12 +111,12 @@ export default function CreateProductFamilyPage() {
             
             <div>
               <label className="mb-1.5 block text-sm font-medium">Code *</label>
-              <input name="code" type="number" value={form.code} onChange={handleChange} placeholder="e.g. 10001" className="input-field w-full" required />
+              <input name="code" type="number" value={form.code} onChange={handleChange} onWheel={(e) => (e.target as HTMLInputElement).blur()} placeholder="e.g. 10001" className="input-field w-full" required />
             </div>
             
             <div>
               <label className="mb-1.5 block text-sm font-medium">Base Price (₹/m) *</label>
-              <input name="basePrice" type="number" step="0.01" value={form.basePrice} onChange={handleChange} className="input-field w-full" required />
+              <input name="basePrice" type="number" step="0.01" value={form.basePrice} onChange={handleChange} onWheel={(e) => (e.target as HTMLInputElement).blur()} className="input-field w-full" required />
             </div>
 
             <div className="sm:col-span-2">
@@ -152,7 +152,7 @@ export default function CreateProductFamilyPage() {
                   </div>
                   <div>
                     <label className="mb-1 block text-sm font-medium">Inventory (m) *</label>
-                    <input type="number" value={variant.inventory} onChange={(e) => handleVariantChange(index, 'inventory', e.target.value)} placeholder="e.g. 15" className="input-field w-full" required />
+                    <input type="number" value={variant.inventory} onChange={(e) => handleVariantChange(index, 'inventory', e.target.value)} onWheel={(e) => (e.target as HTMLInputElement).blur()} placeholder="e.g. 15" className="input-field w-full" required />
                   </div>
                 </div>
               </div>
