@@ -454,6 +454,7 @@ export const updateProduct = async (
       imageUrls, 
       folderUrl,
       colors,      // extract colors so we can handle it as a relation
+      variants,    // grouped variants from admin listing – not a Prisma field
       ...updateData 
     } = req.body;
 
