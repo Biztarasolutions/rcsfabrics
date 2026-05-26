@@ -58,9 +58,10 @@ export const createProductGroup = async (req: Request, res: Response): Promise<v
         data: {
           productId: newProduct.id,
           name: variant.color,
-          hexCode: '#000000', // Default, should be updated or provided
+          hexCode: '#000000',
           productCode: productName,
-          folderUrl: variant.folderUrl
+          folderUrl: variant.folderUrl,
+          inventory: parseFloat(variant.inventory) || 0,
         }
       });
 

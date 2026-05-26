@@ -60,14 +60,6 @@ export default function AdminProductsPage() {
     syncAllMutation.mutate();
   };
 
-  const getStoredProductCodes = (product: any): string => {
-    const codes = (product.colors || [])
-      .map((c: any) => c.productCode)
-      .filter((c: string | undefined) => Boolean(c));
-    if (codes.length === 0) return '—';
-    return codes.join(', ');
-  };
-
   return (
     <div className="min-w-0 w-full max-w-full space-y-6">
       {/* Header */}
@@ -114,13 +106,13 @@ export default function AdminProductsPage() {
           <table className="w-max min-w-full text-sm whitespace-nowrap sm:min-w-[1080px]">
             <thead className="border-b border-gray-100 dark:border-dark-700 bg-gray-50 dark:bg-dark-700/50">
               <tr className="text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                <th className="px-3 py-2.5 min-w-[280px]">Product</th>
-                <th className="px-3 py-2.5 min-w-[200px]">Product Code</th>
-                <th className="px-3 py-2.5 min-w-[120px]">Style Code</th>
-                <th className="px-3 py-2.5 min-w-[100px]">Category</th>
-                <th className="px-3 py-2.5 min-w-[90px]">Price</th>
+                <th className="px-3 py-2.5 min-w-[250px]">Name</th>
+                <th className="px-3 py-2.5 min-w-[120px]">Category</th>
+                <th className="px-3 py-2.5 min-w-[140px]">Style Code</th>
                 <th className="px-3 py-2.5 min-w-[80px]">Stock</th>
-                <th className="px-3 py-2.5 min-w-[70px]">Colors</th>
+                <th className="px-3 py-2.5 min-w-[90px]">Price</th>
+                <th className="px-3 py-2.5 min-w-[100px]">After Discount</th>
+                <th className="px-3 py-2.5 min-w-[100px]">Colors</th>
                 <th className="px-3 py-2.5 min-w-[180px] text-right">Actions</th>
               </tr>
             </thead>
@@ -134,15 +126,15 @@ export default function AdminProductsPage() {
               ) : products.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-10 text-center text-gray-500">
-                    No products found. Create your first product!
+                    No products found. Add your first product!
                   </td>
                 </tr>
               ) : (
                 products.map((product: any) => (
                   <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-dark-700/30 transition-colors">
-                    {/* Product Name */}
+                    {/* Name */}
                     <td className="px-3 py-2">
-                      <div className="flex items-center gap-2 max-w-[280px]">
+                      <div className="flex items-center gap-2 max-w-[250px]">
                         <Image 
                           src={product.images?.[0]?.url || 'https://via.placeholder.com/40'} 
                           alt={product.name} 
@@ -159,38 +151,23 @@ export default function AdminProductsPage() {
                               {product.description}
                             </div>
                           )}
-                          <div className="text-[11px] text-gray-400">#{product.code || '—'}</div>
                         </div>
                       </div>
                     </td>
 
-                    <td className="px-3 py-2 text-xs text-gray-700 dark:text-gray-300 max-w-[200px]">
-                      <span className="block truncate" title={getStoredProductCodes(product)}>
-                        {getStoredProductCodes(product)}
-                      </span>
-                    </td>
-
-                    <td className="px-3 py-2 text-xs">
-                      <span className="block truncate max-w-[200px] text-blue-700 dark:text-blue-400" title={product.styleCode || ''}>
-                        {product.styleCode || '—'}
-                      </span>
-                    </td>
-
+                    {/* Category */}
                     <td className="px-3 py-2 text-xs text-gray-600 dark:text-gray-400">
                       {product.category?.name || '—'}
                     </td>
 
+                    {/* Style Code */}
                     <td className="px-3 py-2 text-xs">
-                      <span className="font-semibold text-gray-900 dark:text-white">
-                        {formatPrice(product.discountPrice || product.basePrice)}
+                      <span className="block truncate max-w-[140px] text-blue-700 dark:text-blue-400" title={product.styleCode || ''}>
+                        {product.styleCode || '—'}
                       </span>
-                      {product.discountPrice && (
-                        <span className="ml-1 text-[11px] text-gray-400 line-through">
-                          {formatPrice(product.basePrice)}
-                        </span>
-                      )}
                     </td>
 
+                    {/* Stock */}
                     <td className="px-3 py-2 text-xs">
                       <span className={`font-semibold ${
                         product.totalStock <= 10 
@@ -201,13 +178,32 @@ export default function AdminProductsPage() {
                       </span>
                     </td>
 
+                    {/* Price */}
+                    <td className="px-3 py-2 text-xs">
+                      <span className="font-semibold text-gray-900 dark:text-white">
+                        {formatPrice(product.basePrice)}
+                      </span>
+                    </td>
+
+                    {/* After Discount */}
+                    <td className="px-3 py-2 text-xs">
+                      {product.discountPrice ? (
+                        <span className="font-semibold text-green-700 dark:text-green-400">
+                          {formatPrice(product.discountPrice)}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">—</span>
+                      )}
+                    </td>
+
+                    {/* Colors */}
                     <td className="px-3 py-2 text-xs">
                       {product.colors && product.colors.length > 0 ? (
-                        <div className="flex gap-1">
+                        <div className="flex flex-wrap gap-1">
                           {product.colors.map((color: any, idx: number) => (
                             <div
                               key={idx}
-                              className="h-5 w-5 rounded-full border border-gray-300"
+                              className="h-5 w-5 rounded-full border border-gray-300 shrink-0"
                               style={{ backgroundColor: color.hexCode }}
                               title={color.name}
                             />

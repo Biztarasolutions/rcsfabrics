@@ -386,6 +386,7 @@ export const createProduct = async (
               hexCode: colorVar.hexCode || '#000000',
               productCode: colorVar.productCode,
               folderUrl: colorVar.folderUrl,
+              inventory: colorVar.inventory,
             }
           }
         },
@@ -505,22 +506,22 @@ export const updateProduct = async (
       }));
     }
 
-    // Map first variant's color/inventory/productCode onto the Product row
     const firstColor = processedColors && processedColors.length > 0 ? processedColors[0] : null;
+    const sumInventory = processedColors
+      ? processedColors.reduce((sum: number, c: any) => sum + (Number(c.inventory) || 0), 0)
+      : undefined;
 
     const dataPayload: any = {
       ...updateData,
       folderUrl,
-      // Convert to numbers so Prisma Float doesn't reject string inputs
       ...(updateData.basePrice     !== undefined && { basePrice:     Number(updateData.basePrice) }),
       ...(updateData.discountValue !== undefined && { discountValue: Number(updateData.discountValue) }),
       ...(updateData.minOrderQty   !== undefined && { minOrderQty:   Number(updateData.minOrderQty) }),
-      // Use variant inventory as totalStock
       ...(firstColor !== null && {
-        totalStock:  firstColor.inventory,
         color:       firstColor.name,
         productCode: firstColor.productCode,
       }),
+      ...(sumInventory !== undefined && { totalStock: sumInventory }),
       ...(updateData.discountPrice !== undefined && {
         discountPrice: updateData.discountPrice !== null && updateData.discountPrice !== ""
           ? Number(updateData.discountPrice)
@@ -535,6 +536,7 @@ export const updateProduct = async (
             hexCode: c.hexCode,
             folderUrl: c.folderUrl,
             productCode: c.productCode,
+            inventory: Number(c.inventory) || 0,
           })),
         },
       }),
