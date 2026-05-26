@@ -394,7 +394,20 @@ export const createProduct = async (
 
       // Sync images automatically using productCode folder matching
       try {
-        await syncImagesForProduct(product.id, product.productCode || product.name);
+        const productForSync: ProductWithColors = {
+          id: product.id,
+          name: product.name,
+          code: product.code,
+          styleCode: product.styleCode,
+          folderUrl: product.folderUrl,
+          colors: product.colors.map((c: any) => ({
+            id: c.id,
+            name: c.name,
+            productCode: c.productCode,
+            folderUrl: c.folderUrl,
+          })),
+        };
+        await syncImagesForProduct(productForSync, category.name);
       } catch (syncErr: any) {
         console.warn(`[Create] Image auto-sync skipped for variant "${colorVar.productCode}":`, syncErr.message || syncErr);
       }
@@ -1362,10 +1375,20 @@ export const syncProductImages = async (
       throw new ApiError(404, 'Product not found');
     }
 
-    console.log(`[Sync] Starting image sync for product: ${product.name} (${product.id})`);
-
-    const imageCount = await syncImagesForProduct(product, product.category.name);
-
+    const productForSync: ProductWithColors = {
+      id: product.id,
+      name: product.name,
+      code: product.code,
+      styleCode: product.styleCode,
+      folderUrl: product.folderUrl,
+      colors: product.colors.map((c: any) => ({
+        id: c.id,
+        name: c.name,
+        productCode: c.productCode,
+        folderUrl: c.folderUrl,
+      })),
+    };
+    const imageCount = await syncImagesForProduct(productForSync, product.category.name);
     invalidateProductCaches();
 
     res.json({
@@ -1406,8 +1429,20 @@ export const syncAllProductImages = async (
 
     for (const product of products) {
       try {
-        console.log(`[Sync All] Syncing product: ${product.name}`);
-        await syncImagesForProduct(product, product.category.name);
+        const productForSync: ProductWithColors = {
+          id: product.id,
+          name: product.name,
+          code: product.code,
+          styleCode: product.styleCode,
+          folderUrl: product.folderUrl,
+          colors: product.colors.map((c: any) => ({
+            id: c.id,
+            name: c.name,
+            productCode: c.productCode,
+            folderUrl: c.folderUrl,
+          })),
+        };
+        await syncImagesForProduct(productForSync, product.category.name);
         syncCount++;
       } catch (err: any) {
         console.error(`[Sync All] Failed syncing product "${product.name}":`, err.message);
