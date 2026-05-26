@@ -199,12 +199,6 @@ const collectProductCodesForSync = (
   return [...codes];
 };
 
-const syncImagesForProduct = async (
-  product: ProductWithColors,
-  categoryName: string
-): Promise<number> => {
-  const productCodes = collectProductCodesForSync(product, categoryName);
-  const folderIds = await collectFolderIdsForProduct(product, categoryName);
   const supabaseUrls: string[] = [];
   const uploadedFileIds = new Set<string>();
   const syncedFolderIds = new Set<string>();
@@ -300,7 +294,6 @@ export const createProduct = async (
       discountValue,
       width,
       pattern,
-      workType,
       stretchability,
       minOrderQty,
       colors,
@@ -372,7 +365,6 @@ export const createProduct = async (
           width,
           pattern,
           occasion: category.bestFor?.join(', ') || undefined,
-          workType,
           color: colorVar.name,
           stretchability,
           totalStock: colorVar.inventory,
@@ -590,21 +582,29 @@ export const updateProduct = async (
       }
     } else {
       // Fallback for single product update without colors array
-      const dataPayload: any = {
-        ...updateData,
-        folderUrl,
-        ...(updateData.basePrice     !== undefined && { basePrice:     Number(updateData.basePrice) }),
-        ...(updateData.discountValue !== undefined && { discountValue: Number(updateData.discountValue) }),
-        ...(updateData.minOrderQty   !== undefined && { minOrderQty:   Number(updateData.minOrderQty) }),
-        ...(updateData.discountPrice !== undefined && {
-          discountPrice: updateData.discountPrice !== null && updateData.discountPrice !== ""
-            ? Number(updateData.discountPrice)
-            : null,
-        }),
-      };
+      // Build a whitelist of allowed fields and convert numeric values
+      const allowedFields = [
+        'name', 'categoryId', 'code', 'basePrice', 'discountPrice', 'discountPercent', 'discountType',
+        'discountValue', 'width', 'pattern', 'occasion', 'color', 'stretchability',
+        'totalStock', 'minOrderQty', 'bestFor', 'properties', 'sku', 'productCode', 'folderUrl',
+        'rating', 'ratingCount', 'isActive', 'isFeatured', 'isNew', 'description', 'styleCode'
+      ];
+      const cleanedData = {} as any;
+      for (const key of allowedFields) {
+        if (key in updateData) {
+          let value = (updateData as any)[key];
+          if (value === null || value === undefined) continue; // skip nulls
+          // Convert known numeric fields
+          if (['code', 'basePrice', 'discountPrice', 'discountPercent', 'discountValue', 'width', 'totalStock', 'minOrderQty', 'rating', 'ratingCount'].includes(key)) {
+            value = Number(value);
+          }
+          cleanedData[key] = value;
+        }
+      }
+
       await prisma.product.update({
         where: { id },
-        data: dataPayload,
+        data: cleanedData,
       });
     }
 

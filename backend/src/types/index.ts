@@ -61,10 +61,10 @@ export interface CreateProductInput {
   discountType?: string;
   discountValue?: number | null;
   gsm?: number | null;
-  width?: number | null;
-  pattern?: string | null;
+  width: number;
+  pattern: string;
   occasion?: string | null;
-  workType?: string | null;
+
   color: string;
   stretchability: string;
   totalStock: number;
@@ -93,10 +93,10 @@ export interface UpdateProductInput {
   discountType?: string;
   discountValue?: number | null;
   gsm?: number | null;
-  width?: number | null;
-  pattern?: string | null;
+  width: number;
+  pattern: string;
   occasion?: string | null;
-  workType?: string | null;
+
   color?: string;
   stretchability?: string;
   totalStock?: number;

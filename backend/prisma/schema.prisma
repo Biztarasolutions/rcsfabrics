@@ -108,10 +108,9 @@ model Product {
   discountPercent Float?
   discountType    String?             @db.VarChar(20) // "percentage" or "fixed"
   discountValue   Float?
-  width           Float?
-  pattern         String?             @db.VarChar(100)
+  width           Float
+  pattern         String              @db.VarChar(100)
   occasion        String?             @db.VarChar(100)
-  workType        String?             @db.VarChar(50) // "Plain", "Printed", "Embroidered"
   color           String              @db.VarChar(50)
   stretchability  String              @db.VarChar(50)
   totalStock      Float

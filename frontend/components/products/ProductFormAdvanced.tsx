@@ -52,7 +52,6 @@ const EMPTY_FORM = {
   discountValue: '',
   width: '',
   pattern: '',
-  workType: 'Plain',
   stretchability: 'Non-Stretch',
   minOrderQty: '0.5',
   colors: [{ name: '', hexCode: '#000000', inventory: '' }],
@@ -239,23 +238,15 @@ export default function ProductFormAdvanced({ initialData, onClose }: ProductFor
           </div>
           {/* Pattern */}
           <div>
-            <label className="mb-1.5 block text-sm font-medium">Pattern</label>
-            <input name="pattern" value={form.pattern} onChange={handleChange} placeholder="e.g., Zari Brocade" className="input-field" />
+            <label className="mb-1.5 block text-sm font-medium">Pattern *</label>
+            <input name="pattern" value={form.pattern} onChange={handleChange} placeholder="e.g., Zari Brocade" className="input-field" required />
           </div>
           {/* Width */}
           <div>
-            <label className="mb-1.5 block text-sm font-medium">Width (inches)</label>
-            <input name="width" type="number" step="0.1" value={form.width} onChange={handleChange} placeholder="e.g., 44" className="input-field" />
+            <label className="mb-1.5 block text-sm font-medium">Width (inches) *</label>
+            <input name="width" type="number" step="0.1" value={form.width} onChange={handleChange} placeholder="e.g., 44" className="input-field" required />
           </div>
-          {/* Work Type */}
-          <div>
-            <label className="mb-1.5 block text-sm font-medium">Work Type</label>
-            <select name="workType" value={form.workType} onChange={handleChange} className="input-field">
-              <option value="Plain">Plain</option>
-              <option value="Printed">Printed</option>
-              <option value="Embroidered">Embroidered</option>
-            </select>
-          </div>
+
           {/* Stretchability */}
           <div>
             <label className="mb-1.5 block text-sm font-medium">Stretchability *</label>
