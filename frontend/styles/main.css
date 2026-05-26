@@ -153,6 +153,16 @@ body {
          dark:focus:border-primary-400;
 }
 
+/* Hide number input spinners */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
 /* ── Badge ───────────────────────────────────────────────────────────── */
 .badge {
   @apply inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold;
