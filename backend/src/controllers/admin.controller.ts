@@ -302,7 +302,6 @@ export const createProduct = async (
       pattern,
       workType,
       stretchability,
-      totalStock,
       minOrderQty,
       colors,
     } = req.body;
@@ -324,85 +323,98 @@ export const createProduct = async (
     if (colors && Array.isArray(colors) && colors.length > 0) {
       processedColors = await Promise.all(colors.map(async (color: any) => {
         const pCode = buildProductCode(cleanedName, category.name, color.name || 'Unknown', code);
-        let fUrl = color.folderUrl?.trim() || '';
-        if (fUrl) {
-          const folderId = extractFolderId(fUrl);
-          if (folderId && (await verifyFolderAccess(folderId))) {
-            fUrl = folderUrlFromId(folderId);
-          }
-        } else {
-          const candidates = getDriveFolderNameCandidates({
-            name: cleanedName,
-            categoryName: category.name,
-            code,
-            colorName: color.name || 'Unknown',
-          });
-          const match = await findFolderIdByNames([pCode, ...candidates]);
-          if (match) fUrl = folderUrlFromId(match.folderId);
-        }
+        let fUrl = '';
+        const candidates = getDriveFolderNameCandidates({
+          name: cleanedName,
+          categoryName: category.name,
+          code,
+          colorName: color.name || 'Unknown',
+        });
+        const match = await findFolderIdByNames([pCode, ...candidates]);
+        if (match) fUrl = folderUrlFromId(match.folderId);
+        
         return {
           name: color.name,
           hexCode: color.hexCode,
+          inventory: Number(color.inventory) || 0,
           productCode: pCode,
           folderUrl: fUrl,
         };
       }));
     }
 
-    const product = await prisma.product.create({
-      data: {
-        name: cleanedName,
-        slug: generateSlug(cleanedName),
-        description: category.description,
-        categoryId,
-        code,
-        styleCode,
-        productCode: processedColors.length > 0 ? processedColors[0].productCode : null,
-        basePrice,
-        discountPrice,
-        discountType,
-        discountValue,
-        width,
-        pattern,
-        occasion: category.bestFor?.join(', ') || undefined,
-        workType,
-        color: colors && colors.length > 0 ? colors[0].name : 'Unknown',
-        stretchability,
-        totalStock: totalStock || 0,
-        minOrderQty: minOrderQty || 0.5,
-        sku: generateSKU('FAB'),
-        bestFor: category.bestFor,
-        properties: category.properties,
-        ...(processedColors.length > 0 && {
+    const createdProducts = [];
+    
+    // Fallback if no colors are provided, create at least one product
+    const colorsList = processedColors.length > 0 ? processedColors : [{
+      name: 'Unknown',
+      hexCode: '#000000',
+      inventory: 0,
+      productCode: buildProductCode(cleanedName, category.name, 'Unknown', code),
+      folderUrl: '',
+    }];
+
+    for (const colorVar of colorsList) {
+      const slug = generateSlug(colorVar.productCode);
+      const product = await prisma.product.create({
+        data: {
+          name: cleanedName,
+          slug,
+          description: category.description,
+          categoryId,
+          code,
+          styleCode,
+          productCode: colorVar.productCode,
+          basePrice,
+          discountPrice,
+          discountType,
+          discountValue,
+          width,
+          pattern,
+          occasion: category.bestFor?.join(', ') || undefined,
+          workType,
+          color: colorVar.name,
+          stretchability,
+          totalStock: colorVar.inventory,
+          minOrderQty: minOrderQty || 0.5,
+          sku: generateSKU('FAB'),
+          bestFor: category.bestFor,
+          properties: category.properties,
           colors: {
-            create: processedColors
+            create: {
+              name: colorVar.name,
+              hexCode: colorVar.hexCode || '#000000',
+              productCode: colorVar.productCode,
+              folderUrl: colorVar.folderUrl,
+            }
           }
-        })
-      },
-      include: { colors: true }
-    });
+        },
+        include: { colors: true }
+      });
 
-    let syncedImageCount = 0;
-    try {
-      syncedImageCount = await syncImagesForProduct(product, category.name);
-    } catch (syncErr: any) {
-      console.warn(`[Create] Image auto-sync skipped for "${name}":`, syncErr.message || syncErr);
+      // Sync images automatically using productCode folder matching
+      try {
+        await syncImagesForProduct(product, category.name);
+      } catch (syncErr: any) {
+        console.warn(`[Create] Image auto-sync skipped for variant "${colorVar.productCode}":`, syncErr.message || syncErr);
+      }
+
+      const productWithImages = await prisma.product.findUnique({
+        where: { id: product.id },
+        include: { colors: true, images: { orderBy: { order: 'asc' } } },
+      });
+
+      createdProducts.push(productWithImages || product);
     }
-
-    const productWithImages = await prisma.product.findUnique({
-      where: { id: product.id },
-      include: { colors: true, images: { orderBy: { order: 'asc' } } },
-    });
 
     invalidateProductCaches();
 
     res.status(201).json({
       success: true,
-      message:
-        syncedImageCount > 0
-          ? `Product created and ${syncedImageCount} image(s) synced from Google Drive.`
-          : 'Product created successfully. Add a matching Drive folder and use Sync Images to import photos.',
-      data: productWithImages || product,
+      message: createdProducts.length > 1
+        ? `Product family created with ${createdProducts.length} variants.`
+        : 'Product created successfully.',
+      data: createdProducts[0],
       statusCode: 201,
     } as ApiResponse);
   } catch (error: any) {
@@ -473,31 +485,28 @@ export const updateProduct = async (
         const colorName = c.name?.trim() || 'Unknown';
         const pCode = buildProductCode(cleanedName, categoryName, colorName, productCode);
         
-        let fUrl = c.folderUrl?.trim() || '';
-        if (fUrl) {
-          const folderId = extractFolderId(fUrl);
-          if (folderId && (await verifyFolderAccess(folderId))) {
-            fUrl = folderUrlFromId(folderId);
-          }
-        } else {
-          const candidates = getDriveFolderNameCandidates({
-            name: cleanedName,
-            categoryName: categoryName,
-            code: productCode,
-            colorName: colorName,
-          });
-          const match = await findFolderIdByNames([pCode, ...candidates]);
-          if (match) fUrl = folderUrlFromId(match.folderId);
-        }
+        let fUrl = '';
+        const candidates = getDriveFolderNameCandidates({
+          name: cleanedName,
+          categoryName: categoryName,
+          code: productCode,
+          colorName: colorName,
+        });
+        const match = await findFolderIdByNames([pCode, ...candidates]);
+        if (match) fUrl = folderUrlFromId(match.folderId);
         
         return {
           name:        colorName,
           hexCode:     c.hexCode ? (c.hexCode.startsWith('#') ? c.hexCode : `#${c.hexCode}`) : '#000000',
           folderUrl:   fUrl,
           productCode: pCode,
+          inventory:   Number(c.inventory) || 0,
         };
       }));
     }
+
+    // Map first variant's color/inventory/productCode onto the Product row
+    const firstColor = processedColors && processedColors.length > 0 ? processedColors[0] : null;
 
     const dataPayload: any = {
       ...updateData,
@@ -506,9 +515,11 @@ export const updateProduct = async (
       ...(updateData.basePrice     !== undefined && { basePrice:     Number(updateData.basePrice) }),
       ...(updateData.discountValue !== undefined && { discountValue: Number(updateData.discountValue) }),
       ...(updateData.minOrderQty   !== undefined && { minOrderQty:   Number(updateData.minOrderQty) }),
-      ...(updateData.totalStock    !== undefined && { totalStock:    Number(updateData.totalStock) }),
-      ...(processedColors !== undefined && {
-        productCode: processedColors.length > 0 ? processedColors[0].productCode : null,
+      // Use variant inventory as totalStock
+      ...(firstColor !== null && {
+        totalStock:  firstColor.inventory,
+        color:       firstColor.name,
+        productCode: firstColor.productCode,
       }),
       ...(updateData.discountPrice !== undefined && {
         discountPrice: updateData.discountPrice !== null && updateData.discountPrice !== ""
@@ -519,7 +530,12 @@ export const updateProduct = async (
       ...(processedColors !== undefined && {
         colors: {
           deleteMany: {},   // remove existing colours
-          create: processedColors,
+          create: processedColors.map(c => ({
+            name: c.name,
+            hexCode: c.hexCode,
+            folderUrl: c.folderUrl,
+            productCode: c.productCode,
+          })),
         },
       }),
     };

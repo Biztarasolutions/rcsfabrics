@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api';
 import toast from 'react-hot-toast';
-import { buildStyleCode, buildProductCode, extractDesignName } from '@/lib/utils';
+import { buildStyleCode, extractDesignName } from '@/lib/utils';
 
 const COLOR_NAME_TO_HEX: Record<string, string> = {
   RED: '#FF0000',
@@ -51,10 +51,8 @@ const EMPTY_FORM = {
   pattern: '',
   workType: 'Plain',
   stretchability: 'Non-Stretch',
-  totalStock: '',
   minOrderQty: '0.5',
-  folderUrl: '',
-  colors: [{ name: '', hexCode: '#000000', folderUrl: '' }],
+  colors: [{ name: '', hexCode: '#000000', inventory: '' }],
 };
 
 interface ProductFormAdvancedProps {
@@ -90,13 +88,13 @@ export default function ProductFormAdvanced({ initialData, onClose }: ProductFor
         ...EMPTY_FORM,
         ...initialData,
         name: cleanedName,
-        // Ensure colors array exists and includes productCode
+        // Ensure colors array exists and includes productCode and inventory
         colors: initialData.colors?.map((c: any) => ({
           name: c.name,
           hexCode: c.hexCode,
           productCode: c.productCode,
-          folderUrl: c.folderUrl || '',
-        })) || [{ name: '', hexCode: '#000000', folderUrl: '' }],
+          inventory: String(initialData.totalStock || ''),
+        })) || [{ name: '', hexCode: '#000000', inventory: '' }],
       });
     }
   }, [initialData, categories]);
@@ -166,7 +164,7 @@ export default function ProductFormAdvanced({ initialData, onClose }: ProductFor
   const addColor = () => {
     setForm((prev: any) => ({
       ...prev,
-      colors: [...prev.colors, { name: '', hexCode: '#000000', folderUrl: '' }],
+      colors: [...prev.colors, { name: '', hexCode: '#000000', inventory: '' }],
     }));
   };
 
@@ -183,7 +181,6 @@ export default function ProductFormAdvanced({ initialData, onClose }: ProductFor
       ...form,
       basePrice: Number(form.basePrice),
       discountValue: form.discountValue ? Number(form.discountValue) : undefined,
-      totalStock: Number(form.totalStock),
       width: form.width ? Number(form.width) : undefined,
       code: form.code ? Number(form.code) : undefined,
       minOrderQty: Number(form.minOrderQty),
@@ -281,11 +278,7 @@ export default function ProductFormAdvanced({ initialData, onClose }: ProductFor
             <label className="mb-1.5 block text-sm font-medium">Discount Value</label>
             <input name="discountValue" type="number" step="0.01" value={form.discountValue} onChange={handleChange} placeholder={form.discountType === 'percentage' ? 'e.g., 20' : 'e.g., 300'} className="input-field" />
           </div>
-          {/* Stock */}
-          <div>
-            <label className="mb-1.5 block text-sm font-medium">Total Stock (meters) *</label>
-            <input name="totalStock" type="number" step="0.5" value={form.totalStock} onChange={handleChange} placeholder="e.g., 50" className="input-field" required />
-          </div>
+
           {/* Min Order */}
           <div>
             <label className="mb-1.5 block text-sm font-medium">Min Order (m)</label>
@@ -299,16 +292,20 @@ export default function ProductFormAdvanced({ initialData, onClose }: ProductFor
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h3 className="text-lg font-bold">Color Variants</h3>
-            <p className="text-sm text-gray-500">Add product colors after Name, Category, and Code are set.</p>
+            <p className="text-sm text-gray-500">
+              {initialData ? "Editing the current variant." : "Add product colors after Name, Category, and Code are set."}
+            </p>
           </div>
-          <button
-            type="button"
-            onClick={addColor}
-            disabled={!form.name || !form.categoryId || !form.code}
-            className="button-secondary px-3 py-1.5 text-sm disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            + Add Color
-          </button>
+          {!initialData && (
+            <button
+              type="button"
+              onClick={addColor}
+              disabled={!form.name || !form.categoryId || !form.code}
+              className="button-secondary px-3 py-1.5 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              + Add Color
+            </button>
+          )}
         </div>
         <div className="space-y-4">
           {form.colors.map((color: any, index: number) => (
@@ -322,7 +319,7 @@ export default function ProductFormAdvanced({ initialData, onClose }: ProductFor
                 )}
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-3">
                 <div>
                   <label className="mb-1 block text-xs font-medium">Color Name *</label>
                   <input type="text" value={color.name} onChange={(e) => handleColorChange(index, 'name', e.target.value)} placeholder="e.g., Red" className="input-field" required />
@@ -336,35 +333,9 @@ export default function ProductFormAdvanced({ initialData, onClose }: ProductFor
                   </div>
                 </div>
 
-                <div className="sm:col-span-2">
-                  <label className="mb-1 block text-xs font-medium">Product Code</label>
-                  <input
-                    type="text"
-                    value={
-                      form.name && selectedCategory && form.code && color.name
-                        ? buildProductCode(form.name, selectedCategory.name, color.name, form.code)
-                        : ''
-                    }
-                    readOnly
-                    placeholder="e.g. Polka Dot-Satin-White-P10001"
-                    className="input-field bg-gray-100 dark:bg-dark-700"
-                    required
-                  />
-                  <p className="mt-1 text-xs text-gray-500">Format: Name-Category-Color-Code (auto-generated)</p>
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label className="mb-1 block text-xs font-medium">Google Drive Folder URL</label>
-                  <input
-                    type="url"
-                    value={color.folderUrl || ''}
-                    onChange={(e) => handleColorChange(index, 'folderUrl', e.target.value)}
-                    placeholder="https://drive.google.com/drive/folders/..."
-                    className="input-field"
-                  />
-                  <p className="mt-1 text-xs text-gray-500">
-                    Folder name should match the product code. Images inside can use any filename (e.g. Stretchable-1.png).
-                  </p>
+                <div>
+                  <label className="mb-1 block text-xs font-medium">Inventory (m) *</label>
+                  <input type="number" step="0.5" value={color.inventory || ''} onChange={(e) => handleColorChange(index, 'inventory', e.target.value)} placeholder="e.g., 25" className="input-field" required />
                 </div>
               </div>
             </div>
