@@ -77,7 +77,6 @@ export const buildLegacyStyleCode = (
 export const buildLegacyProductCode = (legacyStyle: string, colorName: string): string =>
   `${legacyStyle}-${colorName.trim().substring(0, 3).toUpperCase()}`;
 
-/** Candidate Drive folder names to try (new + legacy formats). */
 export const getDriveFolderNameCandidates = (opts: {
   name: string;
   categoryName: string;
@@ -94,14 +93,16 @@ export const getDriveFolderNameCandidates = (opts: {
   const style = buildStyleCode(name, categoryName, code);
   const legacyStyle = buildLegacyStyleCode(code, categoryName, name);
 
-  add(style);
-  add(legacyStyle);
-  add(formatProductCodeSuffix(code));
-  add(String(code));
-
   if (colorName) {
     add(buildProductCode(name, categoryName, colorName, code));
     add(buildLegacyProductCode(legacyStyle, colorName));
+    add(`${formatProductCodeSuffix(code)}-${colorName.trim()}`);
+    add(`${code}-${colorName.trim()}`);
+  } else {
+    add(style);
+    add(legacyStyle);
+    add(formatProductCodeSuffix(code));
+    add(String(code));
   }
 
   return [...seen];
