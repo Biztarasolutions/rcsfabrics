@@ -9,7 +9,11 @@ const ProductForm = () => {
     name: '',
     categoryId: '',
     basePrice: '',
+    pattern: '',
+    width: '',
     stretchability: '',
+    discountType: 'percentage',
+    discountValue: '',
     stock: '',
     colors: [{ name: '', hexCode: '' }],
   });
@@ -22,7 +26,11 @@ const mutation = useMutation<any, Error, any>({
       name: '',
       categoryId: '',
       basePrice: '',
+      pattern: '',
+      width: '',
       stretchability: '',
+      discountType: 'percentage',
+      discountValue: '',
       stock: '',
       colors: [{ name: '', hexCode: '' }],
     });
@@ -34,7 +42,7 @@ const mutation = useMutation<any, Error, any>({
 
 
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -86,11 +94,42 @@ const mutation = useMutation<any, Error, any>({
       />
       <input
         type="text"
+        name="pattern"
+        value={formData.pattern}
+        onChange={handleChange}
+        placeholder="Pattern"
+        required
+      />
+      <input
+        type="number"
+        name="width"
+        value={formData.width}
+        onChange={handleChange}
+        placeholder="Width (inches)"
+        required
+      />
+      <input
+        type="text"
         name="stretchability"
         value={formData.stretchability}
         onChange={handleChange}
         placeholder="Stretchability"
         required
+      />
+      <select
+        name="discountType"
+        value={formData.discountType}
+        onChange={handleChange}
+      >
+        <option value="percentage">Percentage (%)</option>
+        <option value="fixed">Fixed (₹)</option>
+      </select>
+      <input
+        type="number"
+        name="discountValue"
+        value={formData.discountValue}
+        onChange={handleChange}
+        placeholder="Discount Value"
       />
       <input
         type="number"

@@ -11,6 +11,11 @@ const EMPTY_FORM = {
   categoryId: '',
   code: '',
   basePrice: '',
+  pattern: '',
+  width: '',
+  stretchability: 'Non-Stretch',
+  discountType: 'percentage',
+  discountValue: '',
   description: '',
   minOrderQty: '0.5',
   variants: [{ color: '', inventory: '' }],
@@ -117,6 +122,42 @@ export default function CreateProductFamilyPage() {
             <div>
               <label className="mb-1.5 block text-sm font-medium">Base Price (₹/m) *</label>
               <input name="basePrice" type="number" step="0.01" value={form.basePrice} onChange={handleChange} className="input-field w-full" required />
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-sm font-medium">Pattern *</label>
+              <input name="pattern" value={form.pattern} onChange={handleChange} placeholder="e.g. Zari Brocade" className="input-field w-full" required />
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-sm font-medium">Width (inches) *</label>
+              <input name="width" type="number" step="0.1" value={form.width} onChange={handleChange} placeholder="e.g. 44" className="input-field w-full" required />
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-sm font-medium">Stretchability *</label>
+              <select name="stretchability" value={form.stretchability} onChange={handleChange} className="input-field w-full" required>
+                <option value="Stretch">Stretch</option>
+                <option value="Non-Stretch">Non-Stretch</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-sm font-medium">Discount Type</label>
+              <select name="discountType" value={form.discountType} onChange={handleChange} className="input-field w-full">
+                <option value="percentage">Percentage (%)</option>
+                <option value="fixed">Fixed (₹)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-sm font-medium">Discount Value</label>
+              <input name="discountValue" type="number" step="0.01" value={form.discountValue} onChange={handleChange} placeholder={form.discountType === 'percentage' ? 'e.g. 20' : 'e.g. 300'} className="input-field w-full" />
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-sm font-medium">Min Order (m)</label>
+              <input name="minOrderQty" type="number" step="0.5" value={form.minOrderQty} onChange={handleChange} placeholder="e.g. 0.5" className="input-field w-full" />
             </div>
 
             <div className="sm:col-span-2">
