@@ -605,7 +605,20 @@ export const updateProduct = async (
               categoryId: existingProduct.categoryId,
               code: Number(productCode),
               styleCode: styleCodeToUpdate,
-              stretchability: existingProduct.stretchability || 'Non-Stretch',
+              basePrice: cleanedUpdateData.basePrice ?? existingProduct.basePrice,
+              width: cleanedUpdateData.width ?? existingProduct.width,
+              pattern: cleanedUpdateData.pattern ?? existingProduct.pattern,
+              stretchability: cleanedUpdateData.stretchability ?? existingProduct.stretchability ?? 'Non-Stretch',
+              minOrderQty: cleanedUpdateData.minOrderQty ?? existingProduct.minOrderQty,
+              description: cleanedUpdateData.description ?? existingProduct.description,
+              discountPrice: cleanedUpdateData.discountPrice ?? existingProduct.discountPrice,
+              discountPercent: cleanedUpdateData.discountPercent ?? existingProduct.discountPercent,
+              discountType: cleanedUpdateData.discountType ?? existingProduct.discountType,
+              discountValue: cleanedUpdateData.discountValue ?? existingProduct.discountValue,
+              occasion: cleanedUpdateData.occasion ?? existingProduct.occasion,
+              bestFor: cleanedUpdateData.bestFor ?? existingProduct.bestFor,
+              properties: cleanedUpdateData.properties ?? existingProduct.properties,
+              isActive: cleanedUpdateData.isActive ?? existingProduct.isActive,
             }
           });
         }
