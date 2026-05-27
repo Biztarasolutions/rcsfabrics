@@ -709,15 +709,36 @@ export const deleteProduct = async (
 
     const { id } = req.params;
 
-    await prisma.product.delete({
+    const product = await prisma.product.findUnique({
       where: { id },
     });
+
+    if (!product) {
+      throw new ApiError(404, 'Product not found');
+    }
+
+    // Determine all product IDs sharing the same styleCode (including the target)
+    let productIds: string[] = [id];
+    if (product.styleCode) {
+      const related = await prisma.product.findMany({
+        where: { styleCode: product.styleCode },
+        select: { id: true },
+      });
+      productIds = related.map((p) => p.id);
+    }
+
+    // Delete associated colors and images
+    await prisma.productColor.deleteMany({ where: { productId: { in: productIds } } });
+    await prisma.productImage.deleteMany({ where: { productId: { in: productIds } } });
+
+    // Delete the product(s)
+    await prisma.product.deleteMany({ where: { id: { in: productIds } } });
 
     invalidateProductCaches();
 
     res.json({
       success: true,
-      message: 'Product deleted successfully',
+      message: `Deleted ${productIds.length} product variant(s) successfully`,
       statusCode: 200,
     } as ApiResponse);
   } catch (error) {
