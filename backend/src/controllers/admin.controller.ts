@@ -126,7 +126,9 @@ const collectFolderIdsForProduct = async (
     code,
   });
 
-  if (!product.folderUrl) {
+  const isGenericProduct = product.colors.length === 0 || (product.colors.length === 1 && product.colors[0].name === 'Unknown');
+
+  if (!product.folderUrl && isGenericProduct) {
     const styleLookupNames = product.styleCode
       ? [product.styleCode, ...styleCandidates]
       : styleCandidates;
