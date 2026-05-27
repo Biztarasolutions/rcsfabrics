@@ -6,6 +6,44 @@ import { adminApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { buildStyleCode } from '@/lib/utils';
 
+const COLOR_NAME_TO_HEX: Record<string, string> = {
+  RED: '#FF0000',
+  PINK: '#FFC0CB',
+  ORANGE: '#FFA500',
+  YELLOW: '#FFFF00',
+  GREEN: '#008000',
+  BLUE: '#0000FF',
+  PURPLE: '#800080',
+  MAGENTA: '#FF00FF',
+  CYAN: '#00FFFF',
+  TEAL: '#008080',
+  BROWN: '#A52A2A',
+  BLACK: '#000000',
+  WHITE: '#FFFFFF',
+  GRAY: '#808080',
+  NAVY: '#000080',
+  BEIGE: '#F5F5DC',
+  CORAL: '#FF7F50',
+  GOLD: '#FFD700',
+  SILVER: '#C0C0C0',
+  LAVENDER: '#E6E6FA',
+  MINT: '#98FF98',
+  MAROON: '#800000',
+};
+
+const HEX_TO_COLOR_NAME = Object.fromEntries(
+  Object.entries(COLOR_NAME_TO_HEX).map(([name, hex]) => [
+    hex.toUpperCase(),
+    name.charAt(0) + name.slice(1).toLowerCase()
+  ])
+);
+
+const normalizeHex = (value: string) => {
+  const cleaned = value.trim();
+  if (!cleaned) return '#000000';
+  return cleaned.startsWith('#') ? cleaned.toUpperCase() : `#${cleaned.toUpperCase()}`;
+};
+
 const EMPTY_FORM = {
   name: '',
   categoryId: '',
@@ -59,7 +97,27 @@ export default function CreateProductFamilyPage() {
 
   const handleVariantChange = (index: number, field: string, value: string) => {
     const updatedVariants = [...form.variants];
-    updatedVariants[index][field] = value;
+    const currentVariant = { ...updatedVariants[index] };
+
+    if (field === 'color') {
+      currentVariant.color = value;
+      const normalizedName = value.trim().toUpperCase();
+      const mappedHex = COLOR_NAME_TO_HEX[normalizedName];
+      if (mappedHex) {
+        currentVariant.hexCode = mappedHex;
+      }
+    } else if (field === 'hexCode') {
+      const normalizedHex = normalizeHex(value);
+      currentVariant.hexCode = normalizedHex;
+      const mappedName = HEX_TO_COLOR_NAME[normalizedHex];
+      if (mappedName) {
+        currentVariant.color = mappedName;
+      }
+    } else {
+      currentVariant[field] = value;
+    }
+
+    updatedVariants[index] = currentVariant;
     setForm((prev: any) => ({ ...prev, variants: updatedVariants }));
   };
 
@@ -192,8 +250,11 @@ export default function CreateProductFamilyPage() {
                     <input value={variant.color} onChange={(e) => handleVariantChange(index, 'color', e.target.value)} placeholder="e.g. White" className="input-field w-full" required />
                   </div>
                   <div>
-                    <label className="mb-1 block text-sm font-medium">Hex Code</label>
-                    <input value={variant.hexCode || ''} onChange={(e) => handleVariantChange(index, 'hexCode', e.target.value)} placeholder="e.g. #FFFFFF" className="input-field w-full" />
+                    <label className="mb-1 block text-sm font-medium">Hex Code ({variant.hexCode || '#000000'})</label>
+                    <div className="flex gap-2">
+                      <input type="color" value={variant.hexCode || '#000000'} onChange={(e) => handleVariantChange(index, 'hexCode', e.target.value)} className="h-10 w-12 rounded-lg border border-gray-200" />
+                      <input value={variant.hexCode || ''} onChange={(e) => handleVariantChange(index, 'hexCode', e.target.value)} placeholder="e.g. #FFFFFF" className="input-field flex-1" />
+                    </div>
                   </div>
                   <div>
                     <label className="mb-1 block text-sm font-medium">Inventory (m) *</label>
