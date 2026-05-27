@@ -516,7 +516,6 @@ export const updateProduct = async (
     const cleanedName = extractDesignName(name, categoryName, productCode);
     if (cleanedUpdateData.name !== undefined) {
       cleanedUpdateData.name = cleanedName;
-      cleanedUpdateData.slug = generateSlug(cleanedName);
     }
 
     // styleCode should also be updated if name or code changes
@@ -577,6 +576,7 @@ export const updateProduct = async (
         const existing = existingVariants.find(v => v.productCode === c.productCode);
         const variantData = {
           ...basePayload,
+          slug: generateSlug(c.productCode),
           totalStock: c.inventory,
           color: c.name,
           productCode: c.productCode,
@@ -598,7 +598,6 @@ export const updateProduct = async (
           });
         } else {
           // Create new variant
-          const newSlug = generateSlug(buildProductCode(cleanedName, categoryName, c.name, productCode));
           await prisma.product.create({
             data: {
               ...variantData,
@@ -606,7 +605,6 @@ export const updateProduct = async (
               categoryId: existingProduct.categoryId,
               code: Number(productCode),
               styleCode: styleCodeToUpdate,
-              slug: newSlug,
               stretchability: existingProduct.stretchability || 'Non-Stretch',
             }
           });
@@ -614,6 +612,15 @@ export const updateProduct = async (
       }
     } else {
       // Fallback for single product update without colors array
+      
+      // Update slug if name or code changed
+      if (cleanedUpdateData.name !== undefined || cleanedUpdateData.code !== undefined) {
+        const colorName = existingProduct.color || 'Unknown';
+        const updatedProductCode = buildProductCode(cleanedName, categoryName, colorName, productCode);
+        cleanedUpdateData.productCode = updatedProductCode;
+        cleanedUpdateData.slug = generateSlug(updatedProductCode);
+      }
+
       await prisma.product.update({
         where: { id },
         data: cleanedUpdateData,
