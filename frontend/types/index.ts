@@ -29,6 +29,7 @@ export interface Product {
   }>;
 
   color?: string;
+  stretchability?: string;
   totalStock: number;
   minOrderQty: number;
   images: ProductImage[];

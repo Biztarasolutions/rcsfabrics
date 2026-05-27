@@ -58,7 +58,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           <h3 className="mt-1 line-clamp-2 font-semibold text-gray-900 dark:text-white">{product.name}</h3>
           {product.colors && product.colors.length > 0 ? (
             <div className="flex gap-1 mt-0.5">
-              {product.colors.map((c: any, idx: number) => (
+              {product.colors.map((c, idx) => (
                 <div
                   key={idx}
                   className="h-4 w-4 rounded-full border border-gray-300"
