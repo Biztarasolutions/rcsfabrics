@@ -18,7 +18,7 @@ const EMPTY_FORM = {
   discountValue: '',
   description: '',
   minOrderQty: '0.5',
-  variants: [{ color: '', inventory: '' }],
+  variants: [{ color: '', hexCode: '', inventory: '' }],
 };
 
 export default function CreateProductFamilyPage() {
@@ -66,7 +66,7 @@ export default function CreateProductFamilyPage() {
   const addVariant = () => {
     setForm((prev: any) => ({
       ...prev,
-      variants: [...prev.variants, { color: '', inventory: '' }],
+      variants: [...prev.variants, { color: '', hexCode: '', inventory: '' }],
     }));
   };
 
@@ -190,6 +190,10 @@ export default function CreateProductFamilyPage() {
                   <div>
                     <label className="mb-1 block text-sm font-medium">Color *</label>
                     <input value={variant.color} onChange={(e) => handleVariantChange(index, 'color', e.target.value)} placeholder="e.g. White" className="input-field w-full" required />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium">Hex Code</label>
+                    <input value={variant.hexCode || ''} onChange={(e) => handleVariantChange(index, 'hexCode', e.target.value)} placeholder="e.g. #FFFFFF" className="input-field w-full" />
                   </div>
                   <div>
                     <label className="mb-1 block text-sm font-medium">Inventory (m) *</label>
