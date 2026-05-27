@@ -601,6 +601,9 @@ export const updateProduct = async (
           await prisma.product.create({
             data: {
               ...variantData,
+              colors: {
+                create: variantData.colors.create
+              },
               name: cleanedName,
               categoryId: existingProduct.categoryId,
               code: Number(productCode),
