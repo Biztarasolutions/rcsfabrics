@@ -62,7 +62,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                 <div
                   key={idx}
                   className="h-4 w-4 rounded-full border border-gray-300"
-                  style={{ backgroundColor: c.hexCode }}
+                  style={{ backgroundColor: c.hexCode || c.name || '#CCC' }}
                   title={c.name}
                 />
               ))}
