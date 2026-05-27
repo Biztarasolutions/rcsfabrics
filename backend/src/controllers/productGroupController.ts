@@ -9,7 +9,8 @@ export const createProductGroup = async (req: Request, res: Response): Promise<v
   try {
     const { 
       name, categoryId, basePrice, description, code, 
-      minOrderQty = 0.5, variants 
+      minOrderQty = 0.5, variants, pattern, width, 
+      stretchability, discountType, discountValue 
     } = req.body;
 
     // Fetch the category to hardcode into the name as requested
@@ -22,6 +23,18 @@ export const createProductGroup = async (req: Request, res: Response): Promise<v
     const categoryName = category.name;
     const cleanedName = extractDesignName(name, categoryName, code);
     const styleCode = code ? buildStyleCode(cleanedName, categoryName, code) : `P${Date.now()}`; // Or however styleCode is meant to be derived if code is absent
+
+    // Calculate discount price if applicable
+    let discountPrice = null;
+    if (discountValue && parseFloat(discountValue) > 0) {
+      const basePriceNum = parseFloat(basePrice);
+      const discountValueNum = parseFloat(discountValue);
+      if (discountType === 'percentage') {
+        discountPrice = basePriceNum - (basePriceNum * (discountValueNum / 100));
+      } else {
+        discountPrice = basePriceNum - discountValueNum;
+      }
+    }
 
     // Create a product for each variant
     const createdProducts = [];
@@ -41,12 +54,17 @@ export const createProductGroup = async (req: Request, res: Response): Promise<v
           styleCode,
           productCode: productName,
           basePrice: parseFloat(basePrice),
+          discountPrice,
+          discountType,
+          discountValue: discountValue ? parseFloat(discountValue) : null,
           color: variant.color,
           totalStock: parseFloat(variant.inventory),
           minOrderQty: parseFloat(minOrderQty),
-          stretchability: 'Medium', // default or required fields
-          width: variant.width ? parseFloat(variant.width) : 0,
-          pattern: variant.pattern || 'Standard',
+          stretchability: stretchability || 'Non-Stretch',
+          width: width ? parseFloat(width) : null,
+          pattern: pattern || 'Plain',
+          bestFor: category.bestFor,
+          properties: category.properties,
         }
       });
 
@@ -60,7 +78,7 @@ export const createProductGroup = async (req: Request, res: Response): Promise<v
         data: {
           productId: newProduct.id,
           name: variant.color,
-          hexCode: '#000000', // Default, should be updated or provided
+          hexCode: variant.hexCode || '#000000',
           productCode: productName,
           folderUrl: variant.folderUrl
         }
