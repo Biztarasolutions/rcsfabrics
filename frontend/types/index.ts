@@ -19,8 +19,16 @@ export interface Product {
   gsm?: number;
   width?: number;
   pattern?: string;
-  color: string;
-  stretchability: string;
+  colors?: Array<{
+    id: string;
+    name: string;
+    hexCode: string;
+    productCode?: string;
+    folderUrl?: string;
+    stock?: number;
+  }>;
+
+  color?: string;
   totalStock: number;
   minOrderQty: number;
   images: ProductImage[];
