@@ -135,7 +135,65 @@ async function main() {
 
   // Seed products
   console.log('🧵 Creating products...');
+  // Seed products with colour swatches
+  console.log('🧵 Creating products with colours...');
+  const colorHexMap: Record<string, string> = {
+    'Deep Maroon': '#8B0000',
+    'Ivory White': '#FFFFF0',
+    'Midnight Navy': '#191970',
+    'Peacock Green': '#006D5B',
+    'Blush Pink': '#FFC0CB',
+    'Blue': '#0000FF',
+    // Add more colour mappings here as needed
+  };
   for (const product of PRODUCTS) {
+    const { images, categorySlug, tags, ...rest } = product;
+    // 1️⃣ Create the product itself
+    const createdProduct = await prisma.product.create({
+      data: {
+        ...rest,
+        discountPrice: rest.discountPrice ?? undefined,
+        categoryId: categoryMap[categorySlug],
+        images: { create: images },
+      },
+    });
+    // 2️⃣ Create a associated colour entry (fallback hex if unknown)
+    const hex = colorHexMap[product.color] ?? '#CCC';
+    await prisma.productColor.create({
+      data: {
+        productId: createdProduct.id,
+        name: product.color,
+        hexCode: hex,
+      },
+    });
+  }
+  const { images, categorySlug, tags, ...rest } = product;
+  const createdProduct = await prisma.product.create({
+    data: {
+      ...rest,
+      discountPrice: rest.discountPrice ?? undefined,
+      categoryId: categoryMap[categorySlug],
+      images: { create: images },
+    },
+  });
+  // Create a default color entry using a simple hex map (fallback to #CCC)
+  const colorHexMap: Record<string, string> = {
+    'Deep Maroon': '#8B0000',
+    'Ivory White': '#FFFFF0',
+    'Midnight Navy': '#191970',
+    'Peacock Green': '#006D5B',
+    'Blush Pink': '#FFC0CB',
+    'Blue': '#0000FF',
+  };
+  const hex = colorHexMap[product.color] || '#CCC';
+  await prisma.productColor.create({
+    data: {
+      productId: createdProduct.id,
+      name: product.color,
+      hexCode: hex,
+    },
+  });
+}
     const { images, categorySlug, tags, ...rest } = product;
     await prisma.product.create({
       data: {
