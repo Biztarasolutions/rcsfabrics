@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import Link from 'next/link';
+
 import { Product } from '@/types';
 import { formatPrice, calculateDiscount } from '@/lib/utils';
 import { useCartStore, useWishlistStore } from '@/lib/store';
@@ -33,7 +33,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   };
 
   return (
-    <Link href={`/products/${product.slug}`}>
+        <a href={`/products/${product.slug}`}>
       <div onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
         className="group relative flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-product dark:border-dark-700 dark:bg-dark-800">
         {/* Image */}
@@ -94,7 +94,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           </div>
         </div>
       </div>
-    </Link>
+        </a>
   );
 }
 
