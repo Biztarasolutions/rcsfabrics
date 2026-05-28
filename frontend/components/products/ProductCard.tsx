@@ -6,6 +6,7 @@ import { Product } from '@/types';
 import { formatPrice, calculateDiscount } from '@/lib/utils';
 import { useCartStore, useWishlistStore } from '@/lib/store';
 import toast from 'react-hot-toast';
+import Image from 'next/image';
 import Link from 'next/link';
 
 interface ProductCardProps { product: Product; }
