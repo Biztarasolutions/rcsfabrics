@@ -46,7 +46,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       >
         {/* Image */}
         <div className="relative overflow-hidden bg-gray-50 dark:bg-dark-700" style={{ aspectRatio: '4/5' }}>
-          {mainImage && (
+          {mainImage ? (
             <Image
               src={mainImage.url}
               alt={product.name}
@@ -54,6 +54,10 @@ export default function ProductCard({ product }: ProductCardProps) {
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
               className={`object-cover transition-all duration-500 ${hovered && secondImage ? 'opacity-0' : 'opacity-100'}`}
             />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 dark:from-dark-600 dark:to-dark-700">
+              <span className="text-4xl">🧵</span>
+            </div>
           )}
           {secondImage && (
             <Image

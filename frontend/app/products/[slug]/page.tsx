@@ -26,10 +26,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
   const styleCode = initialProduct?.styleCode;
   const { data: groupProducts = [] } = useQuery({
     queryKey: ['product-group', styleCode],
-    queryFn: () => productApi.getGroup(styleCode!).then(res => {
-      console.log('Group products API response:', res);
-      return res.data.data;
-    }),
+    queryFn: () => productApi.getGroup(styleCode!).then(res => res.data.data),
     enabled: !!styleCode,
   });
 

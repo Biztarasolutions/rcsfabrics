@@ -16,19 +16,11 @@ export default function AdminProductsPage() {
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-  const { data: productsData = { products: [], total: 0 }, isLoading, error } = useQuery({
+  const { data: productsData = { products: [], total: 0 }, isLoading } = useQuery({
     queryKey: ['admin-products', search],
-    queryFn: () => adminApi.getAdminProducts({ search, limit: 100 }).then(res => {
-      console.log('API Response:', res);
-      return res.data.data;
-    }),
+    queryFn: () => adminApi.getAdminProducts({ search, limit: 100 }).then(res => res.data.data),
     staleTime: 0,
   });
-
-  // Log any errors for debugging
-  if (error) {
-    console.error('Error fetching products:', error);
-  }
   const products = productsData.products;
   const totalProducts = productsData.total ?? products.length;
 
