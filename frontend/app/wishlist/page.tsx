@@ -54,8 +54,8 @@ export default function WishlistPage() {
                     <span className="font-bold text-primary-700 dark:text-primary-400">
                       {formatPrice(item.product.discountPrice || item.product.basePrice)}<span className="text-xs font-normal text-gray-400">/m</span>
                     </span>
-                    <span className={`text-xs font-medium ${item.product.totalStock > 10 ? 'text-green-600' : 'text-red-500'}`}>
-                      {item.product.totalStock > 10 ? 'In Stock' : `Only ${item.product.totalStock}m left`}
+                    <span className={`text-xs font-medium ${(item.product.totalStock ?? 0) > 10 ? 'text-green-600' : 'text-red-500'}`}>
+                      {(item.product.totalStock ?? 0) > 10 ? 'In Stock' : `Only ${item.product.totalStock ?? 0}m left`}
                     </span>
                   </div>
                   <div className="mt-3 flex gap-2">

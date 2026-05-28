@@ -31,6 +31,7 @@ export interface Product {
   color?: string;
   stretchability?: string;
   styleCode?: string;
+  totalStock?: number;
   minOrderQty: number;
   images: ProductImage[];
   category: {
