@@ -28,7 +28,7 @@ function ProductsContent() {
   const maxPrice = searchParams.get('maxPrice');
   const page = searchParams.get('page') || '1';
 
-  const { data, isLoading, isError, error } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['products', { search, category, sort, minPrice, maxPrice, page }],
     queryFn: () => productApi.getAll({
       search, category, sort,
@@ -36,20 +36,8 @@ function ProductsContent() {
       maxPrice: maxPrice ? Number(maxPrice) : undefined,
       page: Number(page),
       limit: 12,
-    }).then(res => {
-      console.log('Products API response:', res);
-      console.log('Products data:', res.data);
-      console.log('Products data.data:', res.data.data);
-      return res.data.data;
-    }),
+    }).then(res => res.data.data),
   });
-
-  console.log('React Query state:', { isLoading, isError, error, data });
-
-  // Log error if present
-  if (error) {
-    console.error('Error fetching products:', error);
-  }
 
   const products = data?.products || [];
   const pagination = data;
@@ -138,7 +126,6 @@ function ProductsContent() {
               </>
             ) : (
               <>
-                {(() => { console.log('Products found:', products.length, 'First product:', products[0]); return null; })()}
                 <motion.div
                   className={view === 'grid' ? 'grid gap-5 sm:grid-cols-2 xl:grid-cols-3' : 'flex flex-col gap-4'}
                   initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
