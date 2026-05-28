@@ -137,8 +137,53 @@ export default function CreateProductFamilyPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate and convert numeric values
+    const basePriceNum = parseFloat(form.basePrice);
+    if (isNaN(basePriceNum) || basePriceNum <= 0) {
+      toast.error('Base price must be a positive number');
+      return;
+    }
+
+    const minOrderQtyNum = parseFloat(form.minOrderQty);
+    if (isNaN(minOrderQtyNum) || minOrderQtyNum <= 0) {
+      toast.error('Minimum order quantity must be a positive number');
+      return;
+    }
+
+    const widthNum = parseFloat(form.width);
+    if (isNaN(widthNum) || widthNum < 0) {
+      toast.error('Width must be a positive number');
+      return;
+    }
+
+    // Validate discount value if provided
+    if (form.discountValue) {
+      const discountValueNum = parseFloat(form.discountValue);
+      if (isNaN(discountValueNum) || discountValueNum < 0) {
+        toast.error('Discount value must be a positive number');
+        return;
+      }
+    }
+
+    // Validate variants
+    for (const variant of form.variants) {
+      const inventoryNum = parseFloat(variant.inventory);
+      if (isNaN(inventoryNum) || inventoryNum < 0) {
+        toast.error(`Inventory for ${variant.color || 'variant'} must be a positive number`);
+        return;
+      }
+      if (!variant.color || variant.color.trim() === '') {
+        toast.error('Color is required for all variants');
+        return;
+      }
+    }
+
     const payload = {
       ...form,
+      basePrice: basePriceNum,
+      minOrderQty: minOrderQtyNum,
+      width: widthNum,
       styleCode,
     };
     createGroupMutation.mutate(payload);

@@ -24,22 +24,46 @@ export const createProductGroup = async (req: Request, res: Response): Promise<v
     const cleanedName = extractDesignName(name, categoryName, code);
     const styleCode = code ? buildStyleCode(cleanedName, categoryName, code) : `P${Date.now()}`; // Or however styleCode is meant to be derived if code is absent
 
+    // Parse and validate base price
+    const basePriceNum = parseFloat(basePrice);
+    if (isNaN(basePriceNum) || basePriceNum <= 0) {
+      res.status(400).json({ success: false, message: 'Invalid base price. Must be a positive number.' });
+      return;
+    }
+
+    // Parse and validate min order quantity
+    const minOrderQtyNum = parseFloat(minOrderQty || '0.5');
+    if (isNaN(minOrderQtyNum) || minOrderQtyNum <= 0) {
+      // Default to 0.5 if invalid
+      minOrderQtyNum = 0.5;
+    }
+
     // Calculate discount price if applicable
     let discountPrice = null;
     if (discountValue && parseFloat(discountValue) > 0) {
-      const basePriceNum = parseFloat(basePrice);
       const discountValueNum = parseFloat(discountValue);
       if (discountType === 'percentage') {
         discountPrice = basePriceNum - (basePriceNum * (discountValueNum / 100));
       } else {
         discountPrice = basePriceNum - discountValueNum;
       }
+      // Ensure discount price is not negative
+      if (discountPrice < 0) {
+        discountPrice = 0;
+      }
     }
 
     // Create a product for each variant
     const createdProducts = [];
-    
+
     for (const variant of variants) {
+      // Validate variant inventory
+      const inventoryNum = parseFloat(variant.inventory) || 0;
+      if (inventoryNum < 0) {
+        res.status(400).json({ success: false, message: `Invalid inventory for variant ${variant.color}. Must be a positive number.` });
+        return;
+      }
+
       // Name-Category-ProductCode-Color
       const productName = buildProductCode(cleanedName, categoryName, variant.color, code);
       const slug = generateSlug(productName);
@@ -53,13 +77,13 @@ export const createProductGroup = async (req: Request, res: Response): Promise<v
           code: code ? parseInt(code, 10) : null,
           styleCode,
           productCode: productName,
-          basePrice: parseFloat(basePrice),
+          basePrice: basePriceNum,
           discountPrice,
           discountType,
           discountValue: discountValue ? parseFloat(discountValue) : null,
           color: variant.color,
-          totalStock: parseFloat(variant.inventory),
-          minOrderQty: parseFloat(minOrderQty),
+          totalStock: inventoryNum,
+          minOrderQty: minOrderQtyNum,
           stretchability: stretchability || 'Non-Stretch',
           width: Number(width ?? 0),
           pattern: pattern || 'Plain',
