@@ -786,7 +786,7 @@ export const getAdminProducts = async (
       by: ['styleCode'],
       where: {
         ...where,
-        styleCode: { not: null },
+        // styleCode: { not: null }, // Temporarily disabled to show all products including those without styleCode
       },
       _min: { createdAt: true },
       orderBy: { _min: { createdAt: 'desc' } },
@@ -800,7 +800,7 @@ export const getAdminProducts = async (
       by: ['styleCode'],
       where: {
         ...where,
-        styleCode: { not: null },
+        // styleCode: { not: null }, // Temporarily disabled to show all products including those without styleCode
       },
     });
     const total = totalGroups.length;
@@ -824,7 +824,16 @@ export const getAdminProducts = async (
     // Step 3: Group them into a single row per styleCode
     const groupedProductsMap = new Map();
     for (const p of flatProducts) {
-      if (!p.styleCode) continue;
+      // if (!p.styleCode) continue; // Temporarily disabled to include products without styleCode
+      // Handle products without styleCode by adding them as individual entries
+      if (!p.styleCode) {
+        groupedProductsMap.set(p.id, {
+          ...p,
+          variants: [p],
+          colors: [...p.colors],
+        });
+        continue;
+      }
       if (!groupedProductsMap.has(p.styleCode)) {
         groupedProductsMap.set(p.styleCode, {
           ...p,
