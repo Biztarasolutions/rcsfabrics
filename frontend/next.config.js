@@ -8,6 +8,7 @@ const nextConfig = {
       { protocol: 'https', hostname: '**.cloudinary.com' },
       { protocol: 'https', hostname: '**.supabase.co' },
       { protocol: 'https', hostname: 'drive.google.com' },
+      { protocol: 'https', hostname: 'via.placeholder.com' },
       { protocol: 'http', hostname: 'localhost' },
       { protocol: 'https', hostname: 'localhost' },
     ],
