@@ -32,7 +32,7 @@ export const createProductGroup = async (req: Request, res: Response): Promise<v
     }
 
     // Parse and validate min order quantity
-    const minOrderQtyNum = parseFloat(minOrderQty || '0.5');
+    let minOrderQtyNum = parseFloat(minOrderQty || '0.5');
     if (isNaN(minOrderQtyNum) || minOrderQtyNum <= 0) {
       // Default to 0.5 if invalid
       minOrderQtyNum = 0.5;
