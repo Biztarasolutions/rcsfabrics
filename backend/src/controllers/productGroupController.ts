@@ -61,7 +61,7 @@ export const createProductGroup = async (req: Request, res: Response): Promise<v
           totalStock: parseFloat(variant.inventory),
           minOrderQty: parseFloat(minOrderQty),
           stretchability: stretchability || 'Non-Stretch',
-          width: width ? parseFloat(width) : 0,
+          width: Number(width ?? 0),
           pattern: pattern || 'Plain',
           bestFor: category.bestFor,
           properties: category.properties,
