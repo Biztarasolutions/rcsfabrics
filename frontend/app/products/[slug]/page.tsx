@@ -26,7 +26,10 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
   const styleCode = initialProduct?.styleCode;
   const { data: groupProducts = [] } = useQuery({
     queryKey: ['product-group', styleCode],
-    queryFn: () => productApi.getGroup(styleCode!).then(res => res.data.data),
+    queryFn: () => productApi.getGroup(styleCode!).then(res => {
+      console.log('Group products API response:', res);
+      return res.data.data;
+    }),
     enabled: !!styleCode,
   });
 
@@ -163,7 +166,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
             <p className="text-base leading-relaxed text-gray-700 dark:text-gray-300">{PRODUCT.description}</p>
 
             {/* Color Swatches */}
-            {availableVariants.length > 1 && (
+            {availableVariants.length > 0 && (
               <div>
                 <p className="mb-2 text-sm font-medium text-gray-900 dark:text-white">Color: {PRODUCT.color}</p>
                 <div className="flex flex-wrap gap-3">
