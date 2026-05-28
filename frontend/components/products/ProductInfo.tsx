@@ -119,9 +119,9 @@ export default function ProductInfo({
       <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-dark-700 dark:bg-dark-800">
         <p className="text-sm">
           <span className="font-semibold">Stock Available:</span>{' '}
-          {product.totalStock > 10
-            ? `${product.totalStock} meters`
-            : `Only ${product.totalStock} meters left!`}
+          {(product.totalStock ?? 0) > 10
+            ? `${product.totalStock ?? 0} meters`
+            : `Only ${product.totalStock ?? 0} meters left!`}
         </p>
       </div>
 
