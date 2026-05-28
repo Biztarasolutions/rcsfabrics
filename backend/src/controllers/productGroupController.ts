@@ -66,49 +66,83 @@ export const createProductGroup = async (req: Request, res: Response): Promise<v
 
       // Name-Category-ProductCode-Color
       const productName = buildProductCode(cleanedName, categoryName, variant.color, code);
-      const slug = generateSlug(productName);
+      let slug = generateSlug(productName);
+
+      // Check if slug already exists
+      const existingProduct = await prisma.product.findUnique({
+        where: { slug }
+      });
+
+      if (existingProduct) {
+        // Generate a unique slug by adding a timestamp
+        const uniqueSlug = generateSlug(`${productName}-${Date.now()}`);
+        // Update the slug to the unique version
+        slug = uniqueSlug;
+      }
+
       
-      const newProduct = await prisma.product.create({
-        data: {
-          name: cleanedName,
-          slug,
-          description,
-          categoryId,
-          code: code ? parseInt(code, 10) : null,
-          styleCode,
-          productCode: productName,
-          basePrice: basePriceNum,
-          discountPrice,
-          discountType,
-          discountValue: discountValue ? parseFloat(discountValue) : null,
-          color: variant.color,
-          totalStock: inventoryNum,
-          minOrderQty: minOrderQtyNum,
-          stretchability: stretchability || 'Non-Stretch',
-          width: Number(width ?? 0),
-          pattern: pattern || 'Plain',
-          bestFor: category.bestFor,
-          properties: category.properties,
+      try {
+        const newProduct = await prisma.product.create({
+          data: {
+            name: cleanedName,
+            slug,
+            description,
+            categoryId,
+            code: code ? parseInt(code, 10) : null,
+            styleCode,
+            productCode: productName,
+            basePrice: basePriceNum,
+            discountPrice,
+            discountType,
+            discountValue: discountValue ? parseFloat(discountValue) : null,
+            color: variant.color,
+            totalStock: inventoryNum,
+            minOrderQty: minOrderQtyNum,
+            stretchability: stretchability || 'Non-Stretch',
+            width: Number(width ?? 0),
+            pattern: pattern || 'Plain',
+            bestFor: category.bestFor,
+            properties: category.properties,
+          }
+        });
+
+        // Background Sync for Google Drive by product name
+        syncImagesForProduct(newProduct.id, productName).catch(err => {
+          console.error('Background sync failed:', err);
+        });
+
+        // Also create ProductColor record for consistency if needed
+        try {
+          await prisma.productColor.create({
+            data: {
+              productId: newProduct.id,
+              name: variant.color,
+              hexCode: variant.hexCode || '#000000',
+              productCode: productName,
+              folderUrl: variant.folderUrl
+            }
+          });
+        } catch (colorError: any) {
+          // Log error but don't fail the entire product creation if color creation fails
+          console.warn('Failed to create product color:', colorError.message);
         }
-      });
 
-      // Background Sync for Google Drive by product name
-      syncImagesForProduct(newProduct.id, productName).catch(err => {
-        console.error('Background sync failed:', err);
-      });
-
-      // Also create ProductColor record for consistency if needed
-      await prisma.productColor.create({
-        data: {
-          productId: newProduct.id,
-          name: variant.color,
-          hexCode: variant.hexCode || '#000000',
-          productCode: productName,
-          folderUrl: variant.folderUrl
+        createdProducts.push(newProduct);
+      } catch (dbError: any) {
+        // Handle specific database errors
+        if (dbError.code === 'P2002') {
+          // Unique constraint violation
+          const field = dbError.meta?.target?.[0] || 'field';
+          res.status(400).json({ 
+            success: false, 
+            message: `A product with this ${field} already exists. Please use a different name, color, or code.` 
+          });
+          return;
+        } else {
+          // Re-throw other errors to be caught by the outer try-catch
+          throw dbError;
         }
-      });
-
-      createdProducts.push(newProduct);
+      }
     }
 
     res.status(201).json({
