@@ -803,11 +803,11 @@ export const getAdminProducts = async (
         // styleCode: { not: null }, // Temporarily disabled to show all products including those without styleCode
       },
     });
-    const total = totalGroups.length;
+    const total = flatProducts.length;
 
     // Step 2: Fetch all variants for these styleCodes
     const flatProducts = await prisma.product.findMany({
-      where: { styleCode: { in: styleCodes } },
+      where,
       include: {
         images: {
           where: { isMain: true },
