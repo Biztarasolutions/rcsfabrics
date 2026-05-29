@@ -179,12 +179,18 @@ export default function CreateProductFamilyPage() {
       }
     }
 
+    const colors = form.variants.map((variant: any) => ({
+      name: variant.color.trim(),
+      hexCode: variant.hexCode || '#000000',
+      stock: parseFloat(variant.inventory) || 0,
+    }));
     const payload = {
       ...form,
       basePrice: basePriceNum,
       minOrderQty: minOrderQtyNum,
       width: widthNum,
       styleCode,
+      colors,
     };
     createGroupMutation.mutate(payload);
   };
