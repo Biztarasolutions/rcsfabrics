@@ -803,7 +803,7 @@ export const getAdminProducts = async (
         // styleCode: { not: null }, // Temporarily disabled to show all products including those without styleCode
       },
     });
-    const total = flatProducts.length;
+
 
     // Step 2: Fetch all variants for these styleCodes
     const flatProducts = await prisma.product.findMany({
@@ -849,6 +849,7 @@ export const getAdminProducts = async (
     }
 
     const products = Array.from(groupedProductsMap.values());
+const total = flatProducts.length;
 
     const meta = createPaginationMeta(total, parsedPage, parsedLimit);
 
