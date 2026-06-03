@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { productApi } from '@/lib/api';
 import { useCartStore, useWishlistStore } from '@/lib/store';
-import { formatPrice, calculateDiscount } from '@/lib/utils';
+import { formatPrice } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
