@@ -103,7 +103,14 @@ function ProductsContent() {
             {isLoading && (
               <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
                 {[...Array(6)].map((_, i) => (
-                  <div key={i} className="aspect-[4/5] animate-pulse rounded-2xl bg-gray-100 dark:bg-dark-800" />
+                  <div key={i} className="flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white dark:border-dark-700 dark:bg-dark-800">
+                    <div className="aspect-[4/5] animate-pulse bg-gray-100 dark:bg-dark-700" />
+                    <div className="p-4 space-y-3">
+                      <div className="h-3 w-1/3 animate-pulse rounded bg-gray-200 dark:bg-dark-600" />
+                      <div className="h-4 w-3/4 animate-pulse rounded bg-gray-200 dark:bg-dark-600" />
+                      <div className="h-4 w-1/2 animate-pulse rounded bg-gray-200 dark:bg-dark-600" />
+                    </div>
+                  </div>
                 ))}
               </div>
             )}

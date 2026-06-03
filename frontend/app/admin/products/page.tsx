@@ -14,12 +14,22 @@ export default function AdminProductsPage() {
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
+  const [page, setPage] = useState(1);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-  const { data: productsData = { products: [], total: 0 }, isLoading } = useQuery({
-    queryKey: ['admin-products', search],
-    queryFn: () => adminApi.getAdminProducts({ search, limit: 100 }).then(res => res.data.data),
-    staleTime: 0,
+  const { data: productsData = { products: [], total: 0, pages: 1 }, isLoading } = useQuery({
+    queryKey: ['admin-products', search, page],
+    queryFn: async () => {
+        const response = await adminApi.getAdminProducts({ search, page, limit: 50 });
+        const data = response.data;
+        // If the API returns an array directly, wrap it to match expected shape
+        if (Array.isArray(data)) {
+          return { products: data, total: data.length, pages: 1 };
+        }
+        // Otherwise assume it already contains { products, total }
+        return data;
+      },
+    staleTime: 1000 * 60 * 5, // 5 minutes cache
   });
   const products = productsData.products;
   const totalProducts = productsData.total ?? products.length;
@@ -95,7 +105,7 @@ export default function AdminProductsPage() {
           </svg>
           <input 
             value={search} 
-            onChange={(e) => setSearch(e.target.value)} 
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }} 
             placeholder="Search products..."
             className="input-field pl-9 py-2.5"
           />
@@ -238,6 +248,59 @@ export default function AdminProductsPage() {
             </tbody>
           </table>
         </div>
+        
+        {/* Pagination Controls */}
+        {productsData.pages > 1 && (
+          <div className="flex items-center justify-between border-t border-gray-100 bg-white px-4 py-3 sm:px-6 dark:border-dark-700 dark:bg-dark-800 rounded-b-2xl">
+            <div className="flex flex-1 justify-between sm:hidden">
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-dark-600 dark:bg-dark-700 dark:text-gray-200 disabled:opacity-50"
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => setPage(p => Math.min(productsData.pages, p + 1))}
+                disabled={page === productsData.pages}
+                className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-dark-600 dark:bg-dark-700 dark:text-gray-200 disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
+            <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  Showing page <span className="font-medium">{page}</span> of <span className="font-medium">{productsData.pages}</span>
+                </p>
+              </div>
+              <div>
+                <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                  <button
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 dark:ring-dark-600 dark:hover:bg-dark-700 disabled:opacity-50"
+                  >
+                    <span className="sr-only">Previous</span>
+                    <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => setPage(p => Math.min(productsData.pages, p + 1))}
+                    disabled={page === productsData.pages}
+                    className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 dark:ring-dark-600 dark:hover:bg-dark-700 disabled:opacity-50"
+                  >
+                    <span className="sr-only">Next</span>
+                    <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </nav>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Add/Edit Product Modal */}

@@ -806,8 +806,20 @@ export const getAdminProducts = async (
 
 
     // Step 2: Fetch all variants for these styleCodes
+    const variantWhere: any = { OR: [] };
+    if (styleCodes.length > 0) {
+      variantWhere.OR.push({ styleCode: { in: styleCodes } });
+    }
+    const hasNullStyleCode = groupedStyles.some(g => g.styleCode === null);
+    if (hasNullStyleCode) {
+      variantWhere.OR.push({ styleCode: null, ...where });
+    }
+    if (variantWhere.OR.length === 0) {
+      variantWhere.id = 'none';
+    }
+
     const flatProducts = await prisma.product.findMany({
-      where,
+      where: variantWhere,
       include: {
         images: {
           where: { isMain: true },
@@ -824,7 +836,6 @@ export const getAdminProducts = async (
     // Step 3: Group them into a single row per styleCode
     const groupedProductsMap = new Map();
     for (const p of flatProducts) {
-      // if (!p.styleCode) continue; // Temporarily disabled to include products without styleCode
       // Handle products without styleCode by adding them as individual entries
       if (!p.styleCode) {
         groupedProductsMap.set(p.id, {
@@ -849,7 +860,7 @@ export const getAdminProducts = async (
     }
 
     const products = Array.from(groupedProductsMap.values());
-const total = flatProducts.length;
+    const total = totalGroups.length;
 
     const meta = createPaginationMeta(total, parsedPage, parsedLimit);
 

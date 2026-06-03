@@ -10,8 +10,10 @@ import Link from 'next/link';
 
 interface ProductCardProps { product: Product; }
 
-export default function ProductCard({ product }: ProductCardProps) {
+const ProductCard = React.memo(function ProductCard({ product }: ProductCardProps) {
   const [hovered, setHovered] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
+  const [secondImgLoaded, setSecondImgLoaded] = useState(false);
   const mainImage = product.images?.find((img) => img.isMain) || product.images?.[0];
   const secondImage = product.images?.[1];
   const discountPercent = product.discountPrice ? calculateDiscount(product.basePrice, product.discountPrice) : 0;
@@ -45,14 +47,15 @@ export default function ProductCard({ product }: ProductCardProps) {
         className="group relative flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-product dark:border-dark-700 dark:bg-dark-800"
       >
         {/* Image */}
-        <div className="relative overflow-hidden bg-gray-50 dark:bg-dark-700" style={{ aspectRatio: '4/5' }}>
+        <div className={`relative overflow-hidden bg-gray-50 dark:bg-dark-700 ${!imgLoaded ? 'animate-pulse' : ''}`} style={{ aspectRatio: '4/5' }}>
           {mainImage ? (
             <Image
               src={mainImage.url}
               alt={product.name}
               fill
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-              className={`object-cover transition-all duration-500 ${hovered && secondImage ? 'opacity-0' : 'opacity-100'}`}
+              onLoad={() => setImgLoaded(true)}
+              className={`object-cover transition-all duration-500 ${hovered && secondImage ? 'opacity-0' : 'opacity-100'} ${!imgLoaded ? 'scale-105 blur-sm' : 'scale-100 blur-0'}`}
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 dark:from-dark-600 dark:to-dark-700">
@@ -65,7 +68,8 @@ export default function ProductCard({ product }: ProductCardProps) {
               alt={product.name}
               fill
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-              className={`object-cover transition-all duration-500 ${hovered ? 'opacity-100' : 'opacity-0'}`}
+              onLoad={() => setSecondImgLoaded(true)}
+              className={`object-cover transition-all duration-500 ${hovered ? 'opacity-100' : 'opacity-0'} ${!secondImgLoaded ? 'scale-105 blur-sm' : 'scale-100 blur-0'}`}
             />
           )}
           <div className="absolute left-3 top-3 flex flex-col gap-1.5">
@@ -127,4 +131,6 @@ export default function ProductCard({ product }: ProductCardProps) {
       </div>
     </Link>
   );
-}
+});
+
+export default ProductCard;

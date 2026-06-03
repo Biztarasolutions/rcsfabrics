@@ -5,6 +5,10 @@ import { parsePagination, createPaginationMeta } from '@/utils/pagination.util';
 import { ApiError } from '@/middleware/errorHandler';
 import { getDriveImageStream } from '@/utils/googleDrive.util';
 
+// Simple LRU cache for image buffers
+const imageCache = new Map<string, { buffer: Buffer, contentType: string }>();
+const CACHE_LIMIT = 200;
+
 export const getProducts = async (
   req: AuthRequest,
   res: Response
@@ -391,12 +395,26 @@ export const proxyProductImage = async (
       throw new ApiError(400, 'File ID is required');
     }
 
+    // Crucial for cross-origin image rendering in browsers when Helmet is enabled
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    // Set cache headers to avoid hitting Google Drive API repeatedly
+    res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for 1 day
+
+    if (imageCache.has(fileId)) {
+      const cached = imageCache.get(fileId)!;
+      // move to end to simulate LRU
+      imageCache.delete(fileId);
+      imageCache.set(fileId, cached);
+      
+      res.setHeader('Content-Type', cached.contentType);
+      res.setHeader('Content-Length', cached.buffer.length);
+      res.send(cached.buffer);
+      return;
+    }
+
     // Call the drive utility to get the stream
     const driveRes = await getDriveImageStream(fileId);
     
-    // Log headers to see what googleapis returned
-    console.log(`[Proxy] Google Drive response headers for ${fileId}:`, driveRes.headers);
-
     // Set headers from the Google Drive response
     const contentType = driveRes.headers['content-type'] || 'image/jpeg';
     res.setHeader('Content-Type', contentType);
@@ -405,13 +423,19 @@ export const proxyProductImage = async (
     if (contentLength) {
       res.setHeader('Content-Length', contentLength);
     }
-
-    // Crucial for cross-origin image rendering in browsers when Helmet is enabled
-    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-
-    // Set cache headers to avoid hitting Google Drive API repeatedly
-    res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for 1 day
     
+    // Cache the stream data
+    const chunks: Buffer[] = [];
+    driveRes.data.on('data', (chunk: Buffer) => chunks.push(chunk));
+    driveRes.data.on('end', () => {
+      const buffer = Buffer.concat(chunks);
+      if (imageCache.size >= CACHE_LIMIT) {
+         const firstKey = imageCache.keys().next().value;
+         if (firstKey) imageCache.delete(firstKey);
+      }
+      imageCache.set(fileId, { buffer, contentType });
+    });
+
     // Pipe the stream to res
     (driveRes.data as any).pipe(res);
   } catch (error: any) {
