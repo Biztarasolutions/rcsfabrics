@@ -455,6 +455,8 @@ export const createProduct = async (
       basePrice,
       discountPrice,
       discountPercent,
++      discountType,
++      discountValue,
       width,
       pattern,
       stretchability,
@@ -462,6 +464,62 @@ export const createProduct = async (
       minOrderQty,
       colors,
     } = req.body;
+
++    // Compute discountPrice based on discountType and discountValue
++    let computedDiscountPrice: number | null = null;
++    if (discountType === 'fixed' && discountValue != null) {
++      const base = parseFloat(basePrice);
++      const val = parseFloat(discountValue);
++      computedDiscountPrice = Math.max(base - val, 0);
++    } else if (discountType === 'percentage' && discountValue != null) {
++      const base = parseFloat(basePrice);
++      const perc = parseFloat(discountValue);
++      computedDiscountPrice = base * (1 - perc / 100);
++    }
+
+     const category = await prisma.category.findUnique({
+       where: { id: categoryId },
+       select: { bestFor: true, properties: true },
+     });
+@@
+-    const product = await prisma.product.create({
+-      data: {
+-        name,
+-        slug: name.toLowerCase().replace(/\s+/g, '-'),
+-        categoryId,
+-        color: colors && colors.length > 0 ? colors[0].name : '',
+-        basePrice: parseFloat(basePrice),
+-        discountPrice: discountPrice ? parseFloat(discountPrice) : null,
+-        discountPercent: discountPercent ? parseFloat(discountPercent) : 0,
+-        width,
+-        pattern,
+-        stretchability,
+-        totalStock: parseInt(stock),
+-        minOrderQty: parseInt(minOrderQty || '1'),
+-        bestFor: category?.bestFor || [],
+-        properties: category?.properties || [],
+-      },
+-    });
++    const product = await prisma.product.create({
++      data: {
++        name,
++        slug: name.toLowerCase().replace(/\s+/g, '-'),
++        categoryId,
++        color: colors && colors.length > 0 ? colors[0].name : '',
++        basePrice: parseFloat(basePrice),
++        discountPrice: computedDiscountPrice,
++        discountPercent: discountType === 'percentage' && discountValue ? parseFloat(discountValue) : null,
++        discountType: discountType,
++        discountValue: discountValue != null ? parseFloat(discountValue) : null,
++        width,
++        pattern,
++        stretchability,
++        totalStock: parseInt(stock),
++        minOrderQty: parseInt(minOrderQty || '1'),
++        bestFor: category?.bestFor || [],
++        properties: category?.properties || [],
++      },
++    });
 
     if (!name || !categoryId || !basePrice || !stretchability || !stock) {
       throw new ApiError(400, 'Required fields are missing');

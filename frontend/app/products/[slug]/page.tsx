@@ -63,8 +63,20 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
   const PRODUCT = selectedVariant || initialProduct;
   const images = PRODUCT.images ?? [];
   const isWishlisted = hasItem(PRODUCT.id);
-  const price = PRODUCT.discountPrice || PRODUCT.basePrice;
-  const discount = PRODUCT.discountPrice ? calculateDiscount(PRODUCT.basePrice, PRODUCT.discountPrice) : 0;
+  const price = PRODUCT.discountPrice ?? PRODUCT.basePrice;
+  // Determine discount display based on discount type
+  let discountBadge: string | null = null;
+  if (PRODUCT.discountPrice) {
+    const discountType = PRODUCT.discountType?.toLowerCase();
+    if (discountType === 'percentage') {
+      const percent = Math.round(((PRODUCT.basePrice - PRODUCT.discountPrice) / PRODUCT.basePrice) * 100);
+      discountBadge = `-${percent}%`;
+    } else if (discountType === 'fixed') {
+      const amount = Math.round(PRODUCT.basePrice - PRODUCT.discountPrice);
+      discountBadge = `-₹${amount}`;
+    }
+  }
+
   const totalPrice = price * qty;
   const REVIEWS = PRODUCT.reviews || [];
 
@@ -113,9 +125,9 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
               onMouseEnter={() => setZoomed(true)} onMouseLeave={() => setZoomed(false)}>
               <Image src={images?.[activeImg]?.url || 'https://via.placeholder.com/800'} alt={PRODUCT.name}
                 fill priority sizes="(max-width: 1024px) 100vw, 50vw" className={`object-cover transition-transform duration-500 ${zoomed ? 'scale-125' : 'scale-100'}`}/>
-              {PRODUCT.discountPrice && (
+              {PRODUCT.discountPrice && discountBadge && (
                 <div className="absolute left-4 top-4 rounded-full bg-red-500 px-3 py-1 text-sm font-bold text-white">
-                  -{discount}%
+                  {discountBadge}
                 </div>
               )}
               <div className={`absolute bottom-4 right-4 rounded-full border border-white/40 bg-black/30 px-3 py-1 text-xs text-white backdrop-blur-sm transition-opacity ${zoomed ? 'opacity-0' : 'opacity-100'}`}>
@@ -155,7 +167,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
               {PRODUCT.discountPrice && (
                 <div>
                   <p className="text-lg text-gray-400 line-through">{formatPrice(PRODUCT.basePrice)}</p>
-                  <p className="text-sm font-semibold text-green-600">Save {discount}%</p>
+                    <p className="text-sm font-semibold text-green-600">Save {discountBadge}</p>
                 </div>
               )}
             </div>
