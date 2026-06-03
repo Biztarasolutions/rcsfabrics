@@ -836,12 +836,17 @@ export const getAdminProducts = async (
     // Step 3: Group them into a single row per styleCode
     const groupedProductsMap = new Map();
     for (const p of flatProducts) {
+      const colorsWithStock = p.colors.map((c: any) => ({
+        ...c,
+        stock: p.totalStock,
+      }));
+
       // Handle products without styleCode by adding them as individual entries
       if (!p.styleCode) {
         groupedProductsMap.set(p.id, {
           ...p,
           variants: [p],
-          colors: [...p.colors],
+          colors: colorsWithStock,
         });
         continue;
       }
@@ -849,13 +854,13 @@ export const getAdminProducts = async (
         groupedProductsMap.set(p.styleCode, {
           ...p,
           variants: [p],
-          colors: [...p.colors], // start with its own color
+          colors: colorsWithStock, // start with its own color
         });
       } else {
         const group = groupedProductsMap.get(p.styleCode);
         group.variants.push(p);
         group.totalStock += p.totalStock; // Aggregate stock
-        group.colors.push(...p.colors); // Aggregate colors
+        group.colors.push(...colorsWithStock); // Aggregate colors
       }
     }
 
