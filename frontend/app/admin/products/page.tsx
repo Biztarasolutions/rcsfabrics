@@ -31,8 +31,10 @@ export default function AdminProductsPage() {
       },
     staleTime: 1000 * 60 * 5, // 5 minutes cache
   });
-  const products = productsData.products;
-  const totalProducts = productsData.total ?? products.length;
+  const actualData = productsData?.data || productsData;
+  const products = actualData?.products || [];
+  const totalProducts = actualData?.total ?? products.length;
+  const totalPages = actualData?.pages ?? 1;
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => adminApi.deleteProduct(id),
@@ -250,7 +252,7 @@ export default function AdminProductsPage() {
         </div>
         
         {/* Pagination Controls */}
-        {productsData.pages > 1 && (
+        {totalPages > 1 && (
           <div className="flex items-center justify-between border-t border-gray-100 bg-white px-4 py-3 sm:px-6 dark:border-dark-700 dark:bg-dark-800 rounded-b-2xl">
             <div className="flex flex-1 justify-between sm:hidden">
               <button
@@ -261,8 +263,8 @@ export default function AdminProductsPage() {
                 Previous
               </button>
               <button
-                onClick={() => setPage(p => Math.min(productsData.pages, p + 1))}
-                disabled={page === productsData.pages}
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
                 className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-dark-600 dark:bg-dark-700 dark:text-gray-200 disabled:opacity-50"
               >
                 Next
@@ -271,7 +273,7 @@ export default function AdminProductsPage() {
             <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm text-gray-700 dark:text-gray-300">
-                  Showing page <span className="font-medium">{page}</span> of <span className="font-medium">{productsData.pages}</span>
+                  Showing page <span className="font-medium">{page}</span> of <span className="font-medium">{totalPages}</span>
                 </p>
               </div>
               <div>
@@ -287,8 +289,8 @@ export default function AdminProductsPage() {
                     </svg>
                   </button>
                   <button
-                    onClick={() => setPage(p => Math.min(productsData.pages, p + 1))}
-                    disabled={page === productsData.pages}
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
                     className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 dark:ring-dark-600 dark:hover:bg-dark-700 disabled:opacity-50"
                   >
                     <span className="sr-only">Next</span>
