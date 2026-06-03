@@ -568,16 +568,28 @@ export const updateProduct = async (
       }
 
       // Base payload common to all variants
-      const basePayload: any = {
-        ...cleanedUpdateData,
-        folderUrl,
-      };
+      // Compute discountPrice if discountValue/type provided
+      if (cleanedUpdateData.discountValue !== undefined && cleanedUpdateData.discountType) {
+        const base = cleanedUpdateData.basePrice ?? existingProduct.basePrice;
+        const type = cleanedUpdateData.discountType.toLowerCase();
+        const value = Number(cleanedUpdateData.discountValue);
+        let discountPrice: number | null = null;
+        if (type === 'percentage') {
+          discountPrice = base - Math.round((base * value) / 100);
+        } else if (type === 'fixed') {
+          discountPrice = base - value;
+        }
+        cleanedUpdateData.discountPrice = discountPrice && discountPrice > 0 ? discountPrice : null;
+      }
+      const { price, // remove any stray price field if present
+        ...payload } = cleanedUpdateData;
+      const updatePayload = payload;
 
       // Update existing or create new variants
       for (const c of processedColors) {
         const existing = existingVariants.find(v => v.productCode === c.productCode);
         const variantData = {
-          ...basePayload,
+          ...updatePayload,
           slug: generateSlug(c.productCode),
           totalStock: c.inventory,
           color: c.name,
@@ -641,7 +653,7 @@ export const updateProduct = async (
 
       await prisma.product.update({
         where: { id },
-        data: cleanedUpdateData,
+        data: updatePayload,
       });
     }
 
@@ -1030,6 +1042,11 @@ export const getDashboardStats = async (
       prisma.product.count(),
     ]);
 
+    const lowStockThreshold = 10;
+    const lowStockCount = await prisma.product.count({
+      where: { totalStock: { lt: lowStockThreshold } },
+    });
+
     res.json({
       success: true,
       message: 'Dashboard stats retrieved',
@@ -1038,6 +1055,7 @@ export const getDashboardStats = async (
         totalRevenue: totalRevenue._sum.total || 0,
         totalCustomers,
         totalProducts,
+        lowStockCount,
       },
       statusCode: 200,
     } as ApiResponse);
