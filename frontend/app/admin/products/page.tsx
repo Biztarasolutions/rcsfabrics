@@ -120,12 +120,12 @@ export default function AdminProductsPage() {
           <table className="w-max min-w-full text-sm whitespace-nowrap sm:min-w-[1080px]">
             <thead className="border-b border-gray-100 dark:border-dark-700 bg-gray-50 dark:bg-dark-700/50">
               <tr className="text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                <th className="px-3 py-2.5 min-w-[280px]">Product</th>
-                <th className="px-3 py-2.5 min-w-[120px]">Style Code</th>
-                <th className="px-3 py-2.5 min-w-[90px]">Price</th>
-                <th className="px-3 py-2.5 min-w-[80px]">Stock</th>
-                <th className="px-3 py-2.5 min-w-[70px]">Colors</th>
-                <th className="px-3 py-2.5 min-w-[180px] text-right">Actions</th>
+                    <th className="px-3 py-2.5 min-w-[120px]">Category</th>
+                    <th className="px-3 py-2.5 min-w-[90px]">Price</th>
+                    <th className="px-3 py-2.5 min-w-[80px]">Selling At</th>
+                    <th className="px-3 py-2.5 min-w-[70px]">Total Stock</th>
+                    <th className="px-3 py-2.5 min-w-[70px]">Colors</th>
+                    <th className="px-3 py-2.5 min-w-[180px] text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 dark:divide-dark-700">
@@ -145,48 +145,22 @@ export default function AdminProductsPage() {
                 products.map((product: any) => (
                   <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-dark-700/30 transition-colors">
                     {/* Product Name */}
-                    <td className="px-3 py-2">
-                      <div className="flex items-center gap-2 max-w-[280px]">
-                        <Image 
-                          src={product.images?.[0]?.url || 'https://via.placeholder.com/40'} 
-                          alt={product.name} 
-                          width={32}
-                          height={32}
-                          className="rounded-md object-cover shrink-0"
-                        />
-                        <div className="min-w-0">
-                          <div className="font-semibold text-gray-900 dark:text-white truncate" title={product.name}>
-                            {product.name}
-                          </div>
-                          {product.description && (
-                            <div className="text-[11px] text-gray-500 truncate" title={product.description}>
-                              {product.description}
-                            </div>
-                          )}
-                          <div className="text-[11px] text-gray-400">#{product.code || '—'}</div>
-                        </div>
-                      </div>
-                    </td>
-
-
-
                     <td className="px-3 py-2 text-xs">
-                      <span className="block truncate max-w-[200px] text-blue-700 dark:text-blue-400" title={product.styleCode || ''}>
-                        {product.styleCode || '—'}
+                      <span className="block truncate max-w-[200px] text-gray-900 dark:text-white" title={product.category?.name || ''}>
+                        {product.category?.name || '—'}
                       </span>
                     </td>
 
-
+                    <td className="px-3 py-2 text-xs">
+                      <span className="font-semibold text-gray-900 dark:text-white">
+                        {formatPrice(product.basePrice)}
+                      </span>
+                    </td>
 
                     <td className="px-3 py-2 text-xs">
                       <span className="font-semibold text-gray-900 dark:text-white">
                         {formatPrice(product.discountPrice || product.basePrice)}
                       </span>
-                      {product.discountPrice && (
-                        <span className="ml-1 text-[11px] text-gray-400 line-through">
-                          {formatPrice(product.basePrice)}
-                        </span>
-                      )}
                     </td>
 
                     <td className="px-3 py-2 text-xs">
@@ -194,7 +168,8 @@ export default function AdminProductsPage() {
                         product.totalStock <= 10 
                           ? 'text-red-600 dark:text-red-400' 
                           : 'text-gray-700 dark:text-gray-300'
-                      }`}>
+                      }`}
+                      >
                         {product.totalStock}m
                       </span>
                     </td>

@@ -43,9 +43,29 @@ const uploadDriveImagesToSupabase = async (folderId: string): Promise<string[]> 
 export const syncImagesForProduct = async (productId: string, productName: string) => {
   try {
     console.log(`Starting background sync for product ID: ${productId} with name: ${productName}`);
-    const folderId = await findFolderIdByName(productName);
+    // Determine the Google Drive folder ID for the product.
+    // Primary method: find by product name.
+    let folderId = await findFolderIdByName(productName);
+    // Fallback: use folderUrl stored on the product or its colors.
     if (!folderId) {
-      console.error(`Folder not found in Google Drive for product name: ${productName}`);
+      // Fetch product with folder data.
+      const productRecord = await prisma.product.findUnique({
+        where: { id: productId },
+        include: { colors: true },
+      });
+      if (productRecord) {
+        const possibleUrls = [productRecord.folderUrl, ...productRecord.colors.map((c: any) => c.folderUrl)].filter(Boolean);
+        for (const url of possibleUrls) {
+          const match = url?.match(/folders\/([a-zA-Z0-9_-]+)/);
+          if (match) {
+            folderId = match[1];
+            break;
+          }
+        }
+      }
+    }
+    if (!folderId) {
+      console.error(`Folder not found in Google Drive for product ID: ${productId}`);
       return;
     }
 
@@ -64,6 +84,7 @@ export const syncImagesForProduct = async (productId: string, productName: strin
         })
       ]);
       console.log(`Successfully synced ${allPublicUrls.length} images for product ID: ${productId}`);
+      return allPublicUrls.length;
     } else {
       console.log(`No images found to sync for product ID: ${productId}`);
     }
