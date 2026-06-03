@@ -652,9 +652,9 @@ export const updateProduct = async (
       }
 
       await prisma.product.update({
-        where: { id },
-        data: updatePayload,
-      });
+  where: { id },
+  data: cleanedUpdateData,
+});
     }
 
     const product = await prisma.product.findUnique({ where: { id }, include: { colors: true } });
