@@ -120,24 +120,25 @@ export default function AdminProductsPage() {
           <table className="w-max min-w-full text-sm whitespace-nowrap sm:min-w-[1080px]">
             <thead className="border-b border-gray-100 dark:border-dark-700 bg-gray-50 dark:bg-dark-700/50">
               <tr className="text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                    <th className="px-3 py-2.5 min-w-[120px]">Category</th>
-                    <th className="px-3 py-2.5 min-w-[90px]">Price</th>
-                    <th className="px-3 py-2.5 min-w-[80px]">Selling At</th>
-                    <th className="px-3 py-2.5 min-w-[70px]">Total Stock</th>
-                    <th className="px-3 py-2.5 min-w-[70px]">Colors</th>
-                    <th className="px-3 py-2.5 min-w-[180px] text-right">Actions</th>
+                <th className="px-3 py-2.5 min-w-[250px]">Product</th>
+                <th className="px-3 py-2.5 min-w-[120px]">Category</th>
+                <th className="px-3 py-2.5 min-w-[90px]">Price</th>
+                <th className="px-3 py-2.5 min-w-[80px]">Selling At</th>
+                <th className="px-3 py-2.5 min-w-[70px]">Total Stock</th>
+                <th className="px-3 py-2.5 min-w-[70px]">Colors</th>
+                <th className="px-3 py-2.5 min-w-[180px] text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 dark:divide-dark-700">
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="py-10 text-center text-gray-500">
+                  <td colSpan={7} className="py-10 text-center text-gray-500">
                     Loading products...
                   </td>
                 </tr>
               ) : products.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-10 text-center text-gray-500">
+                  <td colSpan={7} className="py-10 text-center text-gray-500">
                     No products found. Create your first product!
                   </td>
                 </tr>
@@ -145,6 +146,18 @@ export default function AdminProductsPage() {
                 products.map((product: any) => (
                   <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-dark-700/30 transition-colors">
                     {/* Product Name */}
+                    <td className="px-3 py-2 flex items-center space-x-2">
+                      <img
+                        src={product.images?.[0]?.url || '/placeholder.png'}
+                        alt={product.name}
+                        className="h-10 w-10 rounded object-cover"
+                      />
+                      <div className="flex flex-col">
+                        <span className="font-medium text-gray-900 dark:text-white">{product.name}</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">{product.code ?? product.styleCode}</span>
+                      </div>
+                    </td>
+
                     <td className="px-3 py-2 text-xs">
                       <span className="block truncate max-w-[200px] text-gray-900 dark:text-white" title={product.category?.name || ''}>
                         {product.category?.name || '—'}
@@ -182,7 +195,7 @@ export default function AdminProductsPage() {
                               key={idx}
                               className="h-5 w-5 rounded-full border border-gray-300"
                               style={{ backgroundColor: color.hexCode }}
-                              title={`${color.name} (${color.inventory || 0}m)`}
+                              title={`${color.name} (${color.stock || 0}m)`}
                             />
                           ))}
                         </div>
