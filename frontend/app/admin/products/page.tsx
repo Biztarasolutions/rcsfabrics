@@ -120,13 +120,13 @@ export default function AdminProductsPage() {
           <table className="w-full min-w-full table-fixed text-sm whitespace-nowrap sm:min-w-[1000px]">
             <thead className="border-b border-gray-100 dark:border-dark-700 bg-gray-50 dark:bg-dark-700/50">
               <tr className="text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                <th className="w-[30%] px-4 py-3 align-middle text-left">Product</th>
-                <th className="w-[15%] px-4 py-3 align-middle text-left">Category</th>
-                <th className="w-[12%] px-4 py-3 align-middle text-left">Price</th>
-                <th className="w-[12%] px-4 py-3 align-middle text-left">Selling At</th>
-                <th className="w-[10%] px-4 py-3 align-middle text-left">Total Stock</th>
-                <th className="w-[10%] px-4 py-3 align-middle text-left">Colors</th>
-                <th className="w-[11%] px-4 py-3 align-middle text-right">Actions</th>
+                <th className="w-[28%] px-3 py-2.5 align-middle text-left">Product</th>
+                <th className="w-[15%] px-3 py-2.5 align-middle text-left">Category</th>
+                <th className="w-[10%] px-3 py-2.5 align-middle text-left">Price</th>
+                <th className="w-[12%] px-3 py-2.5 align-middle text-left">Selling At</th>
+                <th className="w-[10%] px-3 py-2.5 align-middle text-left">Total Stock</th>
+                <th className="w-[15%] px-3 py-2.5 align-middle text-left">Colors</th>
+                <th className="w-[10%] px-3 py-2.5 align-middle text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 dark:divide-dark-700">
@@ -146,63 +146,55 @@ export default function AdminProductsPage() {
                 products.map((product: any) => (
                   <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-dark-700/30 transition-colors">
                     {/* Product Name */}
-                    <td className="w-[30%] px-4 py-2.5 align-middle">
-                      <div className="flex items-center space-x-3">
+                    <td className="w-[28%] px-3 py-2 align-middle">
+                      <div className="flex items-center space-x-2.5">
                         <img
                           src={product.images?.[0]?.url || '/placeholder.png'}
                           alt={product.name}
                           className="h-10 w-10 rounded-lg object-cover border border-gray-100 dark:border-dark-700 shadow-sm shrink-0"
                         />
-                        <div className="flex flex-col min-w-0">
-                          <span className="font-medium text-gray-900 dark:text-white truncate block" title={product.name}>
+                        <div className="flex flex-col min-w-0 leading-tight">
+                          <span className="font-bold text-gray-900 dark:text-white truncate block" title={product.name}>
                             {product.name}
                           </span>
-                          <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">
-                            #{product.styleCode || product.code || '—'}
+                          <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium mt-0.5">
+                            {product.code ? `P${product.code}` : (product.styleCode?.split('-').pop() || '—')}
                           </span>
                         </div>
                       </div>
                     </td>
 
-                    <td className="w-[15%] px-4 py-2.5 align-middle text-xs">
+                    <td className="w-[15%] px-3 py-2 align-middle text-xs">
                       <span className="block truncate text-gray-900 dark:text-white" title={product.category?.name || ''}>
                         {product.category?.name || '—'}
                       </span>
                     </td>
 
-                    <td className="w-[12%] px-4 py-2.5 align-middle text-xs font-semibold text-gray-900 dark:text-white">
+                    <td className="w-[10%] px-3 py-2 align-middle text-xs font-semibold text-gray-900 dark:text-white">
                       {formatPrice(product.basePrice)}
                     </td>
 
-                    <td className="w-[12%] px-4 py-2.5 align-middle text-xs font-semibold text-gray-900 dark:text-white">
+                    <td className="w-[12%] px-3 py-2 align-middle text-xs font-semibold text-gray-900 dark:text-white">
                       {formatPrice(product.discountPrice || product.basePrice)}
                     </td>
 
-                    <td className="w-[10%] px-4 py-2.5 align-middle text-xs font-semibold">
+                    <td className="w-[10%] px-3 py-2 align-middle text-xs font-semibold">
                       <span className={product.totalStock <= 10 ? 'text-red-600 dark:text-red-400' : 'text-gray-700 dark:text-gray-300'}>
                         {product.totalStock}m
                       </span>
                     </td>
 
-                    <td className="w-[10%] px-4 py-2.5 align-middle text-xs">
+                    <td className="w-[15%] px-3 py-2 align-middle text-xs">
                       {product.colors && product.colors.length > 0 ? (
-                        <div className="flex flex-wrap gap-1.5 max-w-full">
+                        <div className="grid grid-cols-5 gap-2 w-max items-center justify-start">
                           {product.colors.map((color: any, idx: number) => (
-                            <div key={idx} className="relative group/tooltip flex items-center justify-center">
-                              <div
-                                className={`h-5 w-5 rounded-full border border-gray-300 dark:border-dark-600 shadow-sm transition-all duration-200 hover:scale-110 cursor-pointer ${
-                                  (color.stock ?? 0) === 0 ? 'opacity-40' : 'opacity-100'
-                                }`}
-                                style={{ backgroundColor: color.hexCode }}
-                              />
-                              <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-30 opacity-0 group-hover/tooltip:opacity-100 transition-opacity duration-100 bg-gray-950 dark:bg-dark-900 text-white px-2.5 py-1.5 rounded-lg shadow-xl text-center flex flex-col items-center border border-gray-800 dark:border-dark-700 min-w-[100px]">
-                                <span className="font-semibold text-xs leading-tight whitespace-nowrap">{color.name}</span>
-                                <span className="text-[10px] text-gray-400 mt-0.5 leading-none whitespace-nowrap">
-                                  {(color.stock ?? 0) > 0 ? `${color.stock}m Available` : 'Out of Stock'}
-                                </span>
-                                <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-950 dark:border-t-dark-900" />
-                              </div>
-                            </div>
+                            <div
+                              key={idx}
+                              className={`h-5 w-5 rounded-full border border-gray-300 dark:border-dark-600 shadow-sm transition-all duration-200 hover:scale-110 cursor-pointer ${
+                                (color.stock ?? 0) === 0 ? 'opacity-40' : 'opacity-100'
+                              }`}
+                              style={{ backgroundColor: color.hexCode }}
+                            />
                           ))}
                         </div>
                       ) : (
@@ -211,7 +203,7 @@ export default function AdminProductsPage() {
                     </td>
 
                     {/* Actions */}
-                    <td className="w-[11%] px-4 py-2.5 align-middle text-right">
+                    <td className="w-[10%] px-3 py-2 align-middle text-right">
                       <div className="flex items-center justify-end gap-1.5">
                         <button
                           onClick={() => handleSyncSingle(product.id)}
