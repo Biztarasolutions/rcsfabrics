@@ -40,7 +40,7 @@ const uploadDriveImagesToSupabase = async (folderId: string): Promise<string[]> 
   }
 };
 
-export const syncImagesForProduct = async (productId: string, productName: string) => {
+export const syncImagesForProduct = async (productId: string, productName: string): Promise<number> => {
   try {
     console.log(`Starting background sync for product ID: ${productId} with name: ${productName}`);
     // Determine the Google Drive folder ID for the product.
@@ -66,7 +66,7 @@ export const syncImagesForProduct = async (productId: string, productName: strin
     }
     if (!folderId) {
       console.error(`Folder not found in Google Drive for product ID: ${productId}`);
-      return;
+      return 0;
     }
 
     const allPublicUrls = await uploadDriveImagesToSupabase(folderId);
@@ -87,8 +87,10 @@ export const syncImagesForProduct = async (productId: string, productName: strin
       return allPublicUrls.length;
     } else {
       console.log(`No images found to sync for product ID: ${productId}`);
+      return 0;
     }
   } catch (err: any) {
     console.error(`Failed to sync images for product ID: ${productId}`, err.message);
+    return 0;
   }
 };

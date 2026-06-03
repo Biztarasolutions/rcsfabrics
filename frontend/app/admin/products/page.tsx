@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
 import toast from 'react-hot-toast';
-import Image from 'next/image';
+// (removed unused Image import)
 import Link from 'next/link';
 import ProductFormAdvanced from '@/components/products/ProductFormAdvanced';
 
