@@ -451,19 +451,7 @@ export const createProduct = async (
   try {
     const {
       name,
-      categoryId,
-      basePrice,
-      discountPrice,
-      discountPercent,
-      discountType,
-      discountValue,
-      width,
-      pattern,
-      stretchability,
-      stock,
-      minOrderQty,
-      colors,
-    } = req.body;
+
 
     // Compute discountPrice based on discountType and discountValue
     let computedDiscountPrice: number | null = null;
@@ -619,7 +607,7 @@ export const createProduct = async (
 +      },
 +    });
 
-    if (!name || !categoryId || !basePrice || !stretchability || !stock) {
+
       throw new ApiError(400, 'Required fields are missing');
     }
 
