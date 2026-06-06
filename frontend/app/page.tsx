@@ -102,31 +102,6 @@ export default function HomePage() {
       {/* 9. Testimonials */}
       <Testimonials />
 
-      {/* 10. Swatch Request */}
-      <section className="py-12 lg:py-16 bg-primary-50 dark:bg-primary-950/20">
-        <div className="container-main">
-          <div className="flex flex-col items-center gap-6 rounded-2xl border border-primary-200 dark:border-primary-800/50 bg-white dark:bg-dark-800 p-8 text-center lg:flex-row lg:text-left lg:justify-between">
-            <div>
-              <span className="text-2xl">🧵</span>
-              <h3 className="mt-2 font-display text-2xl font-bold text-gray-900 dark:text-white">
-                Not sure about the fabric? Request a Swatch!
-              </h3>
-              <p className="mt-2 text-gray-600 dark:text-gray-400">
-                Get a physical sample delivered to your door before committing to a full order.
-              </p>
-            </div>
-            <div className="flex gap-3 shrink-0">
-              <Link href="/contact#swatch" className="button-primary px-6 py-3 whitespace-nowrap">
-                Request Swatch
-              </Link>
-              <Link href="/products" className="button-secondary px-6 py-3 whitespace-nowrap">
-                Browse Fabrics
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* 11. Newsletter */}
       <NewsletterSignup />
     </div>
