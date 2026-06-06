@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import { prisma } from '@/index';
+import { supabase } from '@/services/bulkOrderService';
 import { AuthRequest, ApiResponse } from '@/types';
 import {
   generateSlug,

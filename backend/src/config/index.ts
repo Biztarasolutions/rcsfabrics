@@ -34,6 +34,12 @@ export const config = {
   SMTP_PASSWORD: process.env.SMTP_PASSWORD || '',
   SMTP_FROM_EMAIL: process.env.SMTP_FROM_EMAIL || 'noreply@rcsfabrics.com',
   
+  // SMS Service (Twilio or other provider)
+  SMS_PROVIDER: process.env.SMS_PROVIDER || 'mock', // 'twilio', 'aws', or 'mock'
+  TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID || '',
+  TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN || '',
+  TWILIO_PHONE_NUMBER: process.env.TWILIO_PHONE_NUMBER || '',
+  
   // Admin
   ADMIN_EMAIL: process.env.ADMIN_EMAIL || 'admin@rcsfabrics.com',
   ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || 'admin123',

@@ -14,11 +14,12 @@ model User {
   password      String     @db.VarChar(255)
   firstName     String?    @db.VarChar(100)
   lastName      String?    @db.VarChar(100)
-  phone         String?    @db.VarChar(20)
+  phone         String?    @unique @db.VarChar(20)
   avatar        String?
   role          UserRole   @default(CUSTOMER)
   isActive      Boolean    @default(true)
   isVerified    Boolean    @default(false)
+  phoneVerified Boolean    @default(false)
   verifyToken   String?
   resetToken    String?
   resetTokenExp DateTime?
@@ -29,8 +30,10 @@ model User {
   orders        Order[]
   reviews       Review[]
   wishlist      Wishlist[]
+  otp           OTP?
 
   @@index([email])
+  @@index([phone])
   @@index([role])
   @@map("users")
 }
@@ -373,6 +376,22 @@ model ActivityLog {
   @@index([action])
   @@index([entity])
   @@map("activity_logs")
+}
+
+model OTP {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  phone     String   @db.VarChar(20)
+  code      String   @db.VarChar(6)
+  attempts  Int      @default(0)
+  isUsed    Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([phone])
+  @@index([expiresAt])
+  @@map("otps")
 }
 
 enum UserRole {

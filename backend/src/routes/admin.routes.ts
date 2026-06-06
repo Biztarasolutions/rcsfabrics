@@ -23,6 +23,7 @@ import {
   syncProductImages,
   syncAllProductImages,
 } from '@/controllers/admin.controller';
+import bulkEnquiryRouter from '@/routes/bulkEnquiry.routes';
 import { createProductGroup } from '@/controllers/productGroupController';
 
 const router = Router();
@@ -66,4 +67,5 @@ router.post('/banners', createBanner);
 router.put('/banners/:id', updateBanner);
 router.delete('/banners/:id', deleteBanner);
 
+router.use('/bulk-enquiries', bulkEnquiryRouter);
 export default router;
