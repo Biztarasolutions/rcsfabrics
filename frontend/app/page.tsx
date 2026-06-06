@@ -12,6 +12,8 @@ import CategoryShowcase from '@/components/products/CategoryShowcase';
 import Testimonials from '@/components/common/Testimonials';
 import NewsletterSignup from '@/components/common/NewsletterSignup';
 import Image from 'next/image';
+import WhyChoose from '@/components/home/WhyChoose';
+import sectionToggles from '@/config/sectionToggles.json';
 
 export default function HomePage() {
   return (
@@ -40,6 +42,7 @@ export default function HomePage() {
           </div>
         </div>
       </div>
+{sectionToggles.whyChoose && <WhyChoose />}
 
       {/* 3. Featured Products */}
       <section className="py-16 lg:py-24">
