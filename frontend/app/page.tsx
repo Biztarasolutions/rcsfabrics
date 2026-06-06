@@ -8,7 +8,7 @@ import FeaturedProducts from '@/components/products/FeaturedProducts';
 import NewArrivals from '@/components/products/NewArrivals';
 import BestSellers from '@/components/products/BestSellers';
 import CategoryShowcase from '@/components/products/CategoryShowcase';
-import FeaturedCollections from '@/components/products/FeaturedCollections';
+
 import Testimonials from '@/components/common/Testimonials';
 import NewsletterSignup from '@/components/common/NewsletterSignup';
 import Image from 'next/image';
@@ -94,8 +94,7 @@ export default function HomePage() {
       {/* 7. Category Showcase */}
       <CategoryShowcase />
 
-      {/* 8. Featured Collections */}
-      <FeaturedCollections />
+
 
       {/* 9. Testimonials */}
       <Testimonials />

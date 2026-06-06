@@ -78,22 +78,7 @@ imageUrl    String?
   @@map("categories")
 }
 
-model Collection {
-  id          String              @id @default(cuid())
-  name        String              @unique @db.VarChar(200)
-  slug        String              @unique @db.VarChar(200)
-  description String?
-  image       String?
-  isActive    Boolean             @default(true)
-  order       Int                 @default(0)
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
-  products    CollectionProduct[]
 
-  @@index([slug])
-  @@index([isActive])
-  @@map("collections")
-}
 
 model Product {
   id              String              @id @default(cuid())
@@ -128,7 +113,6 @@ model Product {
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
   cartItems       CartItem[]
-  collections     CollectionProduct[]
   orderItems      OrderItem[]
   images          ProductImage[]
   category        Category            @relation(fields: [categoryId], references: [id])
@@ -166,19 +150,7 @@ model ProductImage {
   @@map("product_images")
 }
 
-model CollectionProduct {
-  id           String     @id @default(cuid())
-  collectionId String
-  productId    String
-  order        Int        @default(0)
-  createdAt    DateTime   @default(now())
-  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
-  product      Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-  @@unique([collectionId, productId])
-  @@index([productId])
-  @@map("collection_products")
-}
 
 model CartItem {
   id        String   @id @default(cuid())
@@ -442,7 +414,6 @@ enum SectionType {
   NEW_ARRIVALS
   TRENDING
   BEST_SELLERS
-  FEATURED_COLLECTIONS
   CATEGORY_SHOWCASE
   TESTIMONIALS
   CUSTOM_HTML
@@ -451,7 +422,6 @@ enum SectionType {
 enum EntityType {
   PRODUCT
   CATEGORY
-  COLLECTION
   PAGE
 }
 

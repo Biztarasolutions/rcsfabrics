@@ -134,7 +134,6 @@ async function main() {
   
   // Clear products
   await prisma.productImage.deleteMany();
-  await prisma.collectionProduct.deleteMany();
   await prisma.product.deleteMany();
   
   // Clear categories

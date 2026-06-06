@@ -118,13 +118,7 @@ export interface Category {
   isActive: boolean;
 }
 
-export interface Collection {
-  id: string;
-  name: string;
-  slug: string;
-  description?: string;
-  image?: string;
-}
+
 
 export interface ApiResponse<T = any> {
   success: boolean;

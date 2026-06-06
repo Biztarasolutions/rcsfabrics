@@ -66,7 +66,7 @@ async function main() {
       title: 'Royal Silk Collection', 
       subtitle: 'Experience the heritage', 
       image: 'https://images.unsplash.com/photo-1584992236310-6edddc08acff?w=1200', 
-      link: '/collections/silk', 
+      link: '/products?category=pure-silk', 
       isActive: true, 
       order: 1 
     },

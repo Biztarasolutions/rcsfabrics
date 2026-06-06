@@ -303,7 +303,7 @@ export const getHomepageData = async (
     const limit = 8;
 
     // Fetch all data in parallel
-    const [featured, newArrivals, bestSellers, categories, collections] = await Promise.all([
+    const [featured, newArrivals, bestSellers, categories] = await Promise.all([
       // Featured products
       prisma.product.findMany({
         where: { isActive: true, isFeatured: true },
@@ -346,19 +346,6 @@ export const getHomepageData = async (
         },
         orderBy: { order: 'asc' },
       }),
-      // Featured collections
-      prisma.collection.findMany({
-        where: { isActive: true },
-        take: 6,
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-          image: true,
-          description: true,
-        },
-        orderBy: { order: 'asc' },
-      }),
     ]);
 
     res.json({
@@ -369,7 +356,6 @@ export const getHomepageData = async (
         newArrivals,
         bestSellers,
         categories,
-        collections,
       },
       statusCode: 200,
     } as ApiResponse);

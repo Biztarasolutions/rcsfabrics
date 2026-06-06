@@ -9,7 +9,6 @@ import { useCartStore, useAuthStore, useThemeStore, useWishlistStore, useUIStore
 const NAV_LINKS = [
   { label: 'Home', href: '/' },
   { label: 'Fabrics', href: '/products' },
-  { label: 'Collections', href: '/collections/summer-2025' },
   { label: 'About', href: '/about' },
   { label: 'Contact', href: '/contact' },
 ];
