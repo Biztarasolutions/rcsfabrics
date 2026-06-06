@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authorizeRole } from '@/middleware/auth.middleware';
+import { authorizeRole } from '@/middleware/auth';
 import { getBulkEnquiries } from '@/controllers/bulkEnquiry.controller';
 
 const router = Router();

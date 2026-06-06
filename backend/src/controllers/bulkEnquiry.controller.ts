@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
-import { supabase } from '@/services/bulkOrderService';
-import { ApiError, ApiResponse } from '@/utils/apiResponse.util';
+import { prisma } from '@/index';
+import { ApiError } from '@/middleware/errorHandler';
+import { ApiResponse } from '@/types';
 import { parsePagination, createPaginationMeta } from '@/utils/pagination.util';
 
 /**
@@ -20,26 +21,23 @@ export const getBulkEnquiries = async (req: Request, res: Response): Promise<voi
     // Build where clause for optional search on name or email fields
     const where: any = {};
     if (search) {
-      where.or = [
-        { name: { ilike: `%${search}%` } },
-        { email: { ilike: `%${search}%` } },
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
       ];
     }
 
-    const { data, error, count } = await supabase
-      .from('bulk_enquiries')
-      .select('*', { count: 'exact' })
-      .order('created_at', { ascending: false })
-      .range(skip, skip + parsedLimit - 1)
-      .match(where);
+    const data = await prisma.bulkOrderInquiry.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: parseInt(limit as string),
+    });
 
-    if (error) {
-      console.error('Supabase fetch error:', error);
-      throw new ApiError(500, 'Failed to fetch bulk enquiries');
-    }
+    const count = await prisma.bulkOrderInquiry.count({ where });
 
-    const meta = createPaginationMeta({ page: parsedPage, limit: parsedLimit, total: count || 0 });
-    res.json({ success: true, data, meta } as ApiResponse);
+    const meta = createPaginationMeta(count || 0, parsedPage, parsedLimit);
+    res.json({ success: true, data, meta, statusCode: 200, message: 'Bulk enquiries retrieved successfully' } as ApiResponse);
   } catch (err: any) {
     if (err instanceof ApiError) {
       res.status(err.statusCode).json({ success: false, message: err.message, statusCode: err.statusCode } as ApiResponse);

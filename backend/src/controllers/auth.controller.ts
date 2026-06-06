@@ -45,10 +45,9 @@ export const sendPhoneOTP = async (
       where: { phone },
     });
 
-    let savedOTP;
     if (existingOTP) {
       // Update existing OTP
-      savedOTP = await prisma.oTP.update({
+      await prisma.oTP.update({
         where: { id: existingOTP.id },
         data: {
           code: otp,
@@ -60,7 +59,7 @@ export const sendPhoneOTP = async (
     } else {
       // Create new OTP entry (temporary, before user creation)
       // We'll use a special userId format for pre-registration OTPs
-      savedOTP = await prisma.oTP.create({
+      await prisma.oTP.create({
         data: {
           userId: `temp-${phone}-${Date.now()}`,
           phone,
@@ -319,6 +318,7 @@ export const register = async (
 /**
  * Login with email and password
  */
+export const login = async (
   req: AuthRequest,
   res: Response
 ): Promise<void> => {

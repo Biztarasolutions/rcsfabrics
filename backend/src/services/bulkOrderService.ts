@@ -1,4 +1,5 @@
 // src/services/bulkOrderService.ts
+import { createClient } from '@supabase/supabase-js';
 import { sendEmail } from '@/utils/email';
 
 // Supabase client for backend (service role key recommended for inserts)
