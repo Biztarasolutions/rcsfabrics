@@ -1,5 +1,4 @@
-// SMS Service - Can be integrated with Twilio, AWS SNS, or other SMS providers
-// For now, using a mock implementation that logs OTP to console
+import { config } from '@/config';
 
 export interface SMSResponse {
   success: boolean;
@@ -18,31 +17,42 @@ export interface OTPData {
  */
 export const sendOTP = async (data: OTPData): Promise<SMSResponse> => {
   try {
+    const provider = config.SMS_PROVIDER;
+
+    if (provider === 'twilio') {
+      if (!config.TWILIO_ACCOUNT_SID || !config.TWILIO_AUTH_TOKEN || !config.TWILIO_PHONE_NUMBER) {
+        throw new Error('Twilio credentials are not fully configured in environment variables');
+      }
+      try {
+        const twilio = require('twilio');
+        const client = twilio(config.TWILIO_ACCOUNT_SID, config.TWILIO_AUTH_TOKEN);
+        const message = await client.messages.create({
+          body: `Your RCS Fabrics verification code is: ${data.code}. Valid for 10 minutes.`,
+          from: config.TWILIO_PHONE_NUMBER,
+          to: data.phone,
+        });
+        console.log(`[SMS OTP] Sent via Twilio. Message SID: ${message.sid}`);
+        return { success: true, messageId: message.sid };
+      } catch (err: any) {
+        console.error('Twilio sending failed:', err);
+        throw new Error(`Twilio error: ${err.message || err}`);
+      }
+    }
+
     // Mock implementation - logs OTP to console for development
     console.log(`[SMS OTP] Sending OTP to ${data.phone}`);
     console.log(`[SMS OTP] Code: ${data.code}`);
-
-    // In production, integrate with actual SMS service:
-    // Example with Twilio:
-    // const twilio = require('twilio');
-    // const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-    // const message = await client.messages.create({
-    //   body: `Your OTP is: ${data.code}. Valid for 10 minutes.`,
-    //   from: process.env.TWILIO_PHONE_NUMBER,
-    //   to: data.phone
-    // });
-    // return { success: true, messageId: message.sid };
 
     // For development, return success
     return {
       success: true,
       messageId: `mock-${Date.now()}`,
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error sending OTP:', error);
     return {
       success: false,
-      error: 'Failed to send OTP. Please try again.',
+      error: error.message || 'Failed to send OTP. Please try again.',
     };
   }
 };

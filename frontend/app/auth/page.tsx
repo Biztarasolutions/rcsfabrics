@@ -18,11 +18,6 @@ interface RegisterFormData {
   confirm: string;
 }
 
-interface LoginFormData {
-  email: string;
-  password: string;
-}
-
 interface ValidationState {
   firstName: boolean;
   lastName: boolean;
@@ -35,7 +30,9 @@ interface ValidationState {
 export default function AuthPage() {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [registrationStep, setRegistrationStep] = useState<RegistrationStep>('details');
-  const [loginForm, setLoginForm] = useState<LoginFormData>({ email: '', password: '' });
+  const [loginMethod, setLoginMethod] = useState<'password' | 'otp'>('password');
+  const [loginOtp, setLoginOtp] = useState('');
+  const [loginForm, setLoginForm] = useState({ identifier: '', password: '' });
   const [registerForm, setRegisterForm] = useState<RegisterFormData>({
     firstName: '',
     lastName: '',
@@ -58,7 +55,6 @@ export default function AuthPage() {
     confirm: false,
   });
   const [otpAttempts, setOtpAttempts] = useState(0);
-  const [passwordStrength, setPasswordStrength] = useState(0);
   const { setUser, setToken } = useAuthStore();
   const router = useRouter();
 
@@ -84,40 +80,8 @@ export default function AuthPage() {
     return `${cleaned.slice(0, 3)} ${cleaned.slice(3, 6)} ${cleaned.slice(6, 10)}`;
   };
 
-  const calculatePasswordStrength = (password: string): number => {
-    let strength = 0;
-    if (password.length >= 8) strength++;
-    if (password.length >= 12) strength++;
-    if (/[a-z]/.test(password)) strength++;
-    if (/[A-Z]/.test(password)) strength++;
-    if (/[0-9]/.test(password)) strength++;
-    if (/[^a-zA-Z0-9]/.test(password)) strength++;
-    return Math.min(strength, 5);
-  };
-
-  const getPasswordStrengthLabel = (strength: number): string => {
-    const labels = ['Weak', 'Fair', 'Good', 'Strong', 'Very Strong', 'Excellent'];
-    return labels[strength - 1] || 'Weak';
-  };
-
-  const getPasswordStrengthClasses = (strength: number): { text: string; bar: string } => {
-    const classes = [
-      { text: 'text-red-600 dark:text-red-400', bar: 'bg-red-500' },
-      { text: 'text-orange-600 dark:text-orange-400', bar: 'bg-orange-500' },
-      { text: 'text-yellow-600 dark:text-yellow-400', bar: 'bg-yellow-500' },
-      { text: 'text-lime-600 dark:text-lime-400', bar: 'bg-lime-500' },
-      { text: 'text-green-600 dark:text-green-400', bar: 'bg-green-500' },
-      { text: 'text-green-600 dark:text-green-400', bar: 'bg-green-500' },
-    ];
-    return classes[strength - 1] || classes[0];
-  };
-
   const updateValidationState = (field: keyof ValidationState, value: boolean) => {
     setValidationState(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleLoginChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setLoginForm({ ...loginForm, [e.target.name]: e.target.value });
   };
 
   const handleRegisterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -146,7 +110,6 @@ export default function AuthPage() {
         updateValidationState('phone', validatePhone(value));
         break;
       case 'password':
-        setPasswordStrength(calculatePasswordStrength(value));
         updateValidationState('password', value.length >= 6);
         if (registerForm.confirm) {
           updateValidationState('confirm', value === registerForm.confirm);
@@ -180,16 +143,27 @@ export default function AuthPage() {
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!loginForm.email || !loginForm.password) {
-      toast.error('Please fill in all fields');
+    if (!loginForm.identifier) {
+      toast.error('Please enter your email or phone number');
+      return;
+    }
+
+    if (loginMethod === 'password' && !loginForm.password) {
+      toast.error('Please enter your password');
+      return;
+    }
+
+    if (loginMethod === 'otp' && (!loginOtp || loginOtp.length !== 6)) {
+      toast.error('Please enter a valid 6-digit OTP');
       return;
     }
 
     setLoading(true);
     try {
       const res = await authApi.login({
-        email: loginForm.email,
-        password: loginForm.password,
+        identifier: loginForm.identifier,
+        password: loginMethod === 'password' ? loginForm.password : undefined,
+        otp: loginMethod === 'otp' ? loginOtp : undefined,
       });
 
       const { user, token } = res.data.data;
@@ -203,6 +177,31 @@ export default function AuthPage() {
       toast.error(error.message || 'Login failed');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRequestLoginOTP = async (e: React.MouseEvent) => {
+    e.preventDefault();
+
+    if (!loginForm.identifier) {
+      toast.error('Please enter your email or phone number');
+      return;
+    }
+
+    setOtpLoading(true);
+    try {
+      const res = await authApi.sendLoginOTP({ identifier: loginForm.identifier });
+      setOtpTimer(30); // 30 second countdown
+      if (res.data.data && res.data.data.otp) {
+        toast.success(`[Development Mode] OTP Code: ${res.data.data.otp}`, { duration: 6000 });
+        setLoginOtp(res.data.data.otp);
+      } else {
+        toast.success(res.data.message || 'OTP sent successfully');
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to send OTP');
+    } finally {
+      setOtpLoading(false);
     }
   };
 
@@ -244,7 +243,12 @@ export default function AuthPage() {
       const res = await authApi.sendOTP({ phone: registerForm.phone });
       setRegistrationStep('otp');
       setOtpTimer(30); // 30 second countdown for resend
-      toast.success(res.data.message || 'OTP sent successfully');
+      if (res.data.data && res.data.data.otp) {
+        toast.success(`[Development Mode] OTP Code: ${res.data.data.otp}`, { duration: 6000 });
+        setOtp(res.data.data.otp);
+      } else {
+        toast.success(res.data.message || 'OTP sent successfully');
+      }
     } catch (error: any) {
       toast.error(error.message || 'Failed to send OTP');
     } finally {
@@ -332,9 +336,9 @@ export default function AuthPage() {
     setRegistrationStep('details');
     setPhoneVerified(false);
     setOtp('');
+    setLoginOtp('');
     setOtpTimer(0);
     setOtpAttempts(0);
-    setPasswordStrength(0);
     setValidationState({
       firstName: false,
       lastName: false,
@@ -343,7 +347,7 @@ export default function AuthPage() {
       password: false,
       confirm: false,
     });
-    setLoginForm({ email: '', password: '' });
+    setLoginForm({ identifier: '', password: '' });
     setRegisterForm({
       firstName: '',
       lastName: '',
@@ -433,73 +437,145 @@ export default function AuthPage() {
 
           {/* Login Form */}
           {mode === 'login' && (
-            <form onSubmit={handleLoginSubmit} className="mt-8 space-y-4">
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Email
-                </label>
-                <input
-                  name="email"
-                  type="email"
-                  value={loginForm.email}
-                  onChange={handleLoginChange}
-                  required
-                  placeholder="you@example.com"
-                  className="input-field"
-                />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Password
-                </label>
-                <input
-                  name="password"
-                  type="password"
-                  value={loginForm.password}
-                  onChange={handleLoginChange}
-                  required
-                  placeholder="••••••••"
-                  className="input-field"
-                />
-              </div>
-              <div className="text-right">
-                <button type="button" className="text-sm text-primary-600 hover:underline dark:text-primary-400">
-                  Forgot password?
+            <div className="mt-8 space-y-5">
+              {/* Method Selector Tabs */}
+              <div className="flex rounded-lg bg-gray-100 p-1 dark:bg-dark-900">
+                <button
+                  type="button"
+                  onClick={() => setLoginMethod('password')}
+                  className={`flex-1 rounded-md py-2 text-sm font-medium transition-all ${
+                    loginMethod === 'password'
+                      ? 'bg-white text-gray-900 shadow-sm dark:bg-dark-800 dark:text-white'
+                      : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                  }`}
+                >
+                  Password Login
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLoginMethod('otp')}
+                  className={`flex-1 rounded-md py-2 text-sm font-medium transition-all ${
+                    loginMethod === 'otp'
+                      ? 'bg-white text-gray-900 shadow-sm dark:bg-dark-800 dark:text-white'
+                      : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                  }`}
+                >
+                  OTP Login
                 </button>
               </div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="button-primary mt-2 w-full py-3.5 text-base disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <svg
-                      className="h-5 w-5 animate-spin"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
+
+              <form onSubmit={handleLoginSubmit} className="space-y-4">
+                {/* Email or Phone */}
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Email or Phone Number
+                  </label>
+                  <input
+                    name="identifier"
+                    type="text"
+                    value={loginForm.identifier}
+                    onChange={e => setLoginForm({ ...loginForm, identifier: e.target.value })}
+                    required
+                    placeholder="you@example.com or +91 98765 43210"
+                    className="input-field"
+                  />
+                </div>
+
+                {/* Password Fields */}
+                {loginMethod === 'password' && (
+                  <>
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Password
+                      </label>
+                      <input
+                        name="password"
+                        type="password"
+                        value={loginForm.password}
+                        onChange={e => setLoginForm({ ...loginForm, password: e.target.value })}
+                        required
+                        placeholder="••••••••"
+                        className="input-field"
                       />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                      />
-                    </svg>
-                    Signing in...
-                  </span>
-                ) : (
-                  'Sign In'
+                    </div>
+                    <div className="text-right">
+                      <button type="button" className="text-sm text-primary-600 hover:underline dark:text-primary-400">
+                        Forgot password?
+                      </button>
+                    </div>
+                  </>
                 )}
-              </button>
-            </form>
+
+                {/* OTP Fields */}
+                {loginMethod === 'otp' && (
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                          OTP Code
+                        </label>
+                        {otpTimer > 0 ? (
+                          <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                            Resend in {otpTimer}s
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={handleRequestLoginOTP}
+                            disabled={otpLoading}
+                            className="text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400 font-semibold disabled:opacity-50"
+                          >
+                            Request OTP
+                          </button>
+                        )}
+                      </div>
+                      <input
+                        type="text"
+                        maxLength={6}
+                        value={loginOtp}
+                        onChange={e => setLoginOtp(e.target.value.replace(/\D/g, ''))}
+                        required
+                        placeholder="000000"
+                        className="input-field text-center text-2xl tracking-widest font-mono"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="button-primary mt-2 w-full py-3.5 text-base disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <svg
+                        className="h-5 w-5 animate-spin"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                        />
+                      </svg>
+                      Signing in...
+                    </span>
+                  ) : (
+                    loginMethod === 'password' ? 'Sign In with Password' : 'Sign In with OTP'
+                  )}
+                </button>
+              </form>
+            </div>
           )}
 
           {/* Registration Form - Step 1: Details */}
@@ -628,11 +704,6 @@ export default function AuthPage() {
                   <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Password
                   </label>
-                  {registerForm.password && (
-                    <span className={`text-xs font-medium ${getPasswordStrengthClasses(passwordStrength).text}`}>
-                      {getPasswordStrengthLabel(passwordStrength)}
-                    </span>
-                  )}
                 </div>
                 <input
                   name="password"
@@ -649,22 +720,8 @@ export default function AuthPage() {
                       : ''
                   }`}
                 />
-                {registerForm.password && (
-                  <div className="mt-2 flex gap-1">
-                    {[...Array(5)].map((_, i) => (
-                      <div
-                        key={i}
-                        className={`h-1 flex-1 rounded-full transition-all ${
-                          i < passwordStrength
-                            ? getPasswordStrengthClasses(passwordStrength).bar
-                            : 'bg-gray-300 dark:bg-gray-600'
-                        }`}
-                      />
-                    ))}
-                  </div>
-                )}
                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Min 6 characters • Mix uppercase, lowercase, numbers & symbols for better security
+                  Min 6 characters
                 </p>
               </div>
 

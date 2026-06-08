@@ -36,6 +36,7 @@ export const authApi = {
   register: (data: any) => api.post('auth/register', data),
   sendOTP: (data: any) => api.post('auth/send-otp', data),
   verifyOTP: (data: any) => api.post('auth/verify-otp', data),
+  sendLoginOTP: (data: any) => api.post('auth/login-otp/send', data),
   getProfile: () => api.get('auth/me'),
   updateProfile: (data: any) => api.put('users/profile', data),
 };

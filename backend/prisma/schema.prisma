@@ -380,14 +380,14 @@ model ActivityLog {
 
 model OTP {
   id        String   @id @default(cuid())
-  userId    String   @unique
+  userId    String?  @unique
   phone     String   @db.VarChar(20)
   code      String   @db.VarChar(6)
   attempts  Int      @default(0)
   isUsed    Boolean  @default(false)
   expiresAt DateTime
   createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([phone])
   @@index([expiresAt])

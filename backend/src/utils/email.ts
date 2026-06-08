@@ -5,7 +5,7 @@ import nodemailer from 'nodemailer';
 const smtpHost = process.env.SMTP_HOST || '';
 const smtpPort = Number(process.env.SMTP_PORT) || 587;
 const smtpUser = process.env.SMTP_USER || '';
-const smtpPass = process.env.SMTP_PASS || '';
+const smtpPass = process.env.SMTP_PASSWORD || process.env.SMTP_PASS || '';
 
 if (!smtpHost || !smtpUser || !smtpPass) {
   console.warn('SMTP configuration is incomplete. Email sending will fail.');
