@@ -15,6 +15,42 @@ const STATUS_COLORS: Record<string, string> = {
   CANCELLED: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
 };
 
+const TIMELINE_STEPS = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED'];
+
+function OrderTimeline({ status }: { status: string }) {
+  if (status === 'CANCELLED') return (
+    <div className="flex items-center gap-2 px-5 py-3 text-sm text-red-500">
+      <span>✕</span> <span>Order cancelled</span>
+    </div>
+  );
+  const currentIdx = TIMELINE_STEPS.indexOf(status);
+  const labels: Record<string, string> = { PENDING: 'Order Placed', PROCESSING: 'Preparing', SHIPPED: 'Shipped', DELIVERED: 'Delivered' };
+  const icons: Record<string, string> = { PENDING: '📋', PROCESSING: '⚙️', SHIPPED: '🚚', DELIVERED: '✅' };
+  return (
+    <div className="px-5 py-4">
+      <div className="flex items-center gap-0">
+        {TIMELINE_STEPS.map((step, i) => {
+          const done = i <= currentIdx;
+          const active = i === currentIdx;
+          return (
+            <React.Fragment key={step}>
+              <div className="flex flex-col items-center">
+                <div className={`flex h-8 w-8 items-center justify-center rounded-full text-sm border-2 transition-colors ${done ? 'border-primary-500 bg-primary-50 dark:bg-primary-950/30' : 'border-gray-200 bg-gray-50 dark:border-dark-600 dark:bg-dark-700'} ${active ? 'ring-2 ring-primary-300 ring-offset-1' : ''}`}>
+                  {icons[step]}
+                </div>
+                <p className={`mt-1 text-[10px] font-medium text-center w-16 ${done ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400'}`}>{labels[step]}</p>
+              </div>
+              {i < TIMELINE_STEPS.length - 1 && (
+                <div className={`mb-4 h-0.5 flex-1 transition-colors ${i < currentIdx ? 'bg-primary-500' : 'bg-gray-200 dark:bg-dark-600'}`} />
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function OrdersContent() {
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ['my-orders'],
@@ -92,14 +128,14 @@ function OrdersContent() {
                 ))}
               </div>
 
+              {/* Timeline */}
+              <div className="border-t border-gray-100 dark:border-dark-700">
+                <OrderTimeline status={order.status} />
+              </div>
+
               {/* Footer */}
               <div className="flex items-center justify-between border-t border-gray-100 px-5 py-3 dark:border-dark-700">
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {order.status === 'DELIVERED' ? '✅ Delivered successfully' :
-                   order.status === 'PROCESSING' ? '⚙️ Being prepared for shipment' :
-                   order.status === 'SHIPPED' ? '🚚 On the way' :
-                   order.status === 'PENDING' ? '⏳ Awaiting confirmation' : ''}
-                </p>
+                <p className="text-sm text-gray-500 dark:text-gray-400"></p>
                 <div className="flex gap-2">
                    <Link href={`/account/orders/${order.id}`} className="text-sm font-medium text-primary-600 hover:underline dark:text-primary-400">
                       View Details

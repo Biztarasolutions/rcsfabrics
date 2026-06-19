@@ -78,7 +78,21 @@ function ProductsContent() {
           {/* Main Content */}
           <div className="flex-1 min-w-0">
             {/* Toolbar */}
-            <div className="mb-6 flex items-center justify-between gap-4">
+            <div className="mb-6 space-y-4">
+              {/* Search */}
+              <form onSubmit={(e) => { e.preventDefault(); const v = (e.currentTarget.elements.namedItem('q') as HTMLInputElement).value; updateParam('search', v); }}
+                className="flex gap-2">
+                <div className="relative flex-1">
+                  <svg className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                  </svg>
+                  <input name="q" defaultValue={search} placeholder="Search fabrics..."
+                    className="input-field pl-9 py-2 text-sm w-full"/>
+                </div>
+                <button type="submit" className="button-primary px-5 py-2 text-sm">Search</button>
+                {search && <button type="button" onClick={() => updateParam('search', '')} className="button-secondary px-4 py-2 text-sm">Clear</button>}
+              </form>
+              <div className="flex items-center justify-between gap-4">
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 {isLoading ? '...' : pagination?.total || 0} results
                 {category && <span className="ml-1">in <strong className="text-gray-700 dark:text-gray-300">{category}</strong></span>}
@@ -96,6 +110,7 @@ function ProductsContent() {
                     <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
                   </button>
                 </div>
+              </div>
               </div>
             </div>
 

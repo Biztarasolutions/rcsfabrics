@@ -57,6 +57,8 @@ export const productApi = {
   getGroup: (styleCode: string) => api.get(`products/group/${styleCode}`),
   getRelated: (id: string, categoryId: string) => api.get(`products/related/${id}/${categoryId}`),
   search: (query: string) => api.get(`products/search?q=${query}`),
+  submitReview: (productId: string, data: { rating: number; title?: string; comment?: string }) =>
+    api.post(`products/${productId}/reviews`, data),
 };
 
 export const orderApi = {

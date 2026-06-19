@@ -7,8 +7,10 @@ import {
   getNewArrivals,
   getHomepageData,
   proxyProductImage,
+  createReview,
 } from '@/controllers/product.controller';
 import { getProductGroup } from '@/controllers/productGroupController';
+import { authenticateToken } from '@/middleware/auth';
 
 const router = Router();
 
@@ -22,5 +24,6 @@ router.get('/image/:fileId', proxyProductImage);
 router.get('/group/:styleCode', getProductGroup);
 router.get('/:id', getProductById);
 router.get('/slug/:slug', getProductBySlug);
+router.post('/:productId/reviews', authenticateToken, createReview);
 
 export default router;

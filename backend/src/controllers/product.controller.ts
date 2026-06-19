@@ -5,6 +5,37 @@ import { parsePagination, createPaginationMeta } from '@/utils/pagination.util';
 import { ApiError } from '@/middleware/errorHandler';
 import { getDriveImageStream } from '@/utils/googleDrive.util';
 
+export const createReview = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { productId } = req.params;
+    const { rating, title, comment } = req.body;
+    const userId = req.userId!;
+
+    if (!rating || rating < 1 || rating > 5) {
+      res.status(400).json({ success: false, message: 'Rating must be between 1 and 5' });
+      return;
+    }
+
+    const review = await prisma.review.upsert({
+      where: { productId_userId: { productId, userId } },
+      create: { productId, userId, rating: Number(rating), title, comment },
+      update: { rating: Number(rating), title, comment },
+      include: { user: { select: { firstName: true, lastName: true } } },
+    });
+
+    // Recalculate product rating
+    const agg = await prisma.review.aggregate({ where: { productId }, _avg: { rating: true }, _count: true });
+    await prisma.product.update({
+      where: { id: productId },
+      data: { rating: agg._avg.rating || 0, ratingCount: agg._count },
+    });
+
+    res.status(201).json({ success: true, data: review });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // Simple LRU cache for image buffers
 const imageCache = new Map<string, { buffer: Buffer, contentType: string }>();
 const CACHE_LIMIT = 200;
