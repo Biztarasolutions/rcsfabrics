@@ -94,6 +94,9 @@ export const adminApi = {
   createCategory: (data: any) => api.post('admin/categories', data),
   updateCategory: (id: string, data: any) => api.put(`admin/categories/${id}`, data),
   deleteCategory: (id: string) => api.delete(`admin/categories/${id}`),
+  getInventory: (params?: { lowStock?: boolean }) => api.get('admin/inventory', { params }),
+  adjustStock: (id: string, adjustment: number, reason?: string) =>
+    api.patch(`admin/products/${id}/stock`, { adjustment, reason }),
   getBanners: () => api.get('admin/banners'),
   createBanner: (data: any) => api.post('admin/banners', data),
   updateBanner: (id: string, data: any) => api.put(`admin/banners/${id}`, data),

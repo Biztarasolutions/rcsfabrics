@@ -22,6 +22,8 @@ import {
   deleteBanner,
   syncProductImages,
   syncAllProductImages,
+  getInventory,
+  adjustStock,
 } from '@/controllers/admin.controller';
 import bulkEnquiryRouter from '@/routes/bulkEnquiry.routes';
 import { createProductGroup } from '@/controllers/productGroupController';
@@ -39,6 +41,10 @@ router.put('/products/:id', updateProduct);
 router.delete('/products/:id', deleteProduct);
 router.post('/products/sync-all', syncAllProductImages);
 router.post('/products/:id/sync', syncProductImages);
+
+// Inventory Management
+router.get('/inventory', getInventory);
+router.patch('/products/:id/stock', adjustStock);
 
 // Order Management
 router.get('/orders', getOrders);

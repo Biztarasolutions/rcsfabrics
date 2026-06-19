@@ -1068,6 +1068,70 @@ export const getDashboardStats = async (
   }
 };
 
+// ── Inventory Management ────────────────────────────────────────────────
+
+export const getInventory = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { lowStock } = req.query;
+    const where: any = { isActive: true };
+    if (lowStock === 'true') where.totalStock = { lte: 10 };
+
+    const products = await prisma.product.findMany({
+      where,
+      select: {
+        id: true,
+        name: true,
+        sku: true,
+        totalStock: true,
+        minOrderQty: true,
+        category: { select: { name: true } },
+        images: { take: 1, select: { url: true } },
+        orderItems: {
+          orderBy: { order: { createdAt: 'desc' } },
+          take: 5,
+          select: {
+            quantity: true,
+            order: { select: { createdAt: true, orderNumber: true, status: true } },
+          },
+        },
+      },
+      orderBy: { totalStock: 'asc' },
+    });
+
+    res.json({ success: true, data: products });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+export const adjustStock = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { adjustment, reason } = req.body;
+    const delta = parseFloat(adjustment);
+
+    if (isNaN(delta)) {
+      res.status(400).json({ success: false, message: 'adjustment must be a number' });
+      return;
+    }
+
+    const product = await prisma.product.findUnique({ where: { id }, select: { totalStock: true, name: true } });
+    if (!product) { res.status(404).json({ success: false, message: 'Product not found' }); return; }
+
+    const newStock = Math.max(0, product.totalStock + delta);
+    const updated = await prisma.product.update({
+      where: { id },
+      data: { totalStock: newStock },
+      select: { id: true, name: true, totalStock: true },
+    });
+
+    console.log(`[Inventory] ${updated.name}: ${product.totalStock} → ${newStock} (${delta > 0 ? '+' : ''}${delta}) | Reason: ${reason || 'manual adjustment'}`);
+    res.json({ success: true, data: updated });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
 // ── Coupon Management ───────────────────────────────────────────────────
 
 export const getCoupons = async (
