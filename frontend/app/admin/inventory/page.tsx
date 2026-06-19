@@ -22,7 +22,7 @@ export default function InventoryPage() {
   const adjustMutation = useMutation({
     mutationFn: ({ id, delta, reason }: { id: string; delta: number; reason: string }) =>
       adminApi.adjustStock(id, delta, reason),
-    onSuccess: (_, vars) => {
+    onSuccess: () => {
       toast.success(`Stock updated`);
       queryClient.invalidateQueries({ queryKey: ['admin-inventory'] });
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
