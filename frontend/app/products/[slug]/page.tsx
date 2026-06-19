@@ -59,7 +59,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
   const [reviewTitle, setReviewTitle] = useState('');
   const [reviewComment, setReviewComment] = useState('');
 
-  const { user, isAuthenticated } = useAuthStore();
+  const { isAuthenticated } = useAuthStore();
 
   const { data: initialProduct, isLoading: isProductLoading, isError: isProductError } = useQuery({
     queryKey: ['product', params.slug],
