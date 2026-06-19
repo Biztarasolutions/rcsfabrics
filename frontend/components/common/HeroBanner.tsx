@@ -51,15 +51,21 @@ export default function HeroBanner() {
   return (
     <section className="relative h-[90vh] min-h-[600px] max-h-[900px] overflow-hidden">
       {/* Background image with ken-burns */}
-      {SLIDES.map((s, i: number) => (
-        <div key={s.id}
-          className={`absolute inset-0 transition-opacity duration-1000 ${i === current ? 'opacity-100' : 'opacity-0'}`}>
-          <Image src={s.image} alt={s.tag} fill priority={i === 0} sizes="100vw"
-            className="object-cover scale-105 animate-float" style={{ animationDuration: '8s' }}/>
-          <div className={`absolute inset-0 bg-gradient-to-r ${s.accent}`}/>
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"/>
-        </div>
-      ))}
+      {SLIDES.map((s, i: number) => {
+        const isActive = i === current;
+        const isNext = i === (current + 1) % SLIDES.length;
+        // Only mount active + next slide; unmount the rest to avoid loading unused images
+        if (!isActive && !isNext && i !== 0) return null;
+        return (
+          <div key={s.id}
+            className={`absolute inset-0 transition-opacity duration-1000 ${isActive ? 'opacity-100' : 'opacity-0'}`}>
+            <Image src={s.image} alt={s.tag} fill priority={i === 0} sizes="100vw"
+              className="object-cover scale-105 animate-float" style={{ animationDuration: '8s' }}/>
+            <div className={`absolute inset-0 bg-gradient-to-r ${s.accent}`}/>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"/>
+          </div>
+        );
+      })}
 
       {/* Decorative fabric texture */}
       <div className="absolute inset-0 opacity-5"

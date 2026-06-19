@@ -12,6 +12,7 @@ interface ProductCardProps { product: Product; }
 
 const ProductCard = React.memo(function ProductCard({ product }: ProductCardProps) {
   const [hovered, setHovered] = useState(false);
+  const [everHovered, setEverHovered] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
   const [secondImgLoaded, setSecondImgLoaded] = useState(false);
   const mainImage = product.images?.find((img) => img.isMain) || product.images?.[0];
@@ -42,7 +43,7 @@ const ProductCard = React.memo(function ProductCard({ product }: ProductCardProp
   return (
     <Link href={`/products/${product.slug}`}>
       <div
-        onMouseEnter={() => setHovered(true)}
+        onMouseEnter={() => { setHovered(true); setEverHovered(true); }}
         onMouseLeave={() => setHovered(false)}
         className="group relative flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-product dark:border-dark-700 dark:bg-dark-800"
       >
@@ -62,7 +63,7 @@ const ProductCard = React.memo(function ProductCard({ product }: ProductCardProp
               <span className="text-4xl">🧵</span>
             </div>
           )}
-          {secondImage && (
+          {secondImage && everHovered && (
             <Image
               src={secondImage.url}
               alt={product.name}

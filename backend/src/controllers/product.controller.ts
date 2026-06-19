@@ -384,7 +384,7 @@ export const proxyProductImage = async (
     // Crucial for cross-origin image rendering in browsers when Helmet is enabled
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
     // Set cache headers to avoid hitting Google Drive API repeatedly
-    res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for 1 day
+    res.setHeader('Cache-Control', 'public, max-age=2592000, stale-while-revalidate=86400'); // 30 days
 
     if (imageCache.has(fileId)) {
       const cached = imageCache.get(fileId)!;
