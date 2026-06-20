@@ -57,6 +57,18 @@ app.get('/health', (_req: Request, res: Response) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
+// Public settings (no auth) — returns only payment config keys safe for frontend
+app.get('/api/settings', async (_req: Request, res: Response) => {
+  try {
+    const rows = await prisma.setting.findMany({
+      where: { key: { in: ['payment_upi_enabled', 'payment_cod_enabled', 'payment_razorpay_enabled', 'upi_id', 'upi_name'] } },
+    });
+    const map: Record<string, string> = { payment_upi_enabled: 'true', payment_cod_enabled: 'true', payment_razorpay_enabled: 'true', upi_id: 'MAB0450543A0000066@Yesbank', upi_name: 'Rajasthan Cloth Store' };
+    rows.forEach((r: any) => { map[r.key] = r.value; });
+    res.json({ success: true, data: map });
+  } catch { res.json({ success: true, data: { payment_upi_enabled: 'true', payment_cod_enabled: 'true', payment_razorpay_enabled: 'true', upi_id: 'MAB0450543A0000066@Yesbank', upi_name: 'Rajasthan Cloth Store' } }); }
+});
+
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);

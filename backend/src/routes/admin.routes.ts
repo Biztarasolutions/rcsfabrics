@@ -24,6 +24,8 @@ import {
   syncAllProductImages,
   getInventory,
   adjustStock,
+  getSettings,
+  updateSetting,
 } from '@/controllers/admin.controller';
 import bulkEnquiryRouter from '@/routes/bulkEnquiry.routes';
 import { createProductGroup } from '@/controllers/productGroupController';
@@ -72,6 +74,10 @@ router.get('/banners', getBanners);
 router.post('/banners', createBanner);
 router.put('/banners/:id', updateBanner);
 router.delete('/banners/:id', deleteBanner);
+
+// Settings Management
+router.get('/settings', getSettings);
+router.put('/settings/:key', updateSetting);
 
 router.use('/bulk-enquiries', bulkEnquiryRouter);
 export default router;

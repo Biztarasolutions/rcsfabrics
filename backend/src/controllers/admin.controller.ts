@@ -1132,6 +1132,60 @@ export const adjustStock = async (req: AuthRequest, res: Response): Promise<void
   }
 };
 
+// ── Settings Management ──────────────────────────────────────────────────
+
+const DEFAULT_SETTINGS = [
+  { key: 'payment_upi_enabled', value: 'true', label: 'UPI Payment' },
+  { key: 'payment_cod_enabled', value: 'true', label: 'Cash on Delivery' },
+  { key: 'payment_razorpay_enabled', value: 'true', label: 'Razorpay (Cards/Net Banking)' },
+  { key: 'upi_id', value: 'MAB0450543A0000066@Yesbank', label: 'UPI ID' },
+  { key: 'upi_name', value: 'Rajasthan Cloth Store', label: 'UPI Display Name' },
+];
+
+export const getSettings = async (_req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    // Seed defaults if missing
+    for (const s of DEFAULT_SETTINGS) {
+      await prisma.setting.upsert({ where: { key: s.key }, update: {}, create: s });
+    }
+    const settings = await prisma.setting.findMany({ orderBy: { key: 'asc' } });
+    const map: Record<string, string> = {};
+    settings.forEach(s => { map[s.key] = s.value; });
+    res.json({ success: true, data: { settings, map } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+export const updateSetting = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { key } = req.params;
+    const { value } = req.body;
+    if (value === undefined) { res.status(400).json({ success: false, message: 'value is required' }); return; }
+    const updated = await prisma.setting.upsert({
+      where: { key },
+      update: { value: String(value) },
+      create: { key, value: String(value) },
+    });
+    res.json({ success: true, data: updated });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+// Public endpoint — no auth required
+export const getPublicSettings = async (_req: any, res: Response): Promise<void> => {
+  try {
+    const settings = await prisma.setting.findMany({ where: { key: { in: ['payment_upi_enabled', 'payment_cod_enabled', 'payment_razorpay_enabled', 'upi_id', 'upi_name'] } } });
+    const map: Record<string, string> = {};
+    settings.forEach(s => { map[s.key] = s.value; });
+    // Return safe defaults if DB not seeded yet
+    res.json({ success: true, data: { payment_upi_enabled: 'true', payment_cod_enabled: 'true', payment_razorpay_enabled: 'true', upi_id: 'MAB0450543A0000066@Yesbank', upi_name: 'Rajasthan Cloth Store', ...map } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
 // ── Coupon Management ───────────────────────────────────────────────────
 
 export const getCoupons = async (

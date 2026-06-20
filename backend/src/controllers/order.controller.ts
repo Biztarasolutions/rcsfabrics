@@ -14,7 +14,7 @@ export const createOrder = async (
       throw new ApiError(401, 'Unauthorized');
     }
 
-    const { items, shippingAddress, shippingCost, tax, couponCode } = req.body;
+    const { items, shippingAddress, shippingCost, tax, couponCode, paymentMethod, utrReference } = req.body;
 
     if (!items || items.length === 0) {
       throw new ApiError(400, 'Order must contain at least one item');
@@ -39,10 +39,19 @@ export const createOrder = async (
       const itemTotal = price * cartItem.quantity;
       subtotal += itemTotal;
 
+      // Fetch first image for this product
+      const mainImg = await prisma.productImage.findFirst({
+        where: { productId: cartItem.product.id, isMain: true },
+        select: { url: true },
+      }) || await prisma.productImage.findFirst({
+        where: { productId: cartItem.product.id },
+        select: { url: true },
+      });
+
       orderItems.push({
         productId: cartItem.product.id,
         productName: cartItem.product.name,
-        productImage: cartItem.product.id,
+        productImage: mainImg?.url || null,
         quantity: cartItem.quantity,
         pricePerMeter: price,
         total: itemTotal,
@@ -88,6 +97,8 @@ export const createOrder = async (
         discountAmount,
         couponCode,
         total,
+        paymentMethod: paymentMethod || undefined,
+        utrReference: utrReference || undefined,
       },
       include: {
         items: {

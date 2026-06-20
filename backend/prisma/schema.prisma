@@ -209,6 +209,7 @@ model Order {
   razorpayOrderId   String?        @db.VarChar(255)
   razorpayPaymentId String?        @db.VarChar(255)
   trackingNumber    String?        @db.VarChar(255)
+  utrReference      String?        @db.VarChar(255)
   items             OrderItem[]
   user              User           @relation(fields: [userId], references: [id])
 
@@ -421,6 +422,7 @@ enum PaymentMethod {
   RAZORPAY
   BANK_TRANSFER
   COD
+  UPI
 }
 
 enum DiscountType {
@@ -457,6 +459,17 @@ enum BulkOrderStatus {
   QUOTED
   ACCEPTED
   REJECTED
+}
+
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique @db.VarChar(100)
+  value     String
+  label     String?  @db.VarChar(255)
+  updatedAt DateTime @updatedAt
+
+  @@index([key])
+  @@map("settings")
 }
 
 model ProductColor {

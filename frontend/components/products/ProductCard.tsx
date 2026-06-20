@@ -26,7 +26,7 @@ const ProductCard = React.memo(function ProductCard({ product }: ProductCardProp
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
-    addItem({ id: `${product.id}-${Date.now()}`, productId: product.id, product, quantity: 0.5 });
+    addItem({ id: product.id, productId: product.id, product, quantity: 0.5 });
     toast.success(`${product.name} added to cart!`);
   };
 

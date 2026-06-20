@@ -101,6 +101,12 @@ export const adminApi = {
   createBanner: (data: any) => api.post('admin/banners', data),
   updateBanner: (id: string, data: any) => api.put(`admin/banners/${id}`, data),
   deleteBanner: (id: string) => api.delete(`admin/banners/${id}`),
+  getSettings: () => api.get('admin/settings'),
+  updateSetting: (key: string, value: string) => api.put(`admin/settings/${key}`, { value }),
+};
+
+export const publicApi = {
+  getSettings: () => api.get('settings'),
 };
 
 // Upload an image from a URL (e.g., Google Drive share link) to Supabase storage and return its public URL.

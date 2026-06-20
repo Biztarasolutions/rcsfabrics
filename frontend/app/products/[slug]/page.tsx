@@ -162,7 +162,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
 
   const handleAddToCart = () => {
     if (stock <= 0) return;
-    addItem({ id: `${PRODUCT.id}-${Date.now()}`, productId: PRODUCT.id, product: PRODUCT as any, quantity: qty });
+    addItem({ id: PRODUCT.id, productId: PRODUCT.id, product: PRODUCT as any, quantity: qty });
     toast.success(`${PRODUCT.name} (${qty}m) added to cart!`);
   };
 

@@ -4,10 +4,11 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useCartStore, useAuthStore } from '@/lib/store';
-import { orderApi } from '@/lib/api';
+import { orderApi, publicApi } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
+import { useQuery } from '@tanstack/react-query';
 
 const STEPS = ['Cart Review', 'Shipping Address', 'Payment'];
 
@@ -17,20 +18,35 @@ export default function CheckoutPage() {
   const [coupon, setCoupon] = useState('');
   const [couponData, setCouponData] = useState<any>(null);
   const [placing, setPlacing] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'razorpay' | 'cod'>('razorpay');
-  
+  const [paymentMethod, setPaymentMethod] = useState<'razorpay' | 'upi' | 'cod'>('upi');
+  const [utrRef, setUtrRef] = useState('');
+  const [upiPaid, setUpiPaid] = useState(false);
+
   const { items, clearCart, totalPrice } = useCartStore();
   const { user } = useAuthStore();
   const router = useRouter();
 
+  const { data: settings } = useQuery({
+    queryKey: ['public-settings'],
+    queryFn: () => publicApi.getSettings().then(r => r.data.data),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const upiEnabled = settings?.payment_upi_enabled !== 'false';
+  const codEnabled = settings?.payment_cod_enabled !== 'false';
+  const razorpayEnabled = settings?.payment_razorpay_enabled !== 'false';
+  const upiId = settings?.upi_id || 'MAB0450543A0000066@Yesbank';
+  const upiName = settings?.upi_name || 'Rajasthan Cloth Store';
+
   // Load Razorpay script
   useEffect(() => {
+    if (!razorpayEnabled) return;
     const script = document.createElement('script');
     script.src = 'https://checkout.razorpay.com/v1/checkout.js';
     script.async = true;
     document.body.appendChild(script);
-    return () => { document.body.removeChild(script); };
-  }, []);
+    return () => { if (document.body.contains(script)) document.body.removeChild(script); };
+  }, [razorpayEnabled]);
 
   // Sync user info if logged in
   useEffect(() => {
@@ -44,6 +60,15 @@ export default function CheckoutPage() {
       }));
     }
   }, [user]);
+
+  // Set default payment method based on what's enabled
+  useEffect(() => {
+    if (settings) {
+      if (upiEnabled) setPaymentMethod('upi');
+      else if (razorpayEnabled) setPaymentMethod('razorpay');
+      else if (codEnabled) setPaymentMethod('cod');
+    }
+  }, [settings, upiEnabled, razorpayEnabled, codEnabled]);
 
   const subtotal = totalPrice();
   const shipping = subtotal >= 2000 ? 0 : 150;
@@ -67,19 +92,24 @@ export default function CheckoutPage() {
       router.push('/login?redirect=/checkout');
       return;
     }
+    if (paymentMethod === 'upi' && upiPaid && !utrRef.trim()) {
+      toast.error('Please enter your UTR / transaction reference number');
+      return;
+    }
 
     setPlacing(true);
     try {
-      const orderPayload = {
+      const orderPayload: any = {
         items: items.map(item => ({
           productId: item.productId,
           quantity: item.quantity,
-          price: item.product.discountPrice || item.product.basePrice
+          price: item.product.discountPrice || item.product.basePrice,
         })),
         shippingAddress: address,
-        paymentMethod: paymentMethod.toUpperCase(),
+        paymentMethod: paymentMethod === 'upi' ? 'UPI' : paymentMethod.toUpperCase(),
         couponCode: couponData?.code,
       };
+      if (paymentMethod === 'upi' && utrRef) orderPayload.utrReference = utrRef;
 
       const res = await orderApi.create(orderPayload);
       const order = res.data;
@@ -87,10 +117,10 @@ export default function CheckoutPage() {
       if (paymentMethod === 'razorpay' && order.razorpayOrderId) {
         const options = {
           key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-          amount: order.totalAmount * 100,
+          amount: (order.total || order.totalAmount) * 100,
           currency: 'INR',
           name: 'RCS Fabrics',
-          description: `Order #${order.id}`,
+          description: `Order #${order.orderNumber || order.id}`,
           order_id: order.razorpayOrderId,
           handler: async (response: any) => {
             try {
@@ -103,23 +133,23 @@ export default function CheckoutPage() {
               clearCart();
               toast.success('🎉 Payment successful! Order placed.');
               router.push(`/account/orders/${order.id}`);
-            } catch (err) {
+            } catch {
               toast.error('Payment verification failed. Please contact support.');
             }
           },
-          prefill: {
-            name: `${address.firstName} ${address.lastName}`,
-            email: address.email,
-            contact: address.phone
-          },
-          theme: { color: '#000000' }
+          prefill: { name: `${address.firstName} ${address.lastName}`, email: address.email, contact: address.phone },
+          theme: { color: '#000000' },
         };
         const rzp = new (window as any).Razorpay(options);
         rzp.open();
       } else {
-        // COD flow
+        // COD or UPI
         clearCart();
-        toast.success('🎉 Order placed successfully!');
+        if (paymentMethod === 'upi') {
+          toast.success('🎉 Order placed! We will confirm once payment is verified.');
+        } else {
+          toast.success('🎉 Order placed successfully!');
+        }
         router.push(`/account/orders/${order.id}`);
       }
     } catch (error: any) {
@@ -170,6 +200,12 @@ export default function CheckoutPage() {
       </div>
     );
   }
+
+  const paymentOptions = [
+    upiEnabled && { id: 'upi' as const, label: 'UPI Payment', sub: `Pay directly to ${upiName}`, icon: '📲' },
+    razorpayEnabled && { id: 'razorpay' as const, label: 'Cards / Net Banking / Wallets', sub: 'Powered by Razorpay — secure checkout', icon: '💳' },
+    codEnabled && { id: 'cod' as const, label: 'Cash on Delivery', sub: 'Pay when your order arrives', icon: '💵' },
+  ].filter(Boolean) as { id: 'upi' | 'razorpay' | 'cod'; label: string; sub: string; icon: string }[];
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark-950 py-10">
@@ -243,27 +279,76 @@ export default function CheckoutPage() {
             )}
 
             {step === 2 && (
-              <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-dark-700 dark:bg-dark-800">
-                <h2 className="font-display text-xl font-bold text-gray-900 dark:text-white">Payment</h2>
-                <div className="mt-5 space-y-3">
-                  {[
-                    { id: 'razorpay', label: 'Razorpay', sub: 'UPI, Cards, Net Banking, Wallets', icon: '💳' },
-                    { id: 'cod', label: 'Cash on Delivery', sub: 'Pay when your order arrives', icon: '💵' },
-                  ].map((method) => (
-                    <label key={method.id} className={`flex cursor-pointer items-center gap-4 rounded-xl border-2 p-4 transition-colors ${paymentMethod === method.id ? 'border-primary-500 bg-primary-50/30 dark:border-primary-500/50 dark:bg-primary-950/10' : 'border-gray-200 dark:border-dark-700'}`}>
-                      <input type="radio" name="payment" value={method.id} checked={paymentMethod === method.id} onChange={() => setPaymentMethod(method.id as any)} className="accent-primary-600"/>
-                      <span className="text-2xl">{method.icon}</span>
-                      <div>
-                        <p className="font-semibold text-gray-900 dark:text-white">{method.label}</p>
-                        <p className="text-sm text-gray-500">{method.sub}</p>
+              <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
+                <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-dark-700 dark:bg-dark-800">
+                  <h2 className="font-display text-xl font-bold text-gray-900 dark:text-white">Payment</h2>
+                  <div className="mt-5 space-y-3">
+                    {paymentOptions.map((method) => (
+                      <label key={method.id} className={`flex cursor-pointer items-center gap-4 rounded-xl border-2 p-4 transition-colors ${paymentMethod === method.id ? 'border-primary-500 bg-primary-50/30 dark:border-primary-500/50 dark:bg-primary-950/10' : 'border-gray-200 dark:border-dark-700'}`}>
+                        <input type="radio" name="payment" value={method.id} checked={paymentMethod === method.id} onChange={() => { setPaymentMethod(method.id); setUpiPaid(false); setUtrRef(''); }} className="accent-primary-600"/>
+                        <span className="text-2xl">{method.icon}</span>
+                        <div>
+                          <p className="font-semibold text-gray-900 dark:text-white">{method.label}</p>
+                          <p className="text-sm text-gray-500">{method.sub}</p>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+
+                  {/* UPI Details Panel */}
+                  {paymentMethod === 'upi' && (
+                    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                      className="mt-4 rounded-xl border-2 border-green-200 bg-green-50 p-5 dark:border-green-900/40 dark:bg-green-950/20">
+                      <p className="text-sm font-semibold text-green-800 dark:text-green-300 mb-3">Pay using any UPI app</p>
+                      <div className="flex items-center gap-4">
+                        {/* QR placeholder — green box with UPI icon */}
+                        <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl bg-white border-2 border-green-300 text-3xl shadow-sm">
+                          📱
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Pay to</p>
+                          <p className="text-lg font-bold text-gray-900 dark:text-white">{upiName}</p>
+                          <div className="flex items-center gap-2">
+                            <code className="rounded-lg bg-white border border-green-200 px-3 py-1.5 text-sm font-mono font-semibold text-green-800 dark:bg-dark-800 dark:border-green-900 dark:text-green-300">
+                              {upiId}
+                            </code>
+                            <button onClick={() => { navigator.clipboard.writeText(upiId); toast.success('UPI ID copied!'); }}
+                              className="rounded-lg border border-green-300 bg-white px-2 py-1.5 text-xs text-green-700 hover:bg-green-50 transition-colors">
+                              Copy
+                            </button>
+                          </div>
+                          <p className="text-xs text-gray-500">Amount: <strong className="text-gray-900 dark:text-white">{formatPrice(total)}</strong></p>
+                        </div>
                       </div>
-                    </label>
-                  ))}
+
+                      <div className="mt-4 border-t border-green-200 pt-4 dark:border-green-900/40">
+                        <label className="flex cursor-pointer items-center gap-2">
+                          <input type="checkbox" checked={upiPaid} onChange={(e) => setUpiPaid(e.target.checked)} className="accent-green-600 h-4 w-4 rounded"/>
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">I have completed the UPI payment</span>
+                        </label>
+                        {upiPaid && (
+                          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-3">
+                            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                              UTR / Transaction Reference Number <span className="text-red-500">*</span>
+                            </label>
+                            <input value={utrRef} onChange={(e) => setUtrRef(e.target.value)}
+                              placeholder="e.g. 426812345678"
+                              className="input-field text-sm"/>
+                            <p className="mt-1 text-xs text-gray-500">Find this in your UPI app under transaction history</p>
+                          </motion.div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
                 </div>
-                <div className="mt-6 flex gap-3">
+
+                <div className="flex gap-3">
                   <button onClick={() => setStep(1)} className="button-secondary flex-1 py-3">← Back</button>
-                  <button onClick={handlePlaceOrder} disabled={placing} className="button-luxury flex-1 py-3 font-semibold">
-                    {placing ? '⏳ Processing...' : `🔒 Place Order · ${formatPrice(total)}`}
+                  <button onClick={handlePlaceOrder} disabled={placing || (paymentMethod === 'upi' && upiPaid && !utrRef.trim())}
+                    className="button-luxury flex-1 py-3 font-semibold disabled:opacity-60">
+                    {placing ? '⏳ Processing...' : paymentMethod === 'upi' && !upiPaid
+                      ? '⬆ Pay & Place Order'
+                      : `🔒 Place Order · ${formatPrice(total)}`}
                   </button>
                 </div>
               </motion.div>
