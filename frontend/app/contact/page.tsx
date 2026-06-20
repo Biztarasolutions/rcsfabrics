@@ -46,10 +46,9 @@ export default function ContactPage() {
               <p className="mt-3 text-gray-600 dark:text-gray-400">Whether you need help with an order, want to request a swatch, or have a bulk requirement — we're just a message away.</p>
             </div>
             {[
-              { icon: '📍', title: 'Visit Us', info: '123 Fabric Market, Surat, Gujarat 395003' },
-              { icon: '📞', title: 'Call Us', info: '+91 98765 43210', sub: 'Mon–Sat, 9am–6pm' },
+              { icon: '📞', title: 'Call Us', info: '+91 98630 26598', sub: 'Mayank Jain · Mon–Sat, 9am–6pm' },
               { icon: '✉️', title: 'Email Us', info: 'info@rcsfabrics.com', sub: 'Reply within 24 hours' },
-              { icon: '💬', title: 'WhatsApp', info: '+91 98765 43210', sub: 'Quick responses' },
+              { icon: '💬', title: 'WhatsApp', info: '+91 98630 26598', sub: 'Quick responses — chat with Mayank' },
             ].map((c) => (
               <div key={c.title} className="flex items-start gap-4">
                 <span className="text-2xl">{c.icon}</span>

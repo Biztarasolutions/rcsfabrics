@@ -12,6 +12,99 @@ import { useQuery } from '@tanstack/react-query';
 
 const STEPS = ['Cart Review', 'Shipping Address', 'Payment'];
 
+const UPI_APPS = [
+  { name: 'GPay', icon: '/icons/gpay.png', emoji: '🟢', scheme: (id: string, name: string, amt: number) => `tez://upi/pay?pa=${id}&pn=${encodeURIComponent(name)}&am=${amt}&cu=INR&tn=RCS+Fabrics+Order` },
+  { name: 'PhonePe', icon: '/icons/phonepe.png', emoji: '🟣', scheme: (id: string, name: string, amt: number) => `phonepe://pay?pa=${id}&pn=${encodeURIComponent(name)}&am=${amt}&cu=INR&tn=RCS+Fabrics+Order` },
+  { name: 'Paytm', icon: '/icons/paytm.png', emoji: '🔵', scheme: (id: string, name: string, amt: number) => `paytmmp://pay?pa=${id}&pn=${encodeURIComponent(name)}&am=${amt}&cu=INR&tn=RCS+Fabrics+Order` },
+  { name: 'BHIM', icon: '/icons/bhim.png', emoji: '🟠', scheme: (id: string, name: string, amt: number) => `upi://pay?pa=${id}&pn=${encodeURIComponent(name)}&am=${amt}&cu=INR&tn=RCS+Fabrics+Order` },
+];
+
+function UpiPayPanel({ upiId, upiName, amount, upiPaid, setUpiPaid, utrRef, setUtrRef }: {
+  upiId: string; upiName: string; amount: number;
+  upiPaid: boolean; setUpiPaid: (v: boolean) => void;
+  utrRef: string; setUtrRef: (v: string) => void;
+}) {
+  const upiLink = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(upiName)}&am=${amount.toFixed(2)}&cu=INR&tn=RCS+Fabrics+Order`;
+  const isMobile = typeof navigator !== 'undefined' && /Mobi|Android/i.test(navigator.userAgent);
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+      className="mt-4 rounded-xl border-2 border-green-200 bg-green-50 p-5 dark:border-green-900/40 dark:bg-green-950/20 space-y-4">
+
+      {/* Payee info */}
+      <div className="flex items-center gap-3">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white border border-green-200 text-2xl shadow-sm">📲</div>
+        <div>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Pay to</p>
+          <p className="font-bold text-gray-900 dark:text-white">{upiName}</p>
+          <p className="text-xs font-mono text-green-700 dark:text-green-400">{upiId}</p>
+        </div>
+        <div className="ml-auto text-right">
+          <p className="text-xs text-gray-500">Amount</p>
+          <p className="font-bold text-lg text-gray-900 dark:text-white">₹{amount.toFixed(2)}</p>
+        </div>
+      </div>
+
+      {/* Open UPI app buttons */}
+      <div>
+        <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Open with your UPI app</p>
+        <div className="grid grid-cols-4 gap-2">
+          {UPI_APPS.map((app) => (
+            <a key={app.name}
+              href={app.scheme(upiId, upiName, amount)}
+              onClick={() => setTimeout(() => setUpiPaid(true), 3000)}
+              className="flex flex-col items-center gap-1.5 rounded-xl border border-green-200 bg-white px-2 py-3 text-center hover:border-green-400 hover:bg-green-50 transition-colors dark:bg-dark-800 dark:border-green-900/50 dark:hover:bg-dark-700">
+              <span className="text-2xl">{app.emoji}</span>
+              <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{app.name}</span>
+            </a>
+          ))}
+        </div>
+        <p className="mt-2 text-xs text-gray-500 text-center dark:text-gray-400">
+          Tap an app above — it will open with the payment pre-filled
+        </p>
+      </div>
+
+      {/* Fallback copy for desktop */}
+      {!isMobile && (
+        <details className="group">
+          <summary className="cursor-pointer text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 list-none flex items-center gap-1">
+            <span className="group-open:hidden">▶ On desktop? Copy UPI ID manually</span>
+            <span className="hidden group-open:inline">▼ UPI ID</span>
+          </summary>
+          <div className="mt-2 flex items-center gap-2">
+            <code className="flex-1 rounded-lg bg-white border border-green-200 px-3 py-2 text-sm font-mono text-green-800 dark:bg-dark-800 dark:border-green-900 dark:text-green-300 break-all">
+              {upiId}
+            </code>
+            <button onClick={() => { navigator.clipboard.writeText(upiId); }}
+              className="shrink-0 rounded-lg border border-green-300 bg-white px-3 py-2 text-xs font-semibold text-green-700 hover:bg-green-50 transition-colors">
+              Copy
+            </button>
+          </div>
+        </details>
+      )}
+
+      {/* Confirmation */}
+      <div className="border-t border-green-200 pt-4 dark:border-green-900/40">
+        <label className="flex cursor-pointer items-center gap-2.5">
+          <input type="checkbox" checked={upiPaid} onChange={(e) => setUpiPaid(e.target.checked)} className="accent-green-600 h-4 w-4 rounded"/>
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">I have completed the payment</span>
+        </label>
+        {upiPaid && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-3">
+            <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              UTR / Transaction Reference <span className="text-red-500">*</span>
+            </label>
+            <input value={utrRef} onChange={(e) => setUtrRef(e.target.value)}
+              placeholder="e.g. 426812345678"
+              className="input-field text-sm"/>
+            <p className="mt-1 text-xs text-gray-500">Find this in your UPI app → Transaction History</p>
+          </motion.div>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
 export default function CheckoutPage() {
   const [step, setStep] = useState(0);
   const [address, setAddress] = useState({ firstName: '', lastName: '', email: '', phone: '', street: '', city: '', state: '', postalCode: '', country: 'India' });
@@ -295,50 +388,17 @@ export default function CheckoutPage() {
                     ))}
                   </div>
 
-                  {/* UPI Details Panel */}
+                  {/* UPI Pay Panel */}
                   {paymentMethod === 'upi' && (
-                    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                      className="mt-4 rounded-xl border-2 border-green-200 bg-green-50 p-5 dark:border-green-900/40 dark:bg-green-950/20">
-                      <p className="text-sm font-semibold text-green-800 dark:text-green-300 mb-3">Pay using any UPI app</p>
-                      <div className="flex items-center gap-4">
-                        {/* QR placeholder — green box with UPI icon */}
-                        <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl bg-white border-2 border-green-300 text-3xl shadow-sm">
-                          📱
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-xs text-gray-500 dark:text-gray-400">Pay to</p>
-                          <p className="text-lg font-bold text-gray-900 dark:text-white">{upiName}</p>
-                          <div className="flex items-center gap-2">
-                            <code className="rounded-lg bg-white border border-green-200 px-3 py-1.5 text-sm font-mono font-semibold text-green-800 dark:bg-dark-800 dark:border-green-900 dark:text-green-300">
-                              {upiId}
-                            </code>
-                            <button onClick={() => { navigator.clipboard.writeText(upiId); toast.success('UPI ID copied!'); }}
-                              className="rounded-lg border border-green-300 bg-white px-2 py-1.5 text-xs text-green-700 hover:bg-green-50 transition-colors">
-                              Copy
-                            </button>
-                          </div>
-                          <p className="text-xs text-gray-500">Amount: <strong className="text-gray-900 dark:text-white">{formatPrice(total)}</strong></p>
-                        </div>
-                      </div>
-
-                      <div className="mt-4 border-t border-green-200 pt-4 dark:border-green-900/40">
-                        <label className="flex cursor-pointer items-center gap-2">
-                          <input type="checkbox" checked={upiPaid} onChange={(e) => setUpiPaid(e.target.checked)} className="accent-green-600 h-4 w-4 rounded"/>
-                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">I have completed the UPI payment</span>
-                        </label>
-                        {upiPaid && (
-                          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-3">
-                            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                              UTR / Transaction Reference Number <span className="text-red-500">*</span>
-                            </label>
-                            <input value={utrRef} onChange={(e) => setUtrRef(e.target.value)}
-                              placeholder="e.g. 426812345678"
-                              className="input-field text-sm"/>
-                            <p className="mt-1 text-xs text-gray-500">Find this in your UPI app under transaction history</p>
-                          </motion.div>
-                        )}
-                      </div>
-                    </motion.div>
+                    <UpiPayPanel
+                      upiId={upiId}
+                      upiName={upiName}
+                      amount={total}
+                      upiPaid={upiPaid}
+                      setUpiPaid={setUpiPaid}
+                      utrRef={utrRef}
+                      setUtrRef={setUtrRef}
+                    />
                   )}
                 </div>
 
