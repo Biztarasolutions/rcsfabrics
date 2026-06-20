@@ -104,6 +104,7 @@ export const adminApi = {
   deleteBanner: (id: string) => api.delete(`admin/banners/${id}`),
   getSettings: () => api.get('admin/settings'),
   updateSetting: (key: string, value: string) => api.put(`admin/settings/${key}`, { value }),
+  getAnalytics: (params?: { from?: string; to?: string }) => api.get('admin/analytics', { params }),
 };
 
 export const publicApi = {

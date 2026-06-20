@@ -90,7 +90,7 @@ export default function AdminDashboard() {
                     <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-dark-700/50 transition-colors">
                       <td className="py-3 font-mono text-xs text-gray-600 dark:text-gray-400">#{order.id.slice(-8).toUpperCase()}</td>
                       <td className="py-3 font-medium text-gray-900 dark:text-white">{order.user?.firstName} {order.user?.lastName}</td>
-                      <td className="py-3 font-semibold text-gray-900 dark:text-white">{formatPrice(order.totalAmount)}</td>
+                      <td className="py-3 font-semibold text-gray-900 dark:text-white">{formatPrice(order.total)}</td>
                       <td className="py-3"><span className={`badge ${STATUS_COLORS[order.status]}`}>{order.status}</span></td>
                     </tr>
                   ))}
@@ -112,7 +112,7 @@ export default function AdminDashboard() {
              {[
               { label: 'Add Product', href: '/admin/products', icon: '➕', color: 'bg-primary-500' },
               { label: 'Manage Orders', href: '/admin/orders', icon: '📋', color: 'bg-blue-500' },
-              { label: 'View Users', href: '/admin/users', icon: '👥', color: 'bg-purple-500' },
+              { label: 'Analytics', href: '/admin/analytics', icon: '📈', color: 'bg-violet-500' },
               { label: 'Settings', href: '/admin/settings', icon: '⚙️', color: 'bg-gray-500' },
             ].map((action: any) => (
               <Link key={action.label} href={action.href}

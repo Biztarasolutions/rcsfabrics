@@ -26,6 +26,7 @@ import {
   adjustStock,
   getSettings,
   updateSetting,
+  getAnalytics,
 } from '@/controllers/admin.controller';
 import bulkEnquiryRouter from '@/routes/bulkEnquiry.routes';
 import { createProductGroup } from '@/controllers/productGroupController';
@@ -57,6 +58,7 @@ router.get('/customers', getCustomers);
 
 // Dashboard
 router.get('/dashboard/stats', getDashboardStats);
+router.get('/analytics', getAnalytics);
 
 // Coupon Management
 router.get('/coupons', getCoupons);

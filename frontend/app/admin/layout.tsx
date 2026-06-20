@@ -12,7 +12,8 @@ const NAV = [
   { label: 'Categories', href: '/admin/categories', icon: '🗂️' },
   { label: 'Banners', href: '/admin/banners', icon: '🖼️' },
   { label: 'Coupons', href: '/admin/coupons', icon: '🎟️' },
-  { label: 'Reports', href: '/admin/reports', icon: '📈' },
+  { label: 'Analytics', href: '/admin/analytics', icon: '📈' },
+  { label: 'Settings', href: '/admin/settings', icon: '⚙️' },
 ];
 
 const SIDEBAR_COLLAPSED_KEY = 'admin-sidebar-collapsed';

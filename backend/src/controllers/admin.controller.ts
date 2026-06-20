@@ -1068,6 +1068,115 @@ export const getDashboardStats = async (
   }
 };
 
+// ── Analytics ───────────────────────────────────────────────────────────
+
+export const getAnalytics = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user || req.user.role !== 'ADMIN') throw new ApiError(403, 'Forbidden');
+
+    const { from, to } = req.query as { from?: string; to?: string };
+
+    const startDate = from ? new Date(from) : new Date(Date.now() - 29 * 24 * 60 * 60 * 1000);
+    const endDate = to ? new Date(to) : new Date();
+    endDate.setHours(23, 59, 59, 999);
+
+    // All orders in date range
+    const orders = await prisma.order.findMany({
+      where: { createdAt: { gte: startDate, lte: endDate } },
+      select: {
+        id: true,
+        total: true,
+        paymentStatus: true,
+        paymentMethod: true,
+        createdAt: true,
+        userId: true,
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    const paidOrders = orders.filter(o => o.paymentStatus === 'PAID' || o.paymentMethod === 'COD');
+    const totalRevenue = paidOrders.reduce((s, o) => s + Number(o.total), 0);
+    const totalOrders = orders.length;
+    const aov = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+
+    // Daily grouped revenue + order count
+    const dailyMap: Record<string, { revenue: number; orders: number }> = {};
+    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+      dailyMap[d.toISOString().slice(0, 10)] = { revenue: 0, orders: 0 };
+    }
+    for (const o of orders) {
+      const day = o.createdAt.toISOString().slice(0, 10);
+      if (dailyMap[day]) {
+        dailyMap[day].orders += 1;
+        if (o.paymentStatus === 'PAID' || o.paymentMethod === 'COD') {
+          dailyMap[day].revenue += Number(o.total);
+        }
+      }
+    }
+    const daily = Object.entries(dailyMap).map(([date, v]) => ({ date, ...v }));
+
+    // Repeat vs new customers (users with >1 order ever)
+    const uniqueUserIds = [...new Set(orders.map(o => o.userId))];
+    const repeatUserIds = uniqueUserIds.length > 0
+      ? await prisma.order.groupBy({
+          by: ['userId'],
+          where: { userId: { in: uniqueUserIds } },
+          having: { userId: { _count: { gt: 1 } } },
+          _count: { userId: true },
+        })
+      : [];
+    const repeatCustomers = repeatUserIds.length;
+    const newCustomers = uniqueUserIds.length - repeatCustomers;
+
+    // Revenue by payment method
+    const byMethod: Record<string, number> = {};
+    for (const o of paidOrders) {
+      const m = o.paymentMethod || 'UNKNOWN';
+      byMethod[m] = (byMethod[m] || 0) + Number(o.total);
+    }
+
+    // Total customers ever
+    const totalCustomers = await prisma.user.count({ where: { role: 'CUSTOMER' } });
+
+    // Top products in period (from order items)
+    const topProductsRaw = await prisma.orderItem.groupBy({
+      by: ['productName'],
+      where: { order: { createdAt: { gte: startDate, lte: endDate } } },
+      _sum: { quantity: true, total: true },
+      orderBy: { _sum: { total: 'desc' } },
+      take: 5,
+    });
+    const topProducts = topProductsRaw.map(p => ({
+      name: p.productName,
+      quantity: Number(p._sum.quantity || 0),
+      revenue: Number(p._sum.total || 0),
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        totalRevenue,
+        totalOrders,
+        aov,
+        totalCustomers,
+        newCustomers,
+        repeatCustomers,
+        daily,
+        byMethod,
+        topProducts,
+        dateRange: { from: startDate.toISOString(), to: endDate.toISOString() },
+      },
+      statusCode: 200,
+    } as ApiResponse);
+  } catch (error) {
+    if (error instanceof ApiError) {
+      res.status(error.statusCode).json({ success: false, message: error.message, statusCode: error.statusCode } as ApiResponse);
+    } else {
+      res.status(500).json({ success: false, message: 'Internal server error', statusCode: 500 } as ApiResponse);
+    }
+  }
+};
+
 // ── Inventory Management ────────────────────────────────────────────────
 
 export const getInventory = async (req: AuthRequest, res: Response): Promise<void> => {
