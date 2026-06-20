@@ -55,7 +55,7 @@ function OrderTimeline({ status }: { status: string }) {
 function OrdersContent() {
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ['my-orders'],
-    queryFn: () => orderApi.getUserOrders().then(res => res.data),
+    queryFn: () => orderApi.getUserOrders().then(res => res.data?.data?.orders ?? res.data?.orders ?? []),
   });
 
   if (isLoading) return <div className="flex min-h-screen items-center justify-center"><div className="h-10 w-10 animate-spin rounded-full border-4 border-primary-600 border-t-transparent"/></div>;

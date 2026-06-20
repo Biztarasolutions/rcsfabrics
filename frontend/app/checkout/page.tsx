@@ -204,7 +204,7 @@ export default function CheckoutPage() {
       if (paymentMethod === 'upi' && utrRef) orderPayload.utrReference = utrRef;
 
       const res = await orderApi.create(orderPayload);
-      const order = res.data;
+      const order = res.data?.data ?? res.data;
 
       if (paymentMethod === 'razorpay' && order.razorpayOrderId) {
         const options = {
