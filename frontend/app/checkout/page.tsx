@@ -24,7 +24,6 @@ function UpiPayPanel({ upiId, upiName, amount, upiPaid, setUpiPaid, utrRef, setU
   upiPaid: boolean; setUpiPaid: (v: boolean) => void;
   utrRef: string; setUtrRef: (v: string) => void;
 }) {
-  const upiLink = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(upiName)}&am=${amount.toFixed(2)}&cu=INR&tn=RCS+Fabrics+Order`;
   const isMobile = typeof navigator !== 'undefined' && /Mobi|Android/i.test(navigator.userAgent);
 
   return (

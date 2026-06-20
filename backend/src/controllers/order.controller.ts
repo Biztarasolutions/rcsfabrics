@@ -20,39 +20,37 @@ export const createOrder = async (
       throw new ApiError(400, 'Order must contain at least one item');
     }
 
-    // Get current cart items
-    const cartItems = await prisma.cartItem.findMany({
-      where: { userId: req.userId },
-      include: { product: true },
-    });
-
-    if (cartItems.length === 0) {
-      throw new ApiError(400, 'Cart is empty');
-    }
-
-    // Calculate subtotal
+    // Build order items from the request body (frontend Zustand cart)
     let subtotal = 0;
     const orderItems: any[] = [];
 
-    for (const cartItem of cartItems) {
-      const price = cartItem.product.discountPrice || cartItem.product.basePrice;
-      const itemTotal = price * cartItem.quantity;
+    for (const item of items) {
+      const product = await prisma.product.findUnique({
+        where: { id: item.productId },
+        select: { id: true, name: true, basePrice: true, discountPrice: true, totalStock: true },
+      });
+      if (!product) throw new ApiError(400, `Product ${item.productId} not found`);
+
+      // Use price from DB (ignore client-sent price to prevent tampering)
+      const price = product.discountPrice || product.basePrice;
+      const qty = parseFloat(item.quantity);
+      const itemTotal = price * qty;
       subtotal += itemTotal;
 
-      // Fetch first image for this product
+      // Fetch main product image
       const mainImg = await prisma.productImage.findFirst({
-        where: { productId: cartItem.product.id, isMain: true },
+        where: { productId: product.id, isMain: true },
         select: { url: true },
       }) || await prisma.productImage.findFirst({
-        where: { productId: cartItem.product.id },
+        where: { productId: product.id },
         select: { url: true },
       });
 
       orderItems.push({
-        productId: cartItem.product.id,
-        productName: cartItem.product.name,
+        productId: product.id,
+        productName: product.name,
         productImage: mainImg?.url || null,
-        quantity: cartItem.quantity,
+        quantity: qty,
         pricePerMeter: price,
         total: itemTotal,
       });
@@ -105,11 +103,6 @@ export const createOrder = async (
           include: { product: true },
         },
       },
-    });
-
-    // Clear cart
-    await prisma.cartItem.deleteMany({
-      where: { userId: req.userId },
     });
 
     res.status(201).json({
