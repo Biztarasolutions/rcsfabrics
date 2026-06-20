@@ -105,6 +105,16 @@ export const createOrder = async (
       },
     });
 
+    // Deduct inventory for each ordered item
+    await Promise.all(
+      orderItems.map((item) =>
+        prisma.product.update({
+          where: { id: item.productId },
+          data: { totalStock: { decrement: item.quantity } },
+        })
+      )
+    );
+
     res.status(201).json({
       success: true,
       message: 'Order created successfully',

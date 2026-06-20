@@ -92,7 +92,7 @@ function OrdersContent() {
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 dark:text-gray-400">Total</p>
-                    <p className="font-bold text-gray-900 dark:text-white">{formatPrice(order.totalAmount)}</p>
+                    <p className="font-bold text-gray-900 dark:text-white">{formatPrice(order.total)}</p>
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -105,26 +105,26 @@ function OrdersContent() {
 
               {/* Items */}
               <div className="divide-y divide-gray-50 dark:divide-dark-700 px-5">
-                {order.items.map((item: any) => (
+                {order.items?.map((item: any) => (
                   <div key={item.id} className="flex items-center justify-between py-4">
                     <div className="flex items-center gap-3">
                       <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 dark:bg-primary-950/30 overflow-hidden">
-                        {item.product?.images?.[0]?.url ? (
-                           <Image src={supabaseImg(item.product.images[0].url, 80)} alt={item.product.name} fill sizes="40px"
+                        {item.productImage ? (
+                           <Image src={supabaseImg(item.productImage, 80)} alt={item.productName || ''} fill sizes="40px"
                              placeholder="blur" blurDataURL={BLUR_PLACEHOLDER} className="object-cover"/>
                         ) : (
                           <span className="text-lg">🧵</span>
                         )}
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900 dark:text-white">{item.product?.name}</p>
+                        <p className="font-medium text-gray-900 dark:text-white">{item.productName}</p>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {item.quantity}m × {formatPrice(item.priceAtPurchase)}/m
+                          {item.quantity}m × {formatPrice(item.pricePerMeter)}/m
                         </p>
                       </div>
                     </div>
                     <p className="font-bold text-gray-900 dark:text-white">
-                      {formatPrice(item.quantity * item.priceAtPurchase)}
+                      {formatPrice(item.total ?? item.quantity * item.pricePerMeter)}
                     </p>
                   </div>
                 ))}
