@@ -1,9 +1,16 @@
 import { Response } from 'express';
+import Razorpay from 'razorpay';
+import crypto from 'crypto';
 import { prisma } from '@/index';
 import { AuthRequest, ApiResponse } from '@/types';
 import { generateOrderNumber, calculateOrderTotal } from '@/utils/order.util';
 import { parsePagination, createPaginationMeta } from '@/utils/pagination.util';
 import { ApiError } from '@/middleware/errorHandler';
+
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID || '',
+  key_secret: process.env.RAZORPAY_KEY_SECRET || '',
+});
 
 export const createOrder = async (
   req: AuthRequest,
@@ -115,10 +122,30 @@ export const createOrder = async (
       )
     );
 
+    // Create Razorpay order for online payments (RAZORPAY or UPI)
+    let razorpayOrderId: string | undefined;
+    if (paymentMethod === 'RAZORPAY' || paymentMethod === 'UPI') {
+      try {
+        const rzOrder = await razorpay.orders.create({
+          amount: Math.round(total * 100),
+          currency: 'INR',
+          receipt: order.orderNumber,
+          notes: { orderId: order.id },
+        });
+        razorpayOrderId = rzOrder.id as string;
+        await prisma.order.update({
+          where: { id: order.id },
+          data: { razorpayOrderId },
+        });
+      } catch (rzErr) {
+        console.error('[Razorpay] Failed to create order:', rzErr);
+      }
+    }
+
     res.status(201).json({
       success: true,
       message: 'Order created successfully',
-      data: order,
+      data: { ...order, razorpayOrderId },
       statusCode: 201,
     } as ApiResponse);
   } catch (error) {
@@ -192,6 +219,49 @@ export const getOrders = async (
         message: 'Internal server error',
         statusCode: 500,
       } as ApiResponse);
+    }
+  }
+};
+
+export const verifyPayment = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.userId) throw new ApiError(401, 'Unauthorized');
+
+    const { id } = req.params;
+    const { razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
+
+    const expectedSig = crypto
+      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET || '')
+      .update(`${razorpayOrderId}|${razorpayPaymentId}`)
+      .digest('hex');
+
+    if (expectedSig !== razorpaySignature) {
+      throw new ApiError(400, 'Payment signature verification failed');
+    }
+
+    const order = await prisma.order.findUnique({ where: { id } });
+    if (!order) throw new ApiError(404, 'Order not found');
+    if (order.userId !== req.userId) throw new ApiError(403, 'Forbidden');
+
+    const updated = await prisma.order.update({
+      where: { id },
+      data: {
+        paymentStatus: 'PAID',
+        status: 'PROCESSING',
+        razorpayPaymentId,
+        paidAt: new Date(),
+      },
+    });
+
+    res.json({ success: true, message: 'Payment verified', data: updated, statusCode: 200 } as ApiResponse);
+  } catch (error) {
+    if (error instanceof ApiError) {
+      res.status(error.statusCode).json({ success: false, message: error.message, statusCode: error.statusCode } as ApiResponse);
+    } else {
+      res.status(500).json({ success: false, message: 'Internal server error', statusCode: 500 } as ApiResponse);
     }
   }
 };

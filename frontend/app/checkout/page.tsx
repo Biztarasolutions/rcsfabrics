@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useCartStore, useAuthStore } from '@/lib/store';
 import { orderApi, publicApi } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
@@ -11,37 +11,6 @@ import Image from 'next/image';
 import { useQuery } from '@tanstack/react-query';
 
 const STEPS = ['Cart Review', 'Shipping Address', 'Payment'];
-
-const UPI_APPS = [
-  {
-    name: 'Google Pay',
-    emoji: '🟢',
-    color: 'hover:border-green-400',
-    scheme: (id: string, name: string, amt: number) =>
-      `tez://upi/pay?pa=${id}&pn=${encodeURIComponent(name)}&am=${amt.toFixed(2)}&cu=INR&tn=RCS+Fabrics+Order`,
-  },
-  {
-    name: 'PhonePe',
-    emoji: '🟣',
-    color: 'hover:border-purple-400',
-    scheme: (id: string, name: string, amt: number) =>
-      `phonepe://pay?pa=${id}&pn=${encodeURIComponent(name)}&am=${amt.toFixed(2)}&cu=INR&tn=RCS+Fabrics+Order`,
-  },
-  {
-    name: 'Paytm',
-    emoji: '🔵',
-    color: 'hover:border-blue-400',
-    scheme: (id: string, name: string, amt: number) =>
-      `paytmmp://pay?pa=${id}&pn=${encodeURIComponent(name)}&am=${amt.toFixed(2)}&cu=INR&tn=RCS+Fabrics+Order`,
-  },
-  {
-    name: 'BHIM / Other',
-    emoji: '🟠',
-    color: 'hover:border-orange-400',
-    scheme: (id: string, name: string, amt: number) =>
-      `upi://pay?pa=${id}&pn=${encodeURIComponent(name)}&am=${amt.toFixed(2)}&cu=INR&tn=RCS+Fabrics+Order`,
-  },
-];
 
 export default function CheckoutPage() {
   const [step, setStep] = useState(0);
@@ -53,9 +22,6 @@ export default function CheckoutPage() {
   const [couponData, setCouponData] = useState<any>(null);
   const [placing, setPlacing] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'razorpay' | 'upi' | 'cod'>('upi');
-  const [utrRef, setUtrRef] = useState('');
-  const [upiPaid, setUpiPaid] = useState(false);
-  const [showUpiPicker, setShowUpiPicker] = useState(false);
 
   const { items, clearCart, totalPrice } = useCartStore();
   const { user } = useAuthStore();
@@ -70,17 +36,15 @@ export default function CheckoutPage() {
   const upiEnabled = settings?.payment_upi_enabled !== 'false';
   const codEnabled = settings?.payment_cod_enabled !== 'false';
   const razorpayEnabled = settings?.payment_razorpay_enabled !== 'false';
-  const upiId = settings?.upi_id || 'MAB0450543A0000066@Yesbank';
-  const upiName = settings?.upi_name || 'Rajasthan Cloth Store';
 
   useEffect(() => {
-    if (!razorpayEnabled) return;
+    if (!razorpayEnabled && !upiEnabled) return;
     const script = document.createElement('script');
     script.src = 'https://checkout.razorpay.com/v1/checkout.js';
     script.async = true;
     document.body.appendChild(script);
     return () => { if (document.body.contains(script)) document.body.removeChild(script); };
-  }, [razorpayEnabled]);
+  }, [razorpayEnabled, upiEnabled]);
 
   useEffect(() => {
     if (user) {
@@ -122,7 +86,7 @@ export default function CheckoutPage() {
     }
   };
 
-  const placeOrder = async (utrOverride?: string) => {
+  const placeOrder = async () => {
     if (!user) {
       toast.error('Please login to place an order');
       router.push('/login?redirect=/checkout');
@@ -130,6 +94,7 @@ export default function CheckoutPage() {
     }
 
     setPlacing(true);
+    let openedRazorpay = false;
     try {
       const orderPayload: any = {
         items: items.map(item => ({
@@ -141,16 +106,14 @@ export default function CheckoutPage() {
         paymentMethod: paymentMethod === 'upi' ? 'UPI' : paymentMethod.toUpperCase(),
         couponCode: couponData?.code,
       };
-      const utr = utrOverride || utrRef;
-      if (paymentMethod === 'upi' && utr) orderPayload.utrReference = utr;
 
       const res = await orderApi.create(orderPayload);
       const order = res.data?.data ?? res.data;
 
-      if (paymentMethod === 'razorpay' && order.razorpayOrderId) {
-        const options = {
+      if ((paymentMethod === 'razorpay' || paymentMethod === 'upi') && order.razorpayOrderId) {
+        const options: any = {
           key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-          amount: (order.total || order.totalAmount) * 100,
+          amount: order.total * 100,
           currency: 'INR',
           name: 'RCS Fabrics',
           description: `Order #${order.orderNumber || order.id}`,
@@ -158,43 +121,61 @@ export default function CheckoutPage() {
           handler: async (response: any) => {
             try {
               await orderApi.verifyPayment(order.id, {
-                orderId: order.id,
                 razorpayOrderId: response.razorpay_order_id,
                 razorpayPaymentId: response.razorpay_payment_id,
                 razorpaySignature: response.razorpay_signature,
               });
               clearCart();
-              toast.success('🎉 Payment successful!');
+              toast.success('🎉 Payment successful! Your order is confirmed.');
               router.push(`/account/orders/${order.id}`);
             } catch {
-              toast.error('Payment verification failed. Contact support.');
+              toast.error('Payment verification failed. Please contact support with your order ID.');
             }
+            setPlacing(false);
+          },
+          modal: {
+            ondismiss: () => {
+              toast('Payment cancelled. Your order is saved — complete payment anytime.');
+              setPlacing(false);
+              router.push(`/account/orders/${order.id}`);
+            },
           },
           prefill: { name: `${address.firstName} ${address.lastName}`, email: address.email, contact: address.phone },
           theme: { color: '#000000' },
         };
+
+        if (paymentMethod === 'upi') {
+          options.config = {
+            display: {
+              blocks: {
+                upi_block: {
+                  name: 'Pay via UPI',
+                  instruments: [{ method: 'upi', flows: ['intent', 'collect', 'qr'] }],
+                },
+              },
+              sequence: ['block.upi_block'],
+              preferences: { show_default_blocks: false },
+            },
+          };
+        }
+
         new (window as any).Razorpay(options).open();
-      } else {
-        clearCart();
-        toast.success(paymentMethod === 'upi'
-          ? '🎉 Order placed! We will confirm once payment is verified.'
-          : '🎉 Order placed successfully!');
-        router.push(`/account/orders/${order.id}`);
+        openedRazorpay = true;
+        return; // handler/ondismiss calls setPlacing(false)
       }
+
+      clearCart();
+      toast.success('🎉 Order placed successfully!');
+      router.push(`/account/orders/${order.id}`);
     } catch (error: any) {
       toast.error(error.message || 'Failed to place order. Please try again.');
-    } finally {
       setPlacing(false);
+    } finally {
+      if (!openedRazorpay) setPlacing(false); // no-op on catch path, resets on normal COD path
     }
   };
 
-  const handleMainButton = () => {
-    if (paymentMethod === 'upi') {
-      setShowUpiPicker(true);
-    } else {
-      placeOrder();
-    }
-  };
+  const handleMainButton = () => placeOrder();
 
   const paymentOptions = [
     upiEnabled && { id: 'upi' as const, label: 'UPI', sub: 'GPay, PhonePe, Paytm & more', icon: '📲' },
@@ -326,7 +307,7 @@ export default function CheckoutPage() {
                       <label key={method.id}
                         className={`flex cursor-pointer items-center gap-4 rounded-xl border-2 p-4 transition-colors ${paymentMethod === method.id ? 'border-primary-500 bg-primary-50/30 dark:border-primary-500/50 dark:bg-primary-950/10' : 'border-gray-200 dark:border-dark-700'}`}>
                         <input type="radio" name="payment" value={method.id} checked={paymentMethod === method.id}
-                          onChange={() => { setPaymentMethod(method.id); setUpiPaid(false); setUtrRef(''); }}
+                          onChange={() => setPaymentMethod(method.id)}
                           className="accent-primary-600"/>
                         <span className="text-2xl">{method.icon}</span>
                         <div>
@@ -336,36 +317,17 @@ export default function CheckoutPage() {
                       </label>
                     ))}
                   </div>
-
-                  {/* After UPI paid — UTR input */}
-                  {paymentMethod === 'upi' && upiPaid && (
-                    <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-                      className="mt-4 rounded-xl border border-green-200 bg-green-50 p-4 dark:border-green-900/40 dark:bg-green-950/20">
-                      <p className="text-sm font-semibold text-green-800 dark:text-green-300">✅ Payment done — enter your UTR to confirm</p>
-                      <label className="mt-3 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        UTR / Transaction Reference <span className="text-red-500">*</span>
-                      </label>
-                      <input value={utrRef} onChange={(e) => setUtrRef(e.target.value)}
-                        placeholder="e.g. 426812345678"
-                        className="input-field mt-1.5 text-sm"/>
-                      <p className="mt-1 text-xs text-gray-500">Find this in your UPI app → Transaction History</p>
-                      <button onClick={() => setUpiPaid(false)}
-                        className="mt-2 text-xs text-gray-400 hover:text-gray-600 underline">
-                        ← Choose a different app
-                      </button>
-                    </motion.div>
-                  )}
                 </div>
 
                 <div className="flex gap-3">
                   <button onClick={() => setStep(1)} className="button-secondary flex-1 py-3">← Back</button>
                   <button
                     onClick={handleMainButton}
-                    disabled={placing || (paymentMethod === 'upi' && upiPaid && !utrRef.trim())}
+                    disabled={placing}
                     className="button-luxury flex-1 py-3 font-semibold disabled:opacity-60">
                     {placing
                       ? '⏳ Processing...'
-                      : paymentMethod === 'upi' && !upiPaid
+                      : paymentMethod === 'upi'
                         ? `📲 Pay ₹${total.toFixed(0)} via UPI`
                         : `🔒 Place Order · ${formatPrice(total)}`}
                   </button>
@@ -377,51 +339,6 @@ export default function CheckoutPage() {
         </div>
       </div>
 
-      {/* UPI App Picker Modal */}
-      <AnimatePresence>
-        {showUpiPicker && (
-          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
-            onClick={(e) => e.target === e.currentTarget && setShowUpiPicker(false)}>
-            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"/>
-            <motion.div
-              initial={{ opacity: 0, y: 60 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 60 }}
-              transition={{ type: 'spring', damping: 28 }}
-              className="relative w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl dark:bg-dark-800">
-
-              {/* Header */}
-              <div className="flex items-center justify-between mb-1">
-                <h3 className="font-display text-lg font-bold text-gray-900 dark:text-white">Choose UPI App</h3>
-                <button onClick={() => setShowUpiPicker(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl p-1">✕</button>
-              </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">
-                Paying <strong className="text-gray-900 dark:text-white">₹{total.toFixed(2)}</strong> to <strong className="text-gray-900 dark:text-white">{upiName}</strong>
-              </p>
-
-              {/* App buttons */}
-              <div className="grid grid-cols-2 gap-3">
-                {UPI_APPS.map((app) => (
-                  <a key={app.name}
-                    href={app.scheme(upiId, upiName, total)}
-                    onClick={() => {
-                      setTimeout(() => {
-                        setShowUpiPicker(false);
-                        setUpiPaid(true);
-                      }, 800);
-                    }}
-                    className={`flex items-center gap-3 rounded-2xl border-2 border-gray-200 bg-gray-50 px-4 py-3.5 transition-all active:scale-95 dark:border-dark-600 dark:bg-dark-700 ${app.color}`}>
-                    <span className="text-3xl">{app.emoji}</span>
-                    <span className="font-semibold text-sm text-gray-800 dark:text-white">{app.name}</span>
-                  </a>
-                ))}
-              </div>
-
-              <p className="mt-4 text-center text-xs text-gray-400">
-                Tap an app · it opens with payment pre-filled · come back here after paying
-              </p>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
