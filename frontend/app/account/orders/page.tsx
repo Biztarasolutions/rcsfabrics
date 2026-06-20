@@ -6,6 +6,7 @@ import { orderApi } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
 import { Suspense } from 'react';
 import Image from 'next/image';
+import { BLUR_PLACEHOLDER, supabaseImg } from '@/lib/image';
 
 const STATUS_COLORS: Record<string, string> = {
   PENDING: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
@@ -109,7 +110,8 @@ function OrdersContent() {
                     <div className="flex items-center gap-3">
                       <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 dark:bg-primary-950/30 overflow-hidden">
                         {item.product?.images?.[0]?.url ? (
-                           <Image src={item.product.images[0].url} alt={item.product.name} fill sizes="40px" className="object-cover"/>
+                           <Image src={supabaseImg(item.product.images[0].url, 80)} alt={item.product.name} fill sizes="40px"
+                             placeholder="blur" blurDataURL={BLUR_PLACEHOLDER} className="object-cover"/>
                         ) : (
                           <span className="text-lg">🧵</span>
                         )}

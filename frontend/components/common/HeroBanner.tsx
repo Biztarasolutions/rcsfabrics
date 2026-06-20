@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
+import { BLUR_PLACEHOLDER } from '@/lib/image';
 
 const SLIDES = [
   {
@@ -60,6 +61,7 @@ export default function HeroBanner() {
           <div key={s.id}
             className={`absolute inset-0 transition-opacity duration-1000 ${isActive ? 'opacity-100' : 'opacity-0'}`}>
             <Image src={s.image} alt={s.tag} fill priority={i === 0} sizes="100vw"
+              placeholder="blur" blurDataURL={BLUR_PLACEHOLDER}
               className="object-cover scale-105 animate-float" style={{ animationDuration: '8s' }}/>
             <div className={`absolute inset-0 bg-gradient-to-r ${s.accent}`}/>
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"/>

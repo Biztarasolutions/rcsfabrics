@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
+import { BLUR_PLACEHOLDER, supabaseImg } from '@/lib/image';
 
 export default function InventoryPage() {
   const queryClient = useQueryClient();
@@ -132,7 +133,8 @@ export default function InventoryPage() {
                         <div className="flex items-center gap-3">
                           <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-dark-700">
                             {product.images?.[0]?.url ? (
-                              <Image src={product.images[0].url} alt={product.name} fill sizes="40px" className="object-cover"/>
+                              <Image src={supabaseImg(product.images[0].url, 80)} alt={product.name} fill sizes="40px"
+                                placeholder="blur" blurDataURL={BLUR_PLACEHOLDER} className="object-cover"/>
                             ) : <span className="flex h-full items-center justify-center text-lg">🧵</span>}
                           </div>
                           <div>

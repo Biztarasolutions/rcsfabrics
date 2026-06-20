@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useHomepageData } from '@/hooks/useHomepageData';
 import Image from 'next/image';
+import { BLUR_PLACEHOLDER, supabaseImg } from '@/lib/image';
 
 export default function CategoryShowcase() {
   const { data: homepageData, isLoading } = useHomepageData();
@@ -35,8 +36,10 @@ export default function CategoryShowcase() {
                     className="group relative block overflow-hidden rounded-2xl">
                     {/* Image */}
                     <div className="relative h-52 overflow-hidden bg-white dark:bg-dark-800">
-                      <Image src={cat.imageUrl || cat.image} alt={cat.name}
-                        fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-contain transition-transform duration-500 group-hover:scale-105"/>
+                      <Image src={supabaseImg(cat.imageUrl || cat.image, 800)} alt={cat.name}
+                        fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        placeholder="blur" blurDataURL={BLUR_PLACEHOLDER}
+                        className="object-contain transition-transform duration-500 group-hover:scale-105"/>
                       <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/80 via-black/30 to-transparent"/>
                     </div>
                     {/* Content */}

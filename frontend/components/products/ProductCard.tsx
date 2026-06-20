@@ -7,6 +7,7 @@ import { useCartStore, useWishlistStore } from '@/lib/store';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 import Link from 'next/link';
+import { BLUR_PLACEHOLDER, supabaseImg } from '@/lib/image';
 
 interface ProductCardProps { product: Product; }
 
@@ -51,12 +52,14 @@ const ProductCard = React.memo(function ProductCard({ product }: ProductCardProp
         <div className={`relative overflow-hidden bg-gray-50 dark:bg-dark-700 ${!imgLoaded ? 'animate-pulse' : ''}`} style={{ aspectRatio: '4/5' }}>
           {mainImage ? (
             <Image
-              src={mainImage.url}
+              src={supabaseImg(mainImage.url, 600)}
               alt={product.name}
               fill
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+              placeholder="blur"
+              blurDataURL={BLUR_PLACEHOLDER}
               onLoad={() => setImgLoaded(true)}
-              className={`object-cover transition-all duration-500 ${hovered && secondImage ? 'opacity-0' : 'opacity-100'} ${!imgLoaded ? 'scale-105 blur-sm' : 'scale-100 blur-0'}`}
+              className={`object-cover transition-all duration-500 ${hovered && secondImage ? 'opacity-0' : 'opacity-100'} ${!imgLoaded ? 'scale-105' : 'scale-100'}`}
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 dark:from-dark-600 dark:to-dark-700">
@@ -65,12 +68,14 @@ const ProductCard = React.memo(function ProductCard({ product }: ProductCardProp
           )}
           {secondImage && everHovered && (
             <Image
-              src={secondImage.url}
+              src={supabaseImg(secondImage.url, 600)}
               alt={product.name}
               fill
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+              placeholder="blur"
+              blurDataURL={BLUR_PLACEHOLDER}
               onLoad={() => setSecondImgLoaded(true)}
-              className={`object-cover transition-all duration-500 ${hovered ? 'opacity-100' : 'opacity-0'} ${!secondImgLoaded ? 'scale-105 blur-sm' : 'scale-100 blur-0'}`}
+              className={`object-cover transition-all duration-500 ${hovered ? 'opacity-100' : 'opacity-0'} ${!secondImgLoaded ? 'scale-105' : 'scale-100'}`}
             />
           )}
           <div className="absolute left-3 top-3 flex flex-col gap-1.5">

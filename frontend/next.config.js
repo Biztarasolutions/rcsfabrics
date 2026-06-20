@@ -2,21 +2,9 @@
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    remotePatterns: [
-      { protocol: 'https', hostname: 'images.unsplash.com' },
-      { protocol: 'https', hostname: '**.amazonaws.com' },
-      { protocol: 'https', hostname: '**.cloudinary.com' },
-      { protocol: 'https', hostname: '**.supabase.co' },
-      { protocol: 'https', hostname: 'drive.google.com' },
-      { protocol: 'https', hostname: 'via.placeholder.com' },
-      { protocol: 'http', hostname: 'localhost' },
-      { protocol: 'https', hostname: 'localhost' },
-    ],
-    formats: ['image/avif', 'image/webp'],
-    deviceSizes: [640, 828, 1080, 1200, 1920],
-    imageSizes: [64, 128, 256, 384],
-    minimumCacheTTL: 2592000, // 30 days — optimized images are immutable
-    unoptimized: false,
+    // Images are served pre-sized via Supabase's Cloudflare CDN (supabaseImg helper)
+    // and Unsplash's own CDN (?w=N&q=80 params). No need for Next.js to re-optimize.
+    unoptimized: true,
   },
   headers: async () => {
     return [
