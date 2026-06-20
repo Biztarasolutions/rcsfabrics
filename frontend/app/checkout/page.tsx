@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useCartStore, useAuthStore } from '@/lib/store';
 import { orderApi, publicApi } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
@@ -13,106 +13,49 @@ import { useQuery } from '@tanstack/react-query';
 const STEPS = ['Cart Review', 'Shipping Address', 'Payment'];
 
 const UPI_APPS = [
-  { name: 'GPay', icon: '/icons/gpay.png', emoji: '🟢', scheme: (id: string, name: string, amt: number) => `tez://upi/pay?pa=${id}&pn=${encodeURIComponent(name)}&am=${amt}&cu=INR&tn=RCS+Fabrics+Order` },
-  { name: 'PhonePe', icon: '/icons/phonepe.png', emoji: '🟣', scheme: (id: string, name: string, amt: number) => `phonepe://pay?pa=${id}&pn=${encodeURIComponent(name)}&am=${amt}&cu=INR&tn=RCS+Fabrics+Order` },
-  { name: 'Paytm', icon: '/icons/paytm.png', emoji: '🔵', scheme: (id: string, name: string, amt: number) => `paytmmp://pay?pa=${id}&pn=${encodeURIComponent(name)}&am=${amt}&cu=INR&tn=RCS+Fabrics+Order` },
-  { name: 'BHIM', icon: '/icons/bhim.png', emoji: '🟠', scheme: (id: string, name: string, amt: number) => `upi://pay?pa=${id}&pn=${encodeURIComponent(name)}&am=${amt}&cu=INR&tn=RCS+Fabrics+Order` },
+  {
+    name: 'Google Pay',
+    emoji: '🟢',
+    color: 'hover:border-green-400',
+    scheme: (id: string, name: string, amt: number) =>
+      `tez://upi/pay?pa=${id}&pn=${encodeURIComponent(name)}&am=${amt.toFixed(2)}&cu=INR&tn=RCS+Fabrics+Order`,
+  },
+  {
+    name: 'PhonePe',
+    emoji: '🟣',
+    color: 'hover:border-purple-400',
+    scheme: (id: string, name: string, amt: number) =>
+      `phonepe://pay?pa=${id}&pn=${encodeURIComponent(name)}&am=${amt.toFixed(2)}&cu=INR&tn=RCS+Fabrics+Order`,
+  },
+  {
+    name: 'Paytm',
+    emoji: '🔵',
+    color: 'hover:border-blue-400',
+    scheme: (id: string, name: string, amt: number) =>
+      `paytmmp://pay?pa=${id}&pn=${encodeURIComponent(name)}&am=${amt.toFixed(2)}&cu=INR&tn=RCS+Fabrics+Order`,
+  },
+  {
+    name: 'BHIM / Other',
+    emoji: '🟠',
+    color: 'hover:border-orange-400',
+    scheme: (id: string, name: string, amt: number) =>
+      `upi://pay?pa=${id}&pn=${encodeURIComponent(name)}&am=${amt.toFixed(2)}&cu=INR&tn=RCS+Fabrics+Order`,
+  },
 ];
-
-function UpiPayPanel({ upiId, upiName, amount, upiPaid, setUpiPaid, utrRef, setUtrRef }: {
-  upiId: string; upiName: string; amount: number;
-  upiPaid: boolean; setUpiPaid: (v: boolean) => void;
-  utrRef: string; setUtrRef: (v: string) => void;
-}) {
-  const isMobile = typeof navigator !== 'undefined' && /Mobi|Android/i.test(navigator.userAgent);
-
-  return (
-    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-      className="mt-4 rounded-xl border-2 border-green-200 bg-green-50 p-5 dark:border-green-900/40 dark:bg-green-950/20 space-y-4">
-
-      {/* Payee info */}
-      <div className="flex items-center gap-3">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white border border-green-200 text-2xl shadow-sm">📲</div>
-        <div>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Pay to</p>
-          <p className="font-bold text-gray-900 dark:text-white">{upiName}</p>
-          <p className="text-xs font-mono text-green-700 dark:text-green-400">{upiId}</p>
-        </div>
-        <div className="ml-auto text-right">
-          <p className="text-xs text-gray-500">Amount</p>
-          <p className="font-bold text-lg text-gray-900 dark:text-white">₹{amount.toFixed(2)}</p>
-        </div>
-      </div>
-
-      {/* Open UPI app buttons */}
-      <div>
-        <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">Open with your UPI app</p>
-        <div className="grid grid-cols-4 gap-2">
-          {UPI_APPS.map((app) => (
-            <a key={app.name}
-              href={app.scheme(upiId, upiName, amount)}
-              onClick={() => setTimeout(() => setUpiPaid(true), 3000)}
-              className="flex flex-col items-center gap-1.5 rounded-xl border border-green-200 bg-white px-2 py-3 text-center hover:border-green-400 hover:bg-green-50 transition-colors dark:bg-dark-800 dark:border-green-900/50 dark:hover:bg-dark-700">
-              <span className="text-2xl">{app.emoji}</span>
-              <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{app.name}</span>
-            </a>
-          ))}
-        </div>
-        <p className="mt-2 text-xs text-gray-500 text-center dark:text-gray-400">
-          Tap an app above — it will open with the payment pre-filled
-        </p>
-      </div>
-
-      {/* Fallback copy for desktop */}
-      {!isMobile && (
-        <details className="group">
-          <summary className="cursor-pointer text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 list-none flex items-center gap-1">
-            <span className="group-open:hidden">▶ On desktop? Copy UPI ID manually</span>
-            <span className="hidden group-open:inline">▼ UPI ID</span>
-          </summary>
-          <div className="mt-2 flex items-center gap-2">
-            <code className="flex-1 rounded-lg bg-white border border-green-200 px-3 py-2 text-sm font-mono text-green-800 dark:bg-dark-800 dark:border-green-900 dark:text-green-300 break-all">
-              {upiId}
-            </code>
-            <button onClick={() => { navigator.clipboard.writeText(upiId); }}
-              className="shrink-0 rounded-lg border border-green-300 bg-white px-3 py-2 text-xs font-semibold text-green-700 hover:bg-green-50 transition-colors">
-              Copy
-            </button>
-          </div>
-        </details>
-      )}
-
-      {/* Confirmation */}
-      <div className="border-t border-green-200 pt-4 dark:border-green-900/40">
-        <label className="flex cursor-pointer items-center gap-2.5">
-          <input type="checkbox" checked={upiPaid} onChange={(e) => setUpiPaid(e.target.checked)} className="accent-green-600 h-4 w-4 rounded"/>
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">I have completed the payment</span>
-        </label>
-        {upiPaid && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-3">
-            <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-              UTR / Transaction Reference <span className="text-red-500">*</span>
-            </label>
-            <input value={utrRef} onChange={(e) => setUtrRef(e.target.value)}
-              placeholder="e.g. 426812345678"
-              className="input-field text-sm"/>
-            <p className="mt-1 text-xs text-gray-500">Find this in your UPI app → Transaction History</p>
-          </motion.div>
-        )}
-      </div>
-    </motion.div>
-  );
-}
 
 export default function CheckoutPage() {
   const [step, setStep] = useState(0);
-  const [address, setAddress] = useState({ firstName: '', lastName: '', email: '', phone: '', street: '', city: '', state: '', postalCode: '', country: 'India' });
+  const [address, setAddress] = useState({
+    firstName: '', lastName: '', email: '', phone: '',
+    street: '', city: '', state: '', postalCode: '', country: 'India',
+  });
   const [coupon, setCoupon] = useState('');
   const [couponData, setCouponData] = useState<any>(null);
   const [placing, setPlacing] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'razorpay' | 'upi' | 'cod'>('upi');
   const [utrRef, setUtrRef] = useState('');
   const [upiPaid, setUpiPaid] = useState(false);
+  const [showUpiPicker, setShowUpiPicker] = useState(false);
 
   const { items, clearCart, totalPrice } = useCartStore();
   const { user } = useAuthStore();
@@ -130,7 +73,6 @@ export default function CheckoutPage() {
   const upiId = settings?.upi_id || 'MAB0450543A0000066@Yesbank';
   const upiName = settings?.upi_name || 'Rajasthan Cloth Store';
 
-  // Load Razorpay script
   useEffect(() => {
     if (!razorpayEnabled) return;
     const script = document.createElement('script');
@@ -140,7 +82,6 @@ export default function CheckoutPage() {
     return () => { if (document.body.contains(script)) document.body.removeChild(script); };
   }, [razorpayEnabled]);
 
-  // Sync user info if logged in
   useEffect(() => {
     if (user) {
       setAddress(prev => ({
@@ -153,7 +94,6 @@ export default function CheckoutPage() {
     }
   }, [user]);
 
-  // Set default payment method based on what's enabled
   useEffect(() => {
     if (settings) {
       if (upiEnabled) setPaymentMethod('upi');
@@ -164,7 +104,11 @@ export default function CheckoutPage() {
 
   const subtotal = totalPrice();
   const shipping = subtotal >= 2000 ? 0 : 150;
-  const discount = couponData ? (couponData.type === 'PERCENT' ? Math.round(subtotal * (couponData.value / 100)) : couponData.value) : 0;
+  const discount = couponData
+    ? couponData.type === 'PERCENT'
+      ? Math.round(subtotal * (couponData.value / 100))
+      : couponData.value
+    : 0;
   const total = subtotal + shipping - discount;
 
   const handleCoupon = async () => {
@@ -172,20 +116,16 @@ export default function CheckoutPage() {
     try {
       const res = await orderApi.validateCoupon(coupon, subtotal);
       setCouponData(res.data);
-      toast.success('Coupon applied successfully!');
+      toast.success('Coupon applied!');
     } catch (error: any) {
       toast.error(error.message || 'Invalid coupon code');
     }
   };
 
-  const handlePlaceOrder = async () => {
+  const placeOrder = async (utrOverride?: string) => {
     if (!user) {
       toast.error('Please login to place an order');
       router.push('/login?redirect=/checkout');
-      return;
-    }
-    if (paymentMethod === 'upi' && upiPaid && !utrRef.trim()) {
-      toast.error('Please enter your UTR / transaction reference number');
       return;
     }
 
@@ -201,7 +141,8 @@ export default function CheckoutPage() {
         paymentMethod: paymentMethod === 'upi' ? 'UPI' : paymentMethod.toUpperCase(),
         couponCode: couponData?.code,
       };
-      if (paymentMethod === 'upi' && utrRef) orderPayload.utrReference = utrRef;
+      const utr = utrOverride || utrRef;
+      if (paymentMethod === 'upi' && utr) orderPayload.utrReference = utr;
 
       const res = await orderApi.create(orderPayload);
       const order = res.data?.data ?? res.data;
@@ -223,25 +164,21 @@ export default function CheckoutPage() {
                 razorpaySignature: response.razorpay_signature,
               });
               clearCart();
-              toast.success('🎉 Payment successful! Order placed.');
+              toast.success('🎉 Payment successful!');
               router.push(`/account/orders/${order.id}`);
             } catch {
-              toast.error('Payment verification failed. Please contact support.');
+              toast.error('Payment verification failed. Contact support.');
             }
           },
           prefill: { name: `${address.firstName} ${address.lastName}`, email: address.email, contact: address.phone },
           theme: { color: '#000000' },
         };
-        const rzp = new (window as any).Razorpay(options);
-        rzp.open();
+        new (window as any).Razorpay(options).open();
       } else {
-        // COD or UPI
         clearCart();
-        if (paymentMethod === 'upi') {
-          toast.success('🎉 Order placed! We will confirm once payment is verified.');
-        } else {
-          toast.success('🎉 Order placed successfully!');
-        }
+        toast.success(paymentMethod === 'upi'
+          ? '🎉 Order placed! We will confirm once payment is verified.'
+          : '🎉 Order placed successfully!');
         router.push(`/account/orders/${order.id}`);
       }
     } catch (error: any) {
@@ -250,6 +187,20 @@ export default function CheckoutPage() {
       setPlacing(false);
     }
   };
+
+  const handleMainButton = () => {
+    if (paymentMethod === 'upi') {
+      setShowUpiPicker(true);
+    } else {
+      placeOrder();
+    }
+  };
+
+  const paymentOptions = [
+    upiEnabled && { id: 'upi' as const, label: 'UPI', sub: 'GPay, PhonePe, Paytm & more', icon: '📲' },
+    razorpayEnabled && { id: 'razorpay' as const, label: 'Card / Net Banking / Wallet', sub: 'Powered by Razorpay', icon: '💳' },
+    codEnabled && { id: 'cod' as const, label: 'Cash on Delivery', sub: 'Pay when order arrives', icon: '💵' },
+  ].filter(Boolean) as { id: 'upi' | 'razorpay' | 'cod'; label: string; sub: string; icon: string }[];
 
   const OrderSummary = () => (
     <div className="sticky top-24 rounded-2xl border border-gray-200 bg-gray-50 p-6 dark:border-dark-700 dark:bg-dark-800">
@@ -262,9 +213,7 @@ export default function CheckoutPage() {
               <p className="truncate text-sm font-medium text-gray-900 dark:text-white">{item.product.name}</p>
               <p className="text-xs text-gray-500">{item.quantity}m</p>
             </div>
-            <p className="text-sm font-semibold text-gray-900 dark:text-white">
-              {formatPrice((item.product.discountPrice || item.product.basePrice) * item.quantity)}
-            </p>
+            <p className="text-sm font-semibold">{formatPrice((item.product.discountPrice || item.product.basePrice) * item.quantity)}</p>
           </div>
         ))}
       </div>
@@ -272,7 +221,7 @@ export default function CheckoutPage() {
         <div className="flex justify-between text-gray-600 dark:text-gray-400"><span>Subtotal</span><span>{formatPrice(subtotal)}</span></div>
         <div className="flex justify-between text-gray-600 dark:text-gray-400"><span>Shipping</span><span>{shipping === 0 ? '🎁 Free' : formatPrice(shipping)}</span></div>
         {couponData && <div className="flex justify-between text-green-600"><span>Discount ({couponData.code})</span><span>-{formatPrice(discount)}</span></div>}
-        <div className="flex justify-between border-t border-gray-200 pt-3 dark:border-dark-700 text-base font-bold text-gray-900 dark:text-white"><span>Total</span><span>{formatPrice(total)}</span></div>
+        <div className="flex justify-between border-t border-gray-200 pt-3 dark:border-dark-700 font-bold text-base text-gray-900 dark:text-white"><span>Total</span><span>{formatPrice(total)}</span></div>
       </div>
       {!couponData && (
         <div className="mt-4 flex gap-2">
@@ -293,17 +242,12 @@ export default function CheckoutPage() {
     );
   }
 
-  const paymentOptions = [
-    upiEnabled && { id: 'upi' as const, label: 'UPI Payment', sub: `Pay directly to ${upiName}`, icon: '📲' },
-    razorpayEnabled && { id: 'razorpay' as const, label: 'Cards / Net Banking / Wallets', sub: 'Powered by Razorpay — secure checkout', icon: '💳' },
-    codEnabled && { id: 'cod' as const, label: 'Cash on Delivery', sub: 'Pay when your order arrives', icon: '💵' },
-  ].filter(Boolean) as { id: 'upi' | 'razorpay' | 'cod'; label: string; sub: string; icon: string }[];
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark-950 py-10">
       <div className="container-main">
         <h1 className="font-display text-3xl font-bold text-gray-900 dark:text-white">Checkout</h1>
 
+        {/* Steps */}
         <div className="mt-6 flex items-center gap-4">
           {STEPS.map((s, i) => (
             <React.Fragment key={s}>
@@ -320,6 +264,7 @@ export default function CheckoutPage() {
 
         <div className="mt-8 grid gap-8 lg:grid-cols-3">
           <div className="lg:col-span-2">
+            {/* Step 0 — Cart review */}
             {step === 0 && (
               <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-dark-700 dark:bg-dark-800">
                 <h2 className="font-display text-xl font-bold text-gray-900 dark:text-white">Review Your Cart</h2>
@@ -341,6 +286,7 @@ export default function CheckoutPage() {
               </motion.div>
             )}
 
+            {/* Step 1 — Shipping */}
             {step === 1 && (
               <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-dark-700 dark:bg-dark-800">
                 <h2 className="font-display text-xl font-bold text-gray-900 dark:text-white">Shipping Address</h2>
@@ -355,7 +301,7 @@ export default function CheckoutPage() {
                     { name: 'state', label: 'State', placeholder: 'Maharashtra' },
                     { name: 'postalCode', label: 'PIN Code', placeholder: '400001' },
                   ].map((f) => (
-                    <div key={f.name} className={f.full ? 'sm:col-span-2' : ''}>
+                    <div key={f.name} className={(f as any).full ? 'sm:col-span-2' : ''}>
                       <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{f.label}</label>
                       <input name={f.name} value={(address as any)[f.name]} placeholder={f.placeholder}
                         onChange={(e) => setAddress({ ...address, [e.target.name]: e.target.value })}
@@ -370,14 +316,18 @@ export default function CheckoutPage() {
               </motion.div>
             )}
 
+            {/* Step 2 — Payment */}
             {step === 2 && (
               <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
                 <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-dark-700 dark:bg-dark-800">
                   <h2 className="font-display text-xl font-bold text-gray-900 dark:text-white">Payment</h2>
                   <div className="mt-5 space-y-3">
                     {paymentOptions.map((method) => (
-                      <label key={method.id} className={`flex cursor-pointer items-center gap-4 rounded-xl border-2 p-4 transition-colors ${paymentMethod === method.id ? 'border-primary-500 bg-primary-50/30 dark:border-primary-500/50 dark:bg-primary-950/10' : 'border-gray-200 dark:border-dark-700'}`}>
-                        <input type="radio" name="payment" value={method.id} checked={paymentMethod === method.id} onChange={() => { setPaymentMethod(method.id); setUpiPaid(false); setUtrRef(''); }} className="accent-primary-600"/>
+                      <label key={method.id}
+                        className={`flex cursor-pointer items-center gap-4 rounded-xl border-2 p-4 transition-colors ${paymentMethod === method.id ? 'border-primary-500 bg-primary-50/30 dark:border-primary-500/50 dark:bg-primary-950/10' : 'border-gray-200 dark:border-dark-700'}`}>
+                        <input type="radio" name="payment" value={method.id} checked={paymentMethod === method.id}
+                          onChange={() => { setPaymentMethod(method.id); setUpiPaid(false); setUtrRef(''); }}
+                          className="accent-primary-600"/>
                         <span className="text-2xl">{method.icon}</span>
                         <div>
                           <p className="font-semibold text-gray-900 dark:text-white">{method.label}</p>
@@ -387,27 +337,37 @@ export default function CheckoutPage() {
                     ))}
                   </div>
 
-                  {/* UPI Pay Panel */}
-                  {paymentMethod === 'upi' && (
-                    <UpiPayPanel
-                      upiId={upiId}
-                      upiName={upiName}
-                      amount={total}
-                      upiPaid={upiPaid}
-                      setUpiPaid={setUpiPaid}
-                      utrRef={utrRef}
-                      setUtrRef={setUtrRef}
-                    />
+                  {/* After UPI paid — UTR input */}
+                  {paymentMethod === 'upi' && upiPaid && (
+                    <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+                      className="mt-4 rounded-xl border border-green-200 bg-green-50 p-4 dark:border-green-900/40 dark:bg-green-950/20">
+                      <p className="text-sm font-semibold text-green-800 dark:text-green-300">✅ Payment done — enter your UTR to confirm</p>
+                      <label className="mt-3 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        UTR / Transaction Reference <span className="text-red-500">*</span>
+                      </label>
+                      <input value={utrRef} onChange={(e) => setUtrRef(e.target.value)}
+                        placeholder="e.g. 426812345678"
+                        className="input-field mt-1.5 text-sm"/>
+                      <p className="mt-1 text-xs text-gray-500">Find this in your UPI app → Transaction History</p>
+                      <button onClick={() => setUpiPaid(false)}
+                        className="mt-2 text-xs text-gray-400 hover:text-gray-600 underline">
+                        ← Choose a different app
+                      </button>
+                    </motion.div>
                   )}
                 </div>
 
                 <div className="flex gap-3">
                   <button onClick={() => setStep(1)} className="button-secondary flex-1 py-3">← Back</button>
-                  <button onClick={handlePlaceOrder} disabled={placing || (paymentMethod === 'upi' && upiPaid && !utrRef.trim())}
+                  <button
+                    onClick={handleMainButton}
+                    disabled={placing || (paymentMethod === 'upi' && upiPaid && !utrRef.trim())}
                     className="button-luxury flex-1 py-3 font-semibold disabled:opacity-60">
-                    {placing ? '⏳ Processing...' : paymentMethod === 'upi' && !upiPaid
-                      ? '⬆ Pay & Place Order'
-                      : `🔒 Place Order · ${formatPrice(total)}`}
+                    {placing
+                      ? '⏳ Processing...'
+                      : paymentMethod === 'upi' && !upiPaid
+                        ? `📲 Pay ₹${total.toFixed(0)} via UPI`
+                        : `🔒 Place Order · ${formatPrice(total)}`}
                   </button>
                 </div>
               </motion.div>
@@ -416,6 +376,52 @@ export default function CheckoutPage() {
           <div><OrderSummary /></div>
         </div>
       </div>
+
+      {/* UPI App Picker Modal */}
+      <AnimatePresence>
+        {showUpiPicker && (
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
+            onClick={(e) => e.target === e.currentTarget && setShowUpiPicker(false)}>
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"/>
+            <motion.div
+              initial={{ opacity: 0, y: 60 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 60 }}
+              transition={{ type: 'spring', damping: 28 }}
+              className="relative w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl dark:bg-dark-800">
+
+              {/* Header */}
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="font-display text-lg font-bold text-gray-900 dark:text-white">Choose UPI App</h3>
+                <button onClick={() => setShowUpiPicker(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl p-1">✕</button>
+              </div>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">
+                Paying <strong className="text-gray-900 dark:text-white">₹{total.toFixed(2)}</strong> to <strong className="text-gray-900 dark:text-white">{upiName}</strong>
+              </p>
+
+              {/* App buttons */}
+              <div className="grid grid-cols-2 gap-3">
+                {UPI_APPS.map((app) => (
+                  <a key={app.name}
+                    href={app.scheme(upiId, upiName, total)}
+                    onClick={() => {
+                      setTimeout(() => {
+                        setShowUpiPicker(false);
+                        setUpiPaid(true);
+                      }, 800);
+                    }}
+                    className={`flex items-center gap-3 rounded-2xl border-2 border-gray-200 bg-gray-50 px-4 py-3.5 transition-all active:scale-95 dark:border-dark-600 dark:bg-dark-700 ${app.color}`}>
+                    <span className="text-3xl">{app.emoji}</span>
+                    <span className="font-semibold text-sm text-gray-800 dark:text-white">{app.name}</span>
+                  </a>
+                ))}
+              </div>
+
+              <p className="mt-4 text-center text-xs text-gray-400">
+                Tap an app · it opens with payment pre-filled · come back here after paying
+              </p>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
