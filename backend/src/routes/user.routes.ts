@@ -6,6 +6,7 @@ import {
   addAddress,
   updateAddress,
   deleteAddress,
+  getUserReviews,
 } from '@/controllers/user.controller';
 
 const router = Router();
@@ -16,5 +17,6 @@ router.get('/addresses', getAddresses);
 router.post('/addresses', addAddress);
 router.put('/addresses/:id', updateAddress);
 router.delete('/addresses/:id', deleteAddress);
+router.get('/reviews', getUserReviews);
 
 export default router;

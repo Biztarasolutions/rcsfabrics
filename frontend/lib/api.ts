@@ -52,6 +52,7 @@ export const userApi = {
   addAddress: (data: any) => api.post('users/addresses', data),
   updateAddress: (id: string, data: any) => api.put(`users/addresses/${id}`, data),
   deleteAddress: (id: string) => api.delete(`users/addresses/${id}`),
+  getMyReviews: () => api.get('users/reviews'),
 };
 
 export const productApi = {

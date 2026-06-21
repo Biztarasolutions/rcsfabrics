@@ -1,13 +1,15 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore, useWishlistStore } from '@/lib/store';
 import { formatPrice } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { authApi, orderApi, userApi, productApi } from '@/lib/api';
 import { queryClient } from '@/components/common/Providers';
+import { supabaseImg, BLUR_PLACEHOLDER } from '@/lib/image';
 import toast from 'react-hot-toast';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -55,6 +57,15 @@ export default function AccountPage() {
     enabled: !!user,
   });
 
+  // Fetch user's submitted reviews (to mark already-reviewed products)
+  const qc = useQueryClient();
+  const { data: myReviews = [] } = useQuery({
+    queryKey: ['user-reviews'],
+    queryFn: () => userApi.getMyReviews().then(res => res.data.data || []),
+    enabled: !!user,
+  });
+  const reviewedProductIds = new Set(myReviews.map((r: any) => r.productId));
+
   // Profile Form State
   const [profileForm, setProfileForm] = useState({ firstName: '', lastName: '', email: '', phone: '' });
   const [savingProfile, setSavingProfile] = useState(false);
@@ -93,6 +104,7 @@ export default function AccountPage() {
         comment: reviewComment.trim() || undefined,
       });
       toast.success('Review submitted! Thank you.');
+      qc.invalidateQueries({ queryKey: ['user-reviews'] });
       setReviewModal(null);
     } catch (err: any) {
       toast.error(err.message || 'Failed to submit review');
@@ -337,15 +349,45 @@ export default function AccountPage() {
                               ))}
                             </div>
                             {order.status === 'DELIVERED' && (
-                              <div className="mt-3 border-t border-gray-100 pt-3 dark:border-dark-700 space-y-1.5">
+                              <div className="mt-3 border-t border-gray-100 pt-3 dark:border-dark-700 space-y-2">
                                 <p className="text-xs font-medium text-gray-400 dark:text-gray-500">Rate your purchase:</p>
-                                {order.items?.map((item: any, i: number) => (
-                                  <button key={i} onClick={() => openReview(order, item)}
-                                    className="flex w-full items-center justify-between rounded-xl bg-primary-50 px-3 py-2 text-sm font-semibold text-primary-700 hover:bg-primary-100 dark:bg-primary-950/20 dark:text-primary-400 dark:hover:bg-primary-950/30 transition-colors">
-                                    <span className="truncate">{item.productName}</span>
-                                    <span className="ml-2 shrink-0">⭐ Review</span>
-                                  </button>
-                                ))}
+                                {order.items?.map((item: any, i: number) => {
+                                  const alreadyReviewed = reviewedProductIds.has(item.productId);
+                                  return alreadyReviewed ? (
+                                    <div key={i} className="flex items-center gap-3 rounded-xl border border-green-100 bg-green-50 px-3 py-2 dark:border-green-900/30 dark:bg-green-950/10">
+                                      {item.productImage ? (
+                                        <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-dark-700">
+                                          <Image src={supabaseImg(item.productImage, 64)} alt={item.productName || ''} fill sizes="36px"
+                                            placeholder="blur" blurDataURL={BLUR_PLACEHOLDER} className="object-cover"/>
+                                        </div>
+                                      ) : (
+                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-base dark:bg-dark-700">🧵</div>
+                                      )}
+                                      <div className="min-w-0 flex-1">
+                                        <p className="truncate text-xs font-semibold text-gray-800 dark:text-gray-200">{item.productName}</p>
+                                        {item.product?.color && <p className="text-[10px] text-gray-400">{item.product.color}</p>}
+                                      </div>
+                                      <span className="shrink-0 text-xs font-semibold text-green-600 dark:text-green-400">✓ Reviewed</span>
+                                    </div>
+                                  ) : (
+                                    <button key={i} onClick={() => openReview(order, item)}
+                                      className="flex w-full items-center gap-3 rounded-xl border border-primary-100 bg-primary-50 px-3 py-2 text-left hover:bg-primary-100 dark:border-primary-900/30 dark:bg-primary-950/10 dark:hover:bg-primary-950/20 transition-colors">
+                                      {item.productImage ? (
+                                        <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-dark-700">
+                                          <Image src={supabaseImg(item.productImage, 64)} alt={item.productName || ''} fill sizes="36px"
+                                            placeholder="blur" blurDataURL={BLUR_PLACEHOLDER} className="object-cover"/>
+                                        </div>
+                                      ) : (
+                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-base dark:bg-dark-700">🧵</div>
+                                      )}
+                                      <div className="min-w-0 flex-1">
+                                        <p className="truncate text-xs font-semibold text-gray-800 dark:text-gray-200">{item.productName}</p>
+                                        {item.product?.color && <p className="text-[10px] text-gray-400">{item.product.color}</p>}
+                                      </div>
+                                      <span className="shrink-0 text-xs font-semibold text-primary-600 dark:text-primary-400">⭐ Review</span>
+                                    </button>
+                                  );
+                                })}
                               </div>
                             )}
                             <div className="mt-3 flex items-center justify-between border-t border-gray-100 pt-3 dark:border-dark-700">
@@ -498,7 +540,22 @@ export default function AccountPage() {
             <motion.div initial={{ scale: 0.95, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95 }}
               className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-dark-800">
               <h3 className="font-display text-xl font-bold text-gray-900 dark:text-white">Write a Review</h3>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 truncate">{reviewModal.item.productName}</p>
+              <div className="mt-3 flex items-center gap-3">
+                {reviewModal.item.productImage ? (
+                  <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-gray-100 dark:bg-dark-700">
+                    <Image src={supabaseImg(reviewModal.item.productImage, 100)} alt={reviewModal.item.productName || ''} fill sizes="56px"
+                      placeholder="blur" blurDataURL={BLUR_PLACEHOLDER} className="object-cover"/>
+                  </div>
+                ) : (
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-2xl dark:bg-dark-700">🧵</div>
+                )}
+                <div className="min-w-0">
+                  <p className="font-semibold text-gray-900 dark:text-white truncate">{reviewModal.item.productName}</p>
+                  {reviewModal.item.product?.color && (
+                    <p className="text-sm text-gray-400">{reviewModal.item.product.color}</p>
+                  )}
+                </div>
+              </div>
 
               <div className="mt-5">
                 <p className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Your Rating *</p>

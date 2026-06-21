@@ -274,3 +274,24 @@ export const deleteAddress = async (
     }
   }
 };
+
+
+export const getUserReviews = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.userId) throw new ApiError(401, 'Unauthorized');
+    const reviews = await prisma.review.findMany({
+      where: { userId: req.userId },
+      select: { productId: true, rating: true, comment: true, createdAt: true },
+    });
+    res.json({ success: true, data: reviews, statusCode: 200 } as ApiResponse);
+  } catch (error) {
+    if (error instanceof ApiError) {
+      res.status(error.statusCode).json({ success: false, message: error.message, statusCode: error.statusCode } as ApiResponse);
+    } else {
+      res.status(500).json({ success: false, message: 'Internal server error', statusCode: 500 } as ApiResponse);
+    }
+  }
+};
