@@ -1,25 +1,23 @@
 'use client';
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useParams } from 'next/navigation';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { orderApi } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
 import Image from 'next/image';
 import { BLUR_PLACEHOLDER, supabaseImg } from '@/lib/image';
 import toast from 'react-hot-toast';
 
-const STATUS_COLORS: Record<string, string> = {
-  PENDING: 'bg-yellow-100 text-yellow-700',
-  PROCESSING: 'bg-blue-100 text-blue-700',
-  SHIPPED: 'bg-purple-100 text-purple-700',
-  DELIVERED: 'bg-green-100 text-green-700',
-  CANCELLED: 'bg-red-100 text-red-700',
+const STATUS_CONFIG: Record<string, { label: string; icon: string; badge: string }> = {
+  PENDING:    { label: 'Order Placed',  icon: '📋', badge: 'bg-yellow-100 text-yellow-800 border border-yellow-300 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-700' },
+  PROCESSING: { label: 'Preparing',     icon: '⚙️', badge: 'bg-blue-100 text-blue-800 border border-blue-300 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-700' },
+  SHIPPED:    { label: 'On the Way',    icon: '🚚', badge: 'bg-purple-100 text-purple-800 border border-purple-300 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-700' },
+  DELIVERED:  { label: 'Delivered',     icon: '✅', badge: 'bg-green-100 text-green-800 border border-green-300 dark:bg-green-900/40 dark:text-green-300 dark:border-green-700' },
+  CANCELLED:  { label: 'Cancelled',     icon: '✕',  badge: 'bg-red-100 text-red-800 border border-red-300 dark:bg-red-900/40 dark:text-red-300 dark:border-red-700' },
 };
 
 const TIMELINE_STEPS = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED'];
-const TIMELINE_LABELS: Record<string, string> = { PENDING: 'Order Placed', PROCESSING: 'Preparing', SHIPPED: 'Shipped', DELIVERED: 'Delivered' };
-const TIMELINE_ICONS: Record<string, string> = { PENDING: '📋', PROCESSING: '⚙️', SHIPPED: '🚚', DELIVERED: '✅' };
 
 const METHOD_LABEL: Record<string, string> = {
   UPI: '📲 UPI Transfer',
@@ -29,7 +27,7 @@ const METHOD_LABEL: Record<string, string> = {
 };
 
 function CancelBlock({ orderId }: { orderId: string }) {
-  const router = useRouter();
+  const queryClient = useQueryClient();
   const [confirming, setConfirming] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -37,8 +35,9 @@ function CancelBlock({ orderId }: { orderId: string }) {
     setLoading(true);
     try {
       await orderApi.cancelOrder(orderId);
-      toast.success('Order cancelled');
-      router.refresh();
+      toast.success('Order cancelled successfully');
+      await queryClient.invalidateQueries({ queryKey: ['order', orderId] });
+      await queryClient.invalidateQueries({ queryKey: ['my-orders'] });
     } catch (err: any) {
       toast.error(err.message || 'Failed to cancel');
     } finally {
@@ -122,9 +121,11 @@ export default function OrderDetailPage() {
             </p>
           </div>
           <div className="flex gap-2">
-            <span className={`badge ${STATUS_COLORS[order.status] || 'bg-gray-100 text-gray-700'}`}>{order.status}</span>
-            <span className={`badge ${order.paymentStatus === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-              {order.paymentStatus}
+            <span className={`badge ${STATUS_CONFIG[order.status]?.badge || 'bg-gray-100 text-gray-700'}`}>
+              {STATUS_CONFIG[order.status]?.icon} {STATUS_CONFIG[order.status]?.label || order.status}
+            </span>
+            <span className={`badge ${order.paymentStatus === 'PAID' ? 'bg-green-100 text-green-800 border border-green-300 dark:bg-green-900/40 dark:text-green-300 dark:border-green-700' : 'bg-yellow-100 text-yellow-800 border border-yellow-300 dark:bg-yellow-900/40 dark:text-yellow-300'}`}>
+              {order.paymentStatus === 'PAID' ? '💚 Paid' : '⏳ ' + order.paymentStatus}
             </span>
           </div>
         </div>
@@ -134,32 +135,45 @@ export default function OrderDetailPage() {
           <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-dark-700 dark:bg-dark-800">
             <h2 className="mb-4 text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Order Status</h2>
             {isCancelled ? (
-              <div className="flex items-center gap-2 rounded-xl bg-red-50 p-4 text-red-600 dark:bg-red-950/20">
-                <span className="text-xl">✕</span>
-                <span className="font-semibold">This order has been cancelled</span>
+              <div className="flex items-center gap-3 rounded-xl bg-red-50 p-4 text-red-700 dark:bg-red-950/20 dark:text-red-400">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 text-xl dark:bg-red-950/40">✕</div>
+                <div>
+                  <p className="font-semibold">Order Cancelled</p>
+                  <p className="text-xs text-red-500">This order has been cancelled and inventory has been restored.</p>
+                </div>
               </div>
             ) : (
-              <div className="flex items-center">
-                {TIMELINE_STEPS.map((step, i) => {
-                  const done = i <= currentIdx;
-                  const active = i === currentIdx;
-                  return (
-                    <React.Fragment key={step}>
-                      <div className="flex flex-col items-center">
-                        <div className={`flex h-10 w-10 items-center justify-center rounded-full border-2 text-base transition-all ${done ? 'border-primary-500 bg-primary-50 dark:bg-primary-950/30' : 'border-gray-200 bg-gray-50 dark:border-dark-600 dark:bg-dark-700'} ${active ? 'ring-2 ring-primary-300 ring-offset-2' : ''}`}>
-                          {TIMELINE_ICONS[step]}
+              <>
+                {/* Active status banner */}
+                <div className={`mb-4 flex items-center gap-2 rounded-xl px-4 py-3 ${STATUS_CONFIG[order.status]?.badge || 'bg-gray-100'}`}>
+                  <span className="text-lg">{STATUS_CONFIG[order.status]?.icon}</span>
+                  <div>
+                    <p className="font-semibold text-sm">{STATUS_CONFIG[order.status]?.label || order.status}</p>
+                    <p className="text-xs opacity-75">Current order status</p>
+                  </div>
+                </div>
+                <div className="flex items-center">
+                  {TIMELINE_STEPS.map((step, i) => {
+                    const done = i <= currentIdx;
+                    const active = i === currentIdx;
+                    return (
+                      <React.Fragment key={step}>
+                        <div className="flex flex-col items-center">
+                          <div className={`flex h-10 w-10 items-center justify-center rounded-full border-2 text-base transition-all ${done ? 'border-primary-500 bg-primary-50 dark:bg-primary-950/30' : 'border-gray-200 bg-gray-50 dark:border-dark-600 dark:bg-dark-700'} ${active ? 'ring-2 ring-primary-300 ring-offset-2' : ''}`}>
+                            {STATUS_CONFIG[step]?.icon || step[0]}
+                          </div>
+                          <p className={`mt-1.5 text-[10px] font-semibold text-center w-16 ${done ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400'}`}>
+                            {STATUS_CONFIG[step]?.label}
+                          </p>
                         </div>
-                        <p className={`mt-1.5 text-[10px] font-semibold text-center w-16 ${done ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400'}`}>
-                          {TIMELINE_LABELS[step]}
-                        </p>
-                      </div>
-                      {i < TIMELINE_STEPS.length - 1 && (
-                        <div className={`mb-5 h-0.5 flex-1 ${i < currentIdx ? 'bg-primary-500' : 'bg-gray-200 dark:bg-dark-600'}`}/>
-                      )}
-                    </React.Fragment>
-                  );
-                })}
-              </div>
+                        {i < TIMELINE_STEPS.length - 1 && (
+                          <div className={`mb-5 h-0.5 flex-1 ${i < currentIdx ? 'bg-primary-500' : 'bg-gray-200 dark:bg-dark-600'}`}/>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+                </div>
+              </>
             )}
             <p className="mt-4 text-xs text-gray-500 dark:text-gray-400">
               Placed on {new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}

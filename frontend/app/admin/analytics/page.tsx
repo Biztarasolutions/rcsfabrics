@@ -73,6 +73,11 @@ function BarChart({ data }: { data: { label: string; value: number }[] }) {
 // ── Area chart (daily revenue) ────────────────────────────────────────────
 function AreaChart({ daily }: { daily: { date: string; revenue: number; orders: number }[] }) {
   const [hover, setHover] = useState<number | null>(null);
+
+  if (!daily.length) {
+    return <div className="h-32 flex items-center justify-center text-sm text-gray-400">No data for this period</div>;
+  }
+
   const revenues = daily.map(d => d.revenue);
   const max = Math.max(...revenues, 1);
   const w = 600;

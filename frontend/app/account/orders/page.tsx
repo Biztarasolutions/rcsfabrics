@@ -9,12 +9,12 @@ import Image from 'next/image';
 import { BLUR_PLACEHOLDER, supabaseImg } from '@/lib/image';
 import toast from 'react-hot-toast';
 
-const STATUS_COLORS: Record<string, string> = {
-  PENDING: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-  PROCESSING: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-  SHIPPED: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
-  DELIVERED: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-  CANCELLED: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+const STATUS_CONFIG: Record<string, { label: string; icon: string; badge: string; bar: string }> = {
+  PENDING:    { label: 'Order Placed',  icon: '📋', badge: 'bg-yellow-100 text-yellow-800 border border-yellow-300 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-700', bar: 'bg-yellow-400' },
+  PROCESSING: { label: 'Preparing',     icon: '⚙️', badge: 'bg-blue-100 text-blue-800 border border-blue-300 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-700',          bar: 'bg-blue-500' },
+  SHIPPED:    { label: 'On the Way',    icon: '🚚', badge: 'bg-purple-100 text-purple-800 border border-purple-300 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-700', bar: 'bg-purple-500' },
+  DELIVERED:  { label: 'Delivered',     icon: '✅', badge: 'bg-green-100 text-green-800 border border-green-300 dark:bg-green-900/40 dark:text-green-300 dark:border-green-700',     bar: 'bg-green-500' },
+  CANCELLED:  { label: 'Cancelled',     icon: '✕',  badge: 'bg-red-100 text-red-800 border border-red-300 dark:bg-red-900/40 dark:text-red-300 dark:border-red-700',                 bar: 'bg-red-400' },
 };
 
 const TIMELINE_STEPS = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED'];
@@ -60,17 +60,25 @@ function CancelOrderButton({ orderId }: { orderId: string }) {
 }
 
 function OrderTimeline({ status }: { status: string }) {
+  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.PENDING;
   if (status === 'CANCELLED') return (
-    <div className="flex items-center gap-2 px-5 py-3 text-sm text-red-500">
-      <span>✕</span> <span>Order cancelled</span>
+    <div className="flex items-center gap-3 px-5 py-4 text-sm">
+      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-red-100 text-base dark:bg-red-950/30">✕</div>
+      <div>
+        <p className="font-semibold text-red-700 dark:text-red-400">Order Cancelled</p>
+        <p className="text-xs text-gray-400">This order has been cancelled</p>
+      </div>
     </div>
   );
   const currentIdx = TIMELINE_STEPS.indexOf(status);
-  const labels: Record<string, string> = { PENDING: 'Order Placed', PROCESSING: 'Preparing', SHIPPED: 'Shipped', DELIVERED: 'Delivered' };
-  const icons: Record<string, string> = { PENDING: '📋', PROCESSING: '⚙️', SHIPPED: '🚚', DELIVERED: '✅' };
   return (
     <div className="px-5 py-4">
-      <div className="flex items-center gap-0">
+      {/* Active status banner */}
+      <div className={`mb-4 flex items-center gap-2 rounded-xl px-4 py-2.5 ${cfg.badge}`}>
+        <span className="text-base">{cfg.icon}</span>
+        <span className="font-semibold text-sm">{cfg.label}</span>
+      </div>
+      <div className="flex items-center">
         {TIMELINE_STEPS.map((step, i) => {
           const done = i <= currentIdx;
           const active = i === currentIdx;
@@ -78,9 +86,9 @@ function OrderTimeline({ status }: { status: string }) {
             <React.Fragment key={step}>
               <div className="flex flex-col items-center">
                 <div className={`flex h-8 w-8 items-center justify-center rounded-full text-sm border-2 transition-colors ${done ? 'border-primary-500 bg-primary-50 dark:bg-primary-950/30' : 'border-gray-200 bg-gray-50 dark:border-dark-600 dark:bg-dark-700'} ${active ? 'ring-2 ring-primary-300 ring-offset-1' : ''}`}>
-                  {icons[step]}
+                  {STATUS_CONFIG[step]?.icon || step[0]}
                 </div>
-                <p className={`mt-1 text-[10px] font-medium text-center w-16 ${done ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400'}`}>{labels[step]}</p>
+                <p className={`mt-1 text-[10px] font-medium text-center w-16 ${done ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400'}`}>{STATUS_CONFIG[step]?.label}</p>
               </div>
               {i < TIMELINE_STEPS.length - 1 && (
                 <div className={`mb-4 h-0.5 flex-1 transition-colors ${i < currentIdx ? 'bg-primary-500' : 'bg-gray-200 dark:bg-dark-600'}`} />
@@ -137,9 +145,11 @@ function OrdersContent() {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <span className={`badge ${STATUS_COLORS[order.status]}`}>{order.status}</span>
-                  <span className={`badge ${order.paymentStatus === 'PAID' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-yellow-100 text-yellow-700'}`}>
-                    {order.paymentStatus}
+                  <span className={`badge ${STATUS_CONFIG[order.status]?.badge || 'bg-gray-100 text-gray-700'}`}>
+                    {STATUS_CONFIG[order.status]?.icon} {STATUS_CONFIG[order.status]?.label || order.status}
+                  </span>
+                  <span className={`badge ${order.paymentStatus === 'PAID' ? 'bg-green-100 text-green-800 border border-green-300 dark:bg-green-900/40 dark:text-green-300 dark:border-green-700' : 'bg-yellow-100 text-yellow-800 border border-yellow-300 dark:bg-yellow-900/40 dark:text-yellow-300'}`}>
+                    {order.paymentStatus === 'PAID' ? '💚 Paid' : '⏳ ' + order.paymentStatus}
                   </span>
                 </div>
               </div>
