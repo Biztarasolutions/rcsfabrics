@@ -8,8 +8,6 @@ import { toast } from 'react-hot-toast';
 
 const EMPTY = { code: '', discountType: 'PERCENTAGE', discountValue: '', minOrderAmount: '', maxUses: '', expiresAt: '', isActive: true };
 
-const NO_EXPIRY_SENTINEL = '2099-12-31';
-
 function isNoExpiry(dateStr: string) {
   return !dateStr || new Date(dateStr).getFullYear() >= 2099;
 }
