@@ -12,9 +12,10 @@ import { useQuery } from '@tanstack/react-query';
 
 const STEPS = ['Cart Review', 'Shipping Address', 'Payment'];
 
-function OrderSummary({ items, subtotal, shipping, discount, total, coupon, setCoupon, couponData, onApplyCoupon }: {
+function OrderSummary({ items, subtotal, shipping, discount, total, coupon, setCoupon, couponData, onApplyCoupon, onRemoveCoupon }: {
   items: any[]; subtotal: number; shipping: number; discount: number; total: number;
-  coupon: string; setCoupon: (v: string) => void; couponData: any; onApplyCoupon: () => void;
+  coupon: string; setCoupon: (v: string) => void; couponData: any;
+  onApplyCoupon: () => void; onRemoveCoupon: () => void;
 }) {
   return (
     <div className="sticky top-24 rounded-2xl border border-gray-200 bg-gray-50 p-6 dark:border-dark-700 dark:bg-dark-800">
@@ -31,18 +32,55 @@ function OrderSummary({ items, subtotal, shipping, discount, total, coupon, setC
           </div>
         ))}
       </div>
+
+      {/* Price breakdown */}
       <div className="mt-5 space-y-2 border-t border-gray-200 pt-4 dark:border-dark-700 text-sm">
-        <div className="flex justify-between text-gray-600 dark:text-gray-400"><span>Subtotal</span><span>{formatPrice(subtotal)}</span></div>
-        <div className="flex justify-between text-gray-600 dark:text-gray-400"><span>Shipping</span><span>{shipping === 0 ? '🎁 Free' : formatPrice(shipping)}</span></div>
-        {couponData && <div className="flex justify-between text-green-600"><span>Discount ({couponData.code})</span><span>-{formatPrice(discount)}</span></div>}
-        <div className="flex justify-between border-t border-gray-200 pt-3 dark:border-dark-700 font-bold text-base text-gray-900 dark:text-white"><span>Total</span><span>{formatPrice(total)}</span></div>
+        <div className="flex justify-between text-gray-600 dark:text-gray-400">
+          <span>Subtotal</span><span>{formatPrice(subtotal)}</span>
+        </div>
+        <div className="flex justify-between text-gray-600 dark:text-gray-400">
+          <span>Shipping</span><span>{shipping === 0 ? '🎁 Free' : formatPrice(shipping)}</span>
+        </div>
+        {couponData && (
+          <div className="flex justify-between text-green-600 dark:text-green-400 font-medium">
+            <span>Coupon ({couponData.code})</span>
+            <span>−{formatPrice(discount)}</span>
+          </div>
+        )}
+        <div className="flex justify-between border-t border-gray-200 pt-3 dark:border-dark-700 font-bold text-base text-gray-900 dark:text-white">
+          <span>Total</span>
+          <span className="text-primary-700 dark:text-primary-400">{formatPrice(total)}</span>
+        </div>
+        {couponData && discount > 0 && (
+          <p className="text-center text-xs text-green-600 dark:text-green-400 font-medium">
+            🎉 You save {formatPrice(discount)} with this coupon!
+          </p>
+        )}
       </div>
-      {!couponData && (
+
+      {/* Coupon input / applied badge */}
+      {couponData ? (
+        <div className="mt-4 flex items-center justify-between rounded-xl border border-green-200 bg-green-50 px-4 py-3 dark:border-green-900/40 dark:bg-green-950/20">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">🎟️</span>
+            <div>
+              <p className="text-sm font-bold text-green-700 dark:text-green-400">{couponData.code}</p>
+              <p className="text-xs text-green-600 dark:text-green-500">
+                {couponData.type === 'PERCENT' ? `${couponData.value}% off` : `₹${couponData.value} off`} · saving {formatPrice(discount)}
+              </p>
+            </div>
+          </div>
+          <button onClick={onRemoveCoupon}
+            className="rounded-lg border border-red-200 px-2.5 py-1 text-xs font-semibold text-red-600 hover:bg-red-50 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-950/30">
+            Remove
+          </button>
+        </div>
+      ) : (
         <div className="mt-4 flex gap-2">
-          <input value={coupon} onChange={(e) => setCoupon(e.target.value)}
+          <input value={coupon} onChange={(e) => setCoupon(e.target.value.toUpperCase())}
             onKeyDown={(e) => e.key === 'Enter' && onApplyCoupon()}
-            placeholder="Coupon code" className="input-field flex-1 py-2 text-sm"/>
-          <button onClick={onApplyCoupon} className="button-secondary px-4 py-2 text-sm">Apply</button>
+            placeholder="Coupon code" className="input-field flex-1 py-2 text-sm uppercase tracking-widest"/>
+          <button onClick={onApplyCoupon} className="button-secondary px-4 py-2 text-sm font-semibold">Apply</button>
         </div>
       )}
     </div>
@@ -113,22 +151,27 @@ export default function CheckoutPage() {
 
   const subtotal = totalPrice();
   const shipping = subtotal >= 2000 ? 0 : 150;
-  const discount = couponData
-    ? couponData.type === 'PERCENT'
-      ? Math.round(subtotal * (couponData.value / 100))
-      : couponData.value
-    : 0;
+  // Use the backend-calculated discount (already respects maxDiscount cap).
+  const discount = couponData?.discount ?? 0;
   const total = subtotal + shipping - discount;
 
   const handleCoupon = async () => {
-    if (!coupon) return;
+    if (!coupon.trim()) return;
     try {
-      const res = await orderApi.validateCoupon(coupon, subtotal);
-      setCouponData(res.data);
-      toast.success('Coupon applied!');
+      const res = await orderApi.validateCoupon(coupon.trim(), subtotal);
+      // Axios: res.data = { success, data: { code, type, value, discount }, statusCode }
+      const data = res.data?.data ?? res.data;
+      setCouponData(data);
+      toast.success(`Coupon ${data.code} applied! You save ${formatPrice(data.discount)}`);
     } catch (error: any) {
-      toast.error(error.message || 'Invalid coupon code');
+      toast.error(error.response?.data?.message || error.message || 'Invalid coupon code');
     }
+  };
+
+  const handleRemoveCoupon = () => {
+    setCouponData(null);
+    setCoupon('');
+    toast('Coupon removed');
   };
 
   const placeOrder = async () => {
@@ -429,7 +472,8 @@ export default function CheckoutPage() {
           <div>
             <OrderSummary
               items={items} subtotal={subtotal} shipping={shipping} discount={discount} total={total}
-              coupon={coupon} setCoupon={setCoupon} couponData={couponData} onApplyCoupon={handleCoupon}
+              coupon={coupon} setCoupon={setCoupon} couponData={couponData}
+              onApplyCoupon={handleCoupon} onRemoveCoupon={handleRemoveCoupon}
             />
           </div>
         </div>
