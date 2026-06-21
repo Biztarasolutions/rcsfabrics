@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api';
@@ -18,27 +18,42 @@ const STATUS_OPTIONS = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCEL
 export default function AdminDashboard() {
   const [status, setStatus] = useState(''); // '' = all statuses
 
+  // Customers / products / low-stock from the stats endpoint (status-independent).
   const { data: stats = null, isLoading: statsLoading } = useQuery({
-    queryKey: ['admin-stats', status],
-    queryFn: () => adminApi.getStats({ status: status || undefined }).then(res => res.data.data),
+    queryKey: ['admin-stats'],
+    queryFn: () => adminApi.getStats().then(res => res.data.data),
     refetchInterval: 30 * 1000,
     refetchIntervalInBackground: false,
   });
 
-  const { data: ordersData = { orders: [] }, isLoading: ordersLoading } = useQuery({
-    queryKey: ['admin-recent-orders', status],
-    queryFn: () => adminApi.getOrders({ limit: 5, status: status || undefined }).then(res => res.data.data),
+  // All orders — used to compute status-filtered order count/revenue and the recent list
+  // client-side (the deployed stats endpoint ignores the status param).
+  const { data: allOrders = [], isLoading: ordersLoading } = useQuery({
+    queryKey: ['admin-all-orders'],
+    queryFn: () => adminApi.getOrders({ limit: 1000 }).then(res => res.data.data?.orders ?? res.data.data ?? []),
     refetchInterval: 30 * 1000,
     refetchIntervalInBackground: false,
   });
 
-  const statusLabel = status ? status.charAt(0) + status.slice(1).toLowerCase() : 'All time';
+  const { filteredOrders, orderCount, orderRevenue } = useMemo(() => {
+    const orders = (allOrders as any[]).filter((o) => (status ? o.status === status : true));
+    const sorted = [...orders].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return {
+      filteredOrders: sorted,
+      orderCount: orders.length,
+      orderRevenue: orders.reduce((s, o) => s + Number(o.total || 0), 0),
+    };
+  }, [allOrders, status]);
+
+  const ordersData = { orders: filteredOrders.slice(0, 5) };
+
+  const statusLabel = status ? status.charAt(0) + status.slice(1).toLowerCase() : 'All statuses';
   const STAT_CARDS = stats ? [
-    { label: 'Total Revenue', value: formatPrice(stats.totalRevenue), icon: '💰', sub: statusLabel },
-    { label: 'Total Orders', value: String(stats.totalOrders), icon: '📦', sub: statusLabel },
+    { label: 'Total Revenue', value: formatPrice(orderRevenue), icon: '💰', sub: statusLabel },
+    { label: 'Total Orders', value: String(orderCount), icon: '📦', sub: statusLabel },
     { label: 'Total Customers', value: String(stats.totalCustomers), icon: '👥', sub: 'Registered users' },
     { label: 'Products', value: String(stats.totalProducts), icon: '🧵', sub: 'In catalog' },
-    { label: 'Avg Order Value', value: formatPrice(stats.totalRevenue / (stats.totalOrders || 1)), icon: '📊', sub: statusLabel },
+    { label: 'Avg Order Value', value: formatPrice(orderRevenue / (orderCount || 1)), icon: '📊', sub: statusLabel },
     { label: 'Low Stock Items', value: String(stats.lowStockCount || 0), icon: '⚠️', sub: 'Below 10m', warning: (stats.lowStockCount || 0) > 0 },
   ] : [];
 

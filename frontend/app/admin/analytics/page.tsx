@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
@@ -171,14 +171,76 @@ export default function AnalyticsPage() {
     }
   };
 
-  const { data: analytics, isLoading } = useQuery({
-    queryKey: ['admin-analytics', from, to, status],
-    queryFn: () => adminApi.getAnalytics({ from, to, status: status || undefined }).then(r => r.data.data),
+  // Compute analytics client-side from the live orders endpoint so it works regardless of
+  // whether the dedicated /admin/analytics route is deployed on the backend.
+  const { data: allOrders = [], isLoading } = useQuery({
+    queryKey: ['admin-orders-for-analytics'],
+    queryFn: () => adminApi.getOrders({ limit: 1000 }).then(r => r.data.data?.orders ?? r.data.data ?? []),
+    refetchInterval: 60 * 1000,
+  });
+  const { data: stats } = useQuery({
+    queryKey: ['admin-stats-for-analytics'],
+    queryFn: () => adminApi.getStats().then(r => r.data.data),
   });
 
-  const daily: { date: string; revenue: number; orders: number }[] = analytics?.daily ?? [];
-  const topProducts: { name: string; quantity: number; revenue: number }[] = analytics?.topProducts ?? [];
-  const byMethod: Record<string, number> = analytics?.byMethod ?? {};
+  const analytics = useMemo(() => {
+    const ymd = (iso: string) => new Date(iso).toISOString().slice(0, 10);
+    const enumerateDates = (f: string, t: string) => {
+      const out: string[] = [];
+      const d = new Date(f + 'T00:00:00Z');
+      const end = new Date(t + 'T00:00:00Z');
+      while (d <= end) { out.push(d.toISOString().slice(0, 10)); d.setUTCDate(d.getUTCDate() + 1); }
+      return out;
+    };
+
+    const orders = allOrders as any[];
+    const inRange = orders.filter((o) => {
+      const k = ymd(o.createdAt);
+      if (k < from || k > to) return false;
+      return status ? o.status === status : o.status !== 'CANCELLED';
+    });
+
+    const totalRevenue = inRange.reduce((s, o) => s + Number(o.total || 0), 0);
+    const totalOrders = inRange.length;
+    const aov = totalOrders ? totalRevenue / totalOrders : 0;
+
+    const dailyMap: Record<string, { revenue: number; orders: number }> = {};
+    enumerateDates(from, to).forEach((d) => { dailyMap[d] = { revenue: 0, orders: 0 }; });
+    inRange.forEach((o) => {
+      const k = ymd(o.createdAt);
+      if (dailyMap[k]) { dailyMap[k].orders += 1; dailyMap[k].revenue += Number(o.total || 0); }
+    });
+    const dailyArr = Object.entries(dailyMap).map(([date, v]) => ({ date, ...v }));
+
+    const methodMap: Record<string, number> = {};
+    inRange.forEach((o) => { const m = o.paymentMethod || 'UNKNOWN'; methodMap[m] = (methodMap[m] || 0) + Number(o.total || 0); });
+
+    const prodMap: Record<string, { name: string; quantity: number; revenue: number }> = {};
+    inRange.forEach((o) => (o.items || []).forEach((it: any) => {
+      const n = it.productName || 'Unknown';
+      if (!prodMap[n]) prodMap[n] = { name: n, quantity: 0, revenue: 0 };
+      prodMap[n].quantity += Number(it.quantity || 0);
+      prodMap[n].revenue += Number(it.total || 0);
+    }));
+    const topProductsArr = Object.values(prodMap).sort((a, b) => b.revenue - a.revenue).slice(0, 5);
+
+    const everCount: Record<string, number> = {};
+    orders.forEach((o) => { if (o.status !== 'CANCELLED') everCount[o.userId] = (everCount[o.userId] || 0) + 1; });
+    const periodUsers = [...new Set(inRange.map((o) => o.userId))];
+    const repeatCustomers = periodUsers.filter((id) => everCount[id] > 1).length;
+    const newCustomers = periodUsers.length - repeatCustomers;
+
+    return {
+      totalRevenue, totalOrders, aov,
+      daily: dailyArr, byMethod: methodMap, topProducts: topProductsArr,
+      newCustomers, repeatCustomers,
+      totalCustomers: stats?.totalCustomers ?? periodUsers.length,
+    };
+  }, [allOrders, from, to, status, stats]);
+
+  const daily: { date: string; revenue: number; orders: number }[] = analytics.daily;
+  const topProducts: { name: string; quantity: number; revenue: number }[] = analytics.topProducts;
+  const byMethod: Record<string, number> = analytics.byMethod;
 
   const methodEntries = Object.entries(byMethod).sort((a, b) => b[1] - a[1]);
   const methodTotal = methodEntries.reduce((s, [, v]) => s + v, 0);
