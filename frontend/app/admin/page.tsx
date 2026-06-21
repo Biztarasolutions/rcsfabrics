@@ -4,7 +4,15 @@ import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
+import { useAuthStore } from '@/lib/store';
 import Link from 'next/link';
+
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
+}
 
 const STATUS_COLORS: Record<string, string> = {
   PENDING: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
@@ -16,6 +24,7 @@ const STATUS_COLORS: Record<string, string> = {
 const STATUS_OPTIONS = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'];
 
 export default function AdminDashboard() {
+  const { user } = useAuthStore();
   const [statuses, setStatuses] = useState<string[]>(['DELIVERED']);
   const toggleStatus = (s: string) =>
     setStatuses((prev) => prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]);
@@ -66,7 +75,7 @@ export default function AdminDashboard() {
       {/* Welcome */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Good morning, Admin! 👋</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{getGreeting()}, {user?.firstName || 'Admin'}! 👋</h2>
           <p className="mt-1 text-gray-500 dark:text-gray-400">Here&apos;s what&apos;s happening with RCS Fabrics today.</p>
         </div>
         {/* Multi-select status filter */}
