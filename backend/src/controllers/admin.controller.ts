@@ -1131,9 +1131,12 @@ export const getAnalytics = async (req: AuthRequest, res: Response): Promise<voi
     const endDate = to ? new Date(to) : new Date();
     endDate.setHours(23, 59, 59, 999);
 
-    // All orders in date range
+    // All non-cancelled orders in date range
     const orders = await prisma.order.findMany({
-      where: { createdAt: { gte: startDate, lte: endDate } },
+      where: {
+        createdAt: { gte: startDate, lte: endDate },
+        status: { not: 'CANCELLED' },
+      },
       select: {
         id: true,
         total: true,
@@ -1145,8 +1148,7 @@ export const getAnalytics = async (req: AuthRequest, res: Response): Promise<voi
       orderBy: { createdAt: 'asc' },
     });
 
-    const paidOrders = orders.filter(o => o.paymentStatus === 'PAID' || o.paymentMethod === 'COD');
-    const totalRevenue = paidOrders.reduce((s, o) => s + Number(o.total), 0);
+    const totalRevenue = orders.reduce((s, o) => s + Number(o.total), 0);
     const totalOrders = orders.length;
     const aov = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
@@ -1159,9 +1161,7 @@ export const getAnalytics = async (req: AuthRequest, res: Response): Promise<voi
       const day = o.createdAt.toISOString().slice(0, 10);
       if (dailyMap[day]) {
         dailyMap[day].orders += 1;
-        if (o.paymentStatus === 'PAID' || o.paymentMethod === 'COD') {
-          dailyMap[day].revenue += Number(o.total);
-        }
+        dailyMap[day].revenue += Number(o.total);
       }
     }
     const daily = Object.entries(dailyMap).map(([date, v]) => ({ date, ...v }));
@@ -1181,7 +1181,7 @@ export const getAnalytics = async (req: AuthRequest, res: Response): Promise<voi
 
     // Revenue by payment method
     const byMethod: Record<string, number> = {};
-    for (const o of paidOrders) {
+    for (const o of orders) {
       const m = o.paymentMethod || 'UNKNOWN';
       byMethod[m] = (byMethod[m] || 0) + Number(o.total);
     }

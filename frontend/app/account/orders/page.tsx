@@ -9,12 +9,12 @@ import Image from 'next/image';
 import { BLUR_PLACEHOLDER, supabaseImg } from '@/lib/image';
 import toast from 'react-hot-toast';
 
-const STATUS_CONFIG: Record<string, { label: string; icon: string; badge: string; bar: string }> = {
-  PENDING:    { label: 'Order Placed',  icon: '📋', badge: 'bg-yellow-100 text-yellow-800 border border-yellow-300 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-700', bar: 'bg-yellow-400' },
-  PROCESSING: { label: 'Preparing',     icon: '⚙️', badge: 'bg-blue-100 text-blue-800 border border-blue-300 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-700',          bar: 'bg-blue-500' },
-  SHIPPED:    { label: 'On the Way',    icon: '🚚', badge: 'bg-purple-100 text-purple-800 border border-purple-300 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-700', bar: 'bg-purple-500' },
-  DELIVERED:  { label: 'Delivered',     icon: '✅', badge: 'bg-green-100 text-green-800 border border-green-300 dark:bg-green-900/40 dark:text-green-300 dark:border-green-700',     bar: 'bg-green-500' },
-  CANCELLED:  { label: 'Cancelled',     icon: '✕',  badge: 'bg-red-100 text-red-800 border border-red-300 dark:bg-red-900/40 dark:text-red-300 dark:border-red-700',                 bar: 'bg-red-400' },
+const STATUS_CONFIG: Record<string, { label: string; icon: string; badge: string; dot: string; stepDone: string; stepActive: string }> = {
+  PENDING:    { label: 'Order Placed',  icon: '🕐', badge: 'bg-yellow-100 text-yellow-800 border border-yellow-300 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-700', dot: 'bg-yellow-400', stepDone: 'bg-yellow-50 border-yellow-400 dark:bg-yellow-950/30', stepActive: 'ring-yellow-300' },
+  PROCESSING: { label: 'Preparing',     icon: '⚙️', badge: 'bg-blue-100 text-blue-800 border border-blue-300 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-700',          dot: 'bg-blue-500',   stepDone: 'bg-blue-50 border-blue-400 dark:bg-blue-950/30',   stepActive: 'ring-blue-300' },
+  SHIPPED:    { label: 'On the Way',    icon: '🚛', badge: 'bg-purple-100 text-purple-800 border border-purple-300 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-700', dot: 'bg-purple-500', stepDone: 'bg-purple-50 border-purple-400 dark:bg-purple-950/30', stepActive: 'ring-purple-300' },
+  DELIVERED:  { label: 'Delivered',     icon: '✓',  badge: 'bg-green-100 text-green-800 border border-green-300 dark:bg-green-900/40 dark:text-green-300 dark:border-green-700',     dot: 'bg-green-500',  stepDone: 'bg-green-50 border-green-500 dark:bg-green-950/30',  stepActive: 'ring-green-300' },
+  CANCELLED:  { label: 'Cancelled',     icon: '✕',  badge: 'bg-red-100 text-red-800 border border-red-300 dark:bg-red-900/40 dark:text-red-300 dark:border-red-700',                 dot: 'bg-red-400',    stepDone: 'bg-red-50 border-red-400 dark:bg-red-950/30',        stepActive: 'ring-red-300' },
 };
 
 const TIMELINE_STEPS = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED'];
@@ -74,24 +74,35 @@ function OrderTimeline({ status }: { status: string }) {
   return (
     <div className="px-5 py-4">
       {/* Active status banner */}
-      <div className={`mb-4 flex items-center gap-2 rounded-xl px-4 py-2.5 ${cfg.badge}`}>
-        <span className="text-base">{cfg.icon}</span>
+      <div className={`mb-4 flex items-center gap-3 rounded-xl px-4 py-3 ${cfg.badge}`}>
+        <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold ${cfg.dot} text-white`}>
+          {cfg.icon}
+        </div>
         <span className="font-semibold text-sm">{cfg.label}</span>
       </div>
       <div className="flex items-center">
         {TIMELINE_STEPS.map((step, i) => {
           const done = i <= currentIdx;
           const active = i === currentIdx;
+          const stepCfg = STATUS_CONFIG[step];
           return (
             <React.Fragment key={step}>
               <div className="flex flex-col items-center">
-                <div className={`flex h-8 w-8 items-center justify-center rounded-full text-sm border-2 transition-colors ${done ? 'border-primary-500 bg-primary-50 dark:bg-primary-950/30' : 'border-gray-200 bg-gray-50 dark:border-dark-600 dark:bg-dark-700'} ${active ? 'ring-2 ring-primary-300 ring-offset-1' : ''}`}>
-                  {STATUS_CONFIG[step]?.icon || step[0]}
+                <div className={`flex h-8 w-8 items-center justify-center rounded-full border-2 text-xs font-bold transition-all
+                  ${done ? `${stepCfg?.stepDone} text-white` : 'border-gray-200 bg-gray-50 text-gray-400 dark:border-dark-600 dark:bg-dark-700'}
+                  ${active ? `ring-2 ${stepCfg?.stepActive} ring-offset-1` : ''}`}>
+                  {done ? (
+                    <div className={`flex h-4 w-4 items-center justify-center rounded-full text-[10px] ${stepCfg?.dot} text-white`}>
+                      {active ? stepCfg?.icon : '✓'}
+                    </div>
+                  ) : (
+                    <span>{i + 1}</span>
+                  )}
                 </div>
-                <p className={`mt-1 text-[10px] font-medium text-center w-16 ${done ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400'}`}>{STATUS_CONFIG[step]?.label}</p>
+                <p className={`mt-1 text-[10px] font-medium text-center w-16 ${done ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400'}`}>{stepCfg?.label}</p>
               </div>
               {i < TIMELINE_STEPS.length - 1 && (
-                <div className={`mb-4 h-0.5 flex-1 transition-colors ${i < currentIdx ? 'bg-primary-500' : 'bg-gray-200 dark:bg-dark-600'}`} />
+                <div className={`mb-4 h-0.5 flex-1 transition-colors ${i < currentIdx ? stepCfg?.dot?.replace('bg-', 'bg-') : 'bg-gray-200 dark:bg-dark-600'}`} />
               )}
             </React.Fragment>
           );

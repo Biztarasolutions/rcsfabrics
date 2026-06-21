@@ -9,12 +9,12 @@ import Image from 'next/image';
 import { BLUR_PLACEHOLDER, supabaseImg } from '@/lib/image';
 import toast from 'react-hot-toast';
 
-const STATUS_CONFIG: Record<string, { label: string; icon: string; badge: string }> = {
-  PENDING:    { label: 'Order Placed',  icon: '📋', badge: 'bg-yellow-100 text-yellow-800 border border-yellow-300 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-700' },
-  PROCESSING: { label: 'Preparing',     icon: '⚙️', badge: 'bg-blue-100 text-blue-800 border border-blue-300 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-700' },
-  SHIPPED:    { label: 'On the Way',    icon: '🚚', badge: 'bg-purple-100 text-purple-800 border border-purple-300 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-700' },
-  DELIVERED:  { label: 'Delivered',     icon: '✅', badge: 'bg-green-100 text-green-800 border border-green-300 dark:bg-green-900/40 dark:text-green-300 dark:border-green-700' },
-  CANCELLED:  { label: 'Cancelled',     icon: '✕',  badge: 'bg-red-100 text-red-800 border border-red-300 dark:bg-red-900/40 dark:text-red-300 dark:border-red-700' },
+const STATUS_CONFIG: Record<string, { label: string; icon: string; badge: string; dot: string; stepDone: string; stepActive: string }> = {
+  PENDING:    { label: 'Order Placed',  icon: '🕐', badge: 'bg-yellow-100 text-yellow-800 border border-yellow-300 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-700', dot: 'bg-yellow-400', stepDone: 'bg-yellow-50 border-yellow-400 dark:bg-yellow-950/30', stepActive: 'ring-yellow-300' },
+  PROCESSING: { label: 'Preparing',     icon: '⚙️', badge: 'bg-blue-100 text-blue-800 border border-blue-300 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-700',          dot: 'bg-blue-500',   stepDone: 'bg-blue-50 border-blue-400 dark:bg-blue-950/30',   stepActive: 'ring-blue-300' },
+  SHIPPED:    { label: 'On the Way',    icon: '🚛', badge: 'bg-purple-100 text-purple-800 border border-purple-300 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-700', dot: 'bg-purple-500', stepDone: 'bg-purple-50 border-purple-400 dark:bg-purple-950/30', stepActive: 'ring-purple-300' },
+  DELIVERED:  { label: 'Delivered',     icon: '✓',  badge: 'bg-green-100 text-green-800 border border-green-300 dark:bg-green-900/40 dark:text-green-300 dark:border-green-700',     dot: 'bg-green-500',  stepDone: 'bg-green-50 border-green-500 dark:bg-green-950/30',  stepActive: 'ring-green-300' },
+  CANCELLED:  { label: 'Cancelled',     icon: '✕',  badge: 'bg-red-100 text-red-800 border border-red-300 dark:bg-red-900/40 dark:text-red-300 dark:border-red-700',                 dot: 'bg-red-400',    stepDone: 'bg-red-50 border-red-400 dark:bg-red-950/30',        stepActive: 'ring-red-300' },
 };
 
 const TIMELINE_STEPS = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED'];
@@ -145,29 +145,42 @@ export default function OrderDetailPage() {
             ) : (
               <>
                 {/* Active status banner */}
-                <div className={`mb-4 flex items-center gap-2 rounded-xl px-4 py-3 ${STATUS_CONFIG[order.status]?.badge || 'bg-gray-100'}`}>
-                  <span className="text-lg">{STATUS_CONFIG[order.status]?.icon}</span>
-                  <div>
-                    <p className="font-semibold text-sm">{STATUS_CONFIG[order.status]?.label || order.status}</p>
-                    <p className="text-xs opacity-75">Current order status</p>
+                {(() => { const cfg = STATUS_CONFIG[order.status]; return (
+                  <div className={`mb-5 flex items-center gap-3 rounded-xl px-4 py-3 ${cfg?.badge || 'bg-gray-100'}`}>
+                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white ${cfg?.dot}`}>
+                      {cfg?.icon}
+                    </div>
+                    <div>
+                      <p className="font-bold text-sm">{cfg?.label || order.status}</p>
+                      <p className="text-xs opacity-70">Current order status</p>
+                    </div>
                   </div>
-                </div>
+                ); })()}
                 <div className="flex items-center">
                   {TIMELINE_STEPS.map((step, i) => {
                     const done = i <= currentIdx;
                     const active = i === currentIdx;
+                    const stepCfg = STATUS_CONFIG[step];
                     return (
                       <React.Fragment key={step}>
                         <div className="flex flex-col items-center">
-                          <div className={`flex h-10 w-10 items-center justify-center rounded-full border-2 text-base transition-all ${done ? 'border-primary-500 bg-primary-50 dark:bg-primary-950/30' : 'border-gray-200 bg-gray-50 dark:border-dark-600 dark:bg-dark-700'} ${active ? 'ring-2 ring-primary-300 ring-offset-2' : ''}`}>
-                            {STATUS_CONFIG[step]?.icon || step[0]}
+                          <div className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all
+                            ${done ? `${stepCfg?.stepDone}` : 'border-gray-200 bg-gray-50 dark:border-dark-600 dark:bg-dark-700'}
+                            ${active ? `ring-2 ring-offset-2 ${stepCfg?.stepActive}` : ''}`}>
+                            {done ? (
+                              <div className={`flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold text-white ${stepCfg?.dot}`}>
+                                {active ? stepCfg?.icon : '✓'}
+                              </div>
+                            ) : (
+                              <span className="text-xs text-gray-400 font-semibold">{i + 1}</span>
+                            )}
                           </div>
-                          <p className={`mt-1.5 text-[10px] font-semibold text-center w-16 ${done ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400'}`}>
-                            {STATUS_CONFIG[step]?.label}
+                          <p className={`mt-1.5 text-[10px] font-semibold text-center w-16 ${done ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400'}`}>
+                            {stepCfg?.label}
                           </p>
                         </div>
                         {i < TIMELINE_STEPS.length - 1 && (
-                          <div className={`mb-5 h-0.5 flex-1 ${i < currentIdx ? 'bg-primary-500' : 'bg-gray-200 dark:bg-dark-600'}`}/>
+                          <div className={`mb-5 h-0.5 flex-1 ${i < currentIdx ? stepCfg?.dot?.replace('bg-', 'bg-') || 'bg-primary-500' : 'bg-gray-200 dark:bg-dark-600'}`}/>
                         )}
                       </React.Fragment>
                     );
@@ -210,23 +223,70 @@ export default function OrderDetailPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             {/* Price breakdown */}
             <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-dark-700 dark:bg-dark-800">
-              <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Price Summary</h2>
-              <div className="space-y-2 text-sm">
+              <h2 className="mb-4 text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Price Summary</h2>
+              <div className="space-y-2.5 text-sm">
+                {/* Items subtotal */}
                 <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                  <span>Subtotal</span><span>{formatPrice(order.subtotal)}</span>
+                  <span>Items subtotal</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{formatPrice(order.subtotal)}</span>
                 </div>
-                <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                  <span>Shipping</span>
-                  <span>{order.shippingCost > 0 ? formatPrice(order.shippingCost) : '🎁 Free'}</span>
-                </div>
+
+                {/* Per-item discounts (product price vs base) — shown if items have a discount embedded */}
+                {(() => {
+                  const itemsTotal = order.items?.reduce((s: number, item: any) => s + (item.quantity * item.pricePerMeter), 0) || 0;
+                  const storeDiscount = itemsTotal - (order.subtotal || itemsTotal);
+                  return storeDiscount > 0.01 ? (
+                    <div className="flex justify-between text-green-600 dark:text-green-400">
+                      <span className="flex items-center gap-1">🏷️ Store discount</span>
+                      <span className="font-medium">−{formatPrice(storeDiscount)}</span>
+                    </div>
+                  ) : null;
+                })()}
+
+                {/* Coupon discount */}
                 {order.discountAmount > 0 && (
-                  <div className="flex justify-between text-green-600">
-                    <span>Discount {order.couponCode && `(${order.couponCode})`}</span>
-                    <span>-{formatPrice(order.discountAmount)}</span>
+                  <div className="flex justify-between text-green-600 dark:text-green-400">
+                    <span className="flex items-center gap-1">
+                      🎟️ Coupon
+                      {order.couponCode && (
+                        <span className="font-mono text-xs bg-green-100 dark:bg-green-900/30 px-1.5 py-0.5 rounded">
+                          {order.couponCode}
+                        </span>
+                      )}
+                    </span>
+                    <span className="font-medium">−{formatPrice(order.discountAmount)}</span>
                   </div>
                 )}
-                <div className="flex justify-between border-t border-gray-100 pt-2 dark:border-dark-700 text-base font-bold text-gray-900 dark:text-white">
-                  <span>Total</span><span>{formatPrice(order.total)}</span>
+
+                {/* Shipping */}
+                <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                  <span>Shipping</span>
+                  <span className={order.shippingCost > 0 ? 'font-medium text-gray-900 dark:text-white' : 'font-medium text-green-600 dark:text-green-400'}>
+                    {order.shippingCost > 0 ? formatPrice(order.shippingCost) : 'Free'}
+                  </span>
+                </div>
+
+                {/* Tax if any */}
+                {order.tax > 0 && (
+                  <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                    <span>Tax</span>
+                    <span className="font-medium text-gray-900 dark:text-white">{formatPrice(order.tax)}</span>
+                  </div>
+                )}
+
+                {/* Total savings summary */}
+                {(order.discountAmount > 0 || order.shippingCost === 0) && (
+                  <div className="rounded-lg bg-green-50 dark:bg-green-950/20 px-3 py-2 flex justify-between text-green-700 dark:text-green-400">
+                    <span className="text-xs font-semibold">You saved</span>
+                    <span className="text-xs font-bold">
+                      {formatPrice((order.discountAmount || 0) + (order.shippingCost === 0 ? 0 : 0))}
+                    </span>
+                  </div>
+                )}
+
+                <div className="flex justify-between border-t-2 border-gray-100 pt-3 dark:border-dark-700 text-base font-bold text-gray-900 dark:text-white">
+                  <span>Total Paid</span>
+                  <span className="text-primary-600 dark:text-primary-400">{formatPrice(order.total)}</span>
                 </div>
               </div>
             </div>
