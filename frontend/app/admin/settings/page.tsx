@@ -1,7 +1,8 @@
 'use client';
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { adminApi } from '@/lib/api';
+import { adminApi, authApi } from '@/lib/api';
+import { useAuthStore } from '@/lib/store';
 import toast from 'react-hot-toast';
 
 function Toggle({ enabled, onChange, disabled }: { enabled: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
@@ -30,6 +31,41 @@ const UPI_KEYS = [
 
 export default function AdminSettingsPage() {
   const queryClient = useQueryClient();
+  const { user, setUser } = useAuthStore();
+
+  // Admin profile state
+  const [profileForm, setProfileForm] = React.useState({ firstName: '', lastName: '', phone: '' });
+  const [savingProfile, setSavingProfile] = React.useState(false);
+
+  // Fetch current profile to pre-fill form
+  const { data: profileData } = useQuery({
+    queryKey: ['user-profile'],
+    queryFn: () => authApi.getProfile().then(r => r.data.data),
+  });
+  React.useEffect(() => {
+    if (profileData) {
+      setProfileForm({
+        firstName: profileData.firstName || '',
+        lastName: profileData.lastName || '',
+        phone: profileData.phone || '',
+      });
+    }
+  }, [profileData]);
+
+  const handleSaveProfile = async () => {
+    setSavingProfile(true);
+    try {
+      const res = await authApi.updateProfile(profileForm);
+      const updatedUser = res.data.data;
+      setUser(updatedUser);
+      queryClient.invalidateQueries({ queryKey: ['user-profile'] });
+      toast.success('Profile updated!');
+    } catch {
+      toast.error('Failed to update profile');
+    } finally {
+      setSavingProfile(false);
+    }
+  };
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin-settings'],
@@ -72,6 +108,35 @@ export default function AdminSettingsPage() {
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Settings</h2>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Manage payment options and store configuration.</p>
       </div>
+
+      {/* Admin Profile */}
+      <section>
+        <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1">Admin Profile</h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Your name appears in cancelled order records.</p>
+        <div className="space-y-4 rounded-2xl border border-gray-200 bg-white p-5 dark:border-dark-700 dark:bg-dark-800">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">First Name</label>
+              <input value={profileForm.firstName} onChange={(e) => setProfileForm({ ...profileForm, firstName: e.target.value })}
+                placeholder="First name" className="input-field"/>
+            </div>
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Last Name</label>
+              <input value={profileForm.lastName} onChange={(e) => setProfileForm({ ...profileForm, lastName: e.target.value })}
+                placeholder="Last name" className="input-field"/>
+            </div>
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Phone</label>
+            <input value={profileForm.phone} onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+              placeholder="+91 XXXXX XXXXX" className="input-field"/>
+          </div>
+          <button onClick={handleSaveProfile} disabled={savingProfile}
+            className="button-primary px-6 py-2.5 disabled:opacity-50">
+            {savingProfile ? 'Saving...' : 'Save Profile'}
+          </button>
+        </div>
+      </section>
 
       {/* Payment Methods */}
       <section>

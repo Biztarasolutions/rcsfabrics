@@ -5,6 +5,7 @@ import { useAuthStore } from '@/lib/store';
 import { useRouter } from 'next/navigation';
 import { authApi } from '@/lib/api';
 import toast from 'react-hot-toast';
+import { queryClient } from '@/components/common/Providers';
 import Image from 'next/image';
 
 type RegistrationStep = 'details' | 'otp' | 'verified';
@@ -167,6 +168,7 @@ export default function AuthPage() {
       });
 
       const { user, token } = res.data.data;
+      queryClient.clear();
       setUser(user);
       setToken(token);
       if (typeof window !== 'undefined') localStorage.setItem('authToken', token);
@@ -318,6 +320,7 @@ export default function AuthPage() {
       });
 
       const { user, token } = res.data.data;
+      queryClient.clear();
       setUser(user);
       setToken(token);
       if (typeof window !== 'undefined') localStorage.setItem('authToken', token);

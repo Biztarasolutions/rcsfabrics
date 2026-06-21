@@ -31,8 +31,8 @@ export default function CancelledOrdersPage() {
                 <th className="px-5 py-4">Products</th>
                 <th className="px-5 py-4">Total</th>
                 <th className="px-5 py-4">Payment</th>
-                <th className="px-5 py-4">Cancelled By</th>
-                <th className="px-5 py-4">Cancelled At</th>
+                <th className="px-5 py-4">By</th>
+                <th className="px-5 py-4">At</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 dark:divide-dark-700">

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { authApi } from '@/lib/api';
 import { useAuthStore } from '@/lib/store';
+import { queryClient } from '@/components/common/Providers';
 
 export default function LoginForm() {
   const router = useRouter();
@@ -22,8 +23,9 @@ export default function LoginForm() {
     try {
       const res = await authApi.login(formData);
       const { user, token } = res.data;
-      
-      // Update global state
+
+      // Clear any stale cache from a previous user session
+      queryClient.clear();
       setUser(user);
       setToken(token);
       

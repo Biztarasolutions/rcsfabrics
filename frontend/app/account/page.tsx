@@ -6,7 +6,7 @@ import { useAuthStore, useWishlistStore } from '@/lib/store';
 import { formatPrice } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { authApi, orderApi, userApi } from '@/lib/api';
+import { authApi, orderApi, userApi, productApi } from '@/lib/api';
 import { queryClient } from '@/components/common/Providers';
 import toast from 'react-hot-toast';
 
@@ -69,6 +69,37 @@ export default function AccountPage() {
       });
     }
   }, [profileRes]);
+
+  // Review Modal State
+  const [reviewModal, setReviewModal] = useState<{ order: any; item: any } | null>(null);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState('');
+  const [reviewHover, setReviewHover] = useState(0);
+  const [submittingReview, setSubmittingReview] = useState(false);
+
+  const openReview = (order: any, item: any) => {
+    setReviewModal({ order, item });
+    setReviewRating(0);
+    setReviewComment('');
+    setReviewHover(0);
+  };
+
+  const submitReview = async () => {
+    if (!reviewRating || !reviewModal) return;
+    setSubmittingReview(true);
+    try {
+      await productApi.submitReview(reviewModal.item.productId, {
+        rating: reviewRating,
+        comment: reviewComment.trim() || undefined,
+      });
+      toast.success('Review submitted! Thank you.');
+      setReviewModal(null);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to submit review');
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
 
   // Address Form State
   const [showAddressForm, setShowAddressForm] = useState(false);
@@ -305,11 +336,20 @@ export default function AccountPage() {
                                 </div>
                               ))}
                             </div>
+                            {order.status === 'DELIVERED' && (
+                              <div className="mt-3 border-t border-gray-100 pt-3 dark:border-dark-700 space-y-1.5">
+                                <p className="text-xs font-medium text-gray-400 dark:text-gray-500">Rate your purchase:</p>
+                                {order.items?.map((item: any, i: number) => (
+                                  <button key={i} onClick={() => openReview(order, item)}
+                                    className="flex w-full items-center justify-between rounded-xl bg-primary-50 px-3 py-2 text-sm font-semibold text-primary-700 hover:bg-primary-100 dark:bg-primary-950/20 dark:text-primary-400 dark:hover:bg-primary-950/30 transition-colors">
+                                    <span className="truncate">{item.productName}</span>
+                                    <span className="ml-2 shrink-0">⭐ Review</span>
+                                  </button>
+                                ))}
+                              </div>
+                            )}
                             <div className="mt-3 flex items-center justify-between border-t border-gray-100 pt-3 dark:border-dark-700">
                               <p className="text-sm font-bold text-gray-900 dark:text-white">Total: {formatPrice(order.total)}</p>
-                              {order.status === 'DELIVERED' && (
-                                <button className="text-sm font-semibold text-primary-600 hover:underline dark:text-primary-400">Write Review</button>
-                              )}
                             </div>
                           </div>
                         ))}
@@ -448,6 +488,60 @@ export default function AccountPage() {
           </main>
         </div>
       </div>
+
+      {/* Review Modal */}
+      <AnimatePresence>
+        {reviewModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+            onClick={(e) => e.target === e.currentTarget && setReviewModal(null)}>
+            <motion.div initial={{ scale: 0.95, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95 }}
+              className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-dark-800">
+              <h3 className="font-display text-xl font-bold text-gray-900 dark:text-white">Write a Review</h3>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 truncate">{reviewModal.item.productName}</p>
+
+              <div className="mt-5">
+                <p className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Your Rating *</p>
+                <div className="flex gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button key={star}
+                      onMouseEnter={() => setReviewHover(star)}
+                      onMouseLeave={() => setReviewHover(0)}
+                      onClick={() => setReviewRating(star)}
+                      className={`text-3xl transition-transform hover:scale-110 ${(reviewHover || reviewRating) >= star ? 'text-yellow-400' : 'text-gray-300 dark:text-dark-600'}`}>
+                      ★
+                    </button>
+                  ))}
+                </div>
+                {reviewRating > 0 && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    {['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][reviewRating]}
+                  </p>
+                )}
+              </div>
+
+              <div className="mt-4">
+                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Comment <span className="text-gray-400 font-normal">(optional)</span></label>
+                <textarea
+                  value={reviewComment}
+                  onChange={(e) => setReviewComment(e.target.value)}
+                  rows={3}
+                  placeholder="Share your experience with this fabric..."
+                  className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-dark-600 dark:bg-dark-700 dark:text-white dark:placeholder-gray-500"
+                />
+              </div>
+
+              <div className="mt-5 flex gap-3">
+                <button onClick={() => setReviewModal(null)} className="button-secondary flex-1 py-2.5">Cancel</button>
+                <button onClick={submitReview} disabled={!reviewRating || submittingReview}
+                  className="button-primary flex-1 py-2.5 disabled:opacity-50">
+                  {submittingReview ? 'Submitting...' : 'Submit Review'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

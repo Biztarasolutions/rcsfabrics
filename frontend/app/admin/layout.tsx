@@ -2,7 +2,9 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useAuthStore } from '@/lib/store';
+import { queryClient } from '@/components/common/Providers';
 
 const NAV = [
   { label: 'Dashboard', href: '/admin', icon: '📊' },
@@ -21,8 +23,16 @@ const SIDEBAR_COLLAPSED_KEY = 'admin-sidebar-collapsed';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { logout } = useAuthStore();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const handleLogout = () => {
+    logout();
+    queryClient.clear();
+    router.push('/auth');
+  };
 
   useEffect(() => {
     const stored = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
@@ -172,10 +182,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="flex shrink-0 items-center gap-3">
             <button
               type="button"
-              onClick={() => {
-                localStorage.removeItem('authToken');
-                window.location.href = '/auth';
-              }}
+              onClick={handleLogout}
               className="text-sm font-medium text-red-600 hover:text-red-700 dark:text-red-400"
             >
               Logout
