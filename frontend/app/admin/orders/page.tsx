@@ -257,6 +257,9 @@ export default function AdminOrdersPage() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-sm text-gray-900 dark:text-white truncate">{item.productName}</p>
+                          {(item.product?.sku || item.product?.code) && (
+                            <p className="text-[10px] font-mono text-gray-400">{item.product?.sku || `Code: ${item.product?.code}`}</p>
+                          )}
                           <p className="text-xs text-gray-500">{item.quantity}m × {formatPrice(item.pricePerMeter)}/m</p>
                         </div>
                         <p className="font-bold text-sm text-gray-900 dark:text-white shrink-0">{formatPrice(item.total)}</p>

@@ -4,9 +4,8 @@ import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 
 export default function ContactPage() {
-  const [activeForm, setActiveForm] = useState<'contact' | 'swatch' | 'bulk'>('contact');
+  const [activeForm, setActiveForm] = useState<'contact' | 'bulk'>('contact');
   const [form, setForm] = useState({ name: '', email: '', phone: '', subject: '', message: '' });
-  const [swatchForm, setSwatchForm] = useState({ name: '', email: '', phone: '', fabrics: '', address: '' });
   const [bulkForm, setBulkForm] = useState({ name: '', company: '', email: '', phone: '', fabric: '', quantity: '', deadline: '', notes: '' });
   const [loading, setLoading] = useState(false);
 
@@ -65,10 +64,10 @@ export default function ContactPage() {
           <div className="lg:col-span-2">
             {/* Form type selector */}
             <div className="mb-6 flex gap-2 rounded-2xl border border-gray-200 bg-gray-50 p-1.5 dark:border-dark-700 dark:bg-dark-800">
-              {(['contact', 'swatch', 'bulk'] as const).map((type) => (
+              {(['contact', 'bulk'] as const).map((type) => (
                 <button key={type} onClick={() => setActiveForm(type)}
                   className={`flex-1 rounded-xl py-2.5 text-sm font-semibold capitalize transition-all ${activeForm === type ? 'bg-white shadow-sm text-primary-700 dark:bg-dark-700 dark:text-primary-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}>
-                  {type === 'contact' ? '💬 General' : type === 'swatch' ? '🧵 Swatch Request' : '📦 Bulk Order'}
+                  {type === 'contact' ? '💬 General' : '📦 Bulk Order'}
                 </button>
               ))}
             </div>
@@ -84,20 +83,6 @@ export default function ContactPage() {
                   <div><label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Subject</label><input value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} placeholder="Order query, product info..." required className="input-field"/></div>
                   <div><label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Message</label><textarea value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} rows={4} placeholder="Tell us how we can help..." required className="input-field resize-none"/></div>
                   <button type="submit" disabled={loading} className="button-primary w-full py-3.5">{loading ? 'Sending...' : 'Send Message'}</button>
-                </motion.form>
-              )}
-
-              {activeForm === 'swatch' && (
-                <motion.form id="swatch" initial={{ opacity: 0 }} animate={{ opacity: 1 }} onSubmit={handleSubmit} className="space-y-4">
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Request physical fabric swatches to feel the quality before ordering. Swatches are sent free of charge for up to 5 fabrics.</p>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div><label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label><input value={swatchForm.name} onChange={(e) => setSwatchForm({ ...swatchForm, name: e.target.value })} required className="input-field" placeholder="Your name"/></div>
-                    <div><label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label><input type="email" value={swatchForm.email} onChange={(e) => setSwatchForm({ ...swatchForm, email: e.target.value })} required className="input-field" placeholder="your@email.com"/></div>
-                  </div>
-                  <div><label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Phone</label><input value={swatchForm.phone} onChange={(e) => setSwatchForm({ ...swatchForm, phone: e.target.value })} required className="input-field" placeholder="+91 ..."/></div>
-                  <div><label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Fabrics you want samples of</label><textarea value={swatchForm.fabrics} onChange={(e) => setSwatchForm({ ...swatchForm, fabrics: e.target.value })} rows={3} required className="input-field resize-none" placeholder="e.g. Banarasi Silk, Egyptian Cotton, French Linen..."/></div>
-                  <div><label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Delivery Address</label><textarea value={swatchForm.address} onChange={(e) => setSwatchForm({ ...swatchForm, address: e.target.value })} rows={2} required className="input-field resize-none" placeholder="Full delivery address..."/></div>
-                  <button type="submit" disabled={loading} className="button-primary w-full py-3.5">{loading ? 'Sending...' : '🧵 Request Swatches'}</button>
                 </motion.form>
               )}
 

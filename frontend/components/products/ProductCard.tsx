@@ -46,16 +46,16 @@ const ProductCard = React.memo(function ProductCard({ product }: ProductCardProp
       <div
         onMouseEnter={() => { setHovered(true); setEverHovered(true); }}
         onMouseLeave={() => setHovered(false)}
-        className="group relative flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-product dark:border-dark-700 dark:bg-dark-800"
+        className="group relative flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all duration-300 sm:hover:-translate-y-1 sm:hover:shadow-product dark:border-dark-700 dark:bg-dark-800"
       >
         {/* Image */}
         <div className={`relative overflow-hidden bg-gray-50 dark:bg-dark-700 ${!imgLoaded ? 'animate-pulse' : ''}`} style={{ aspectRatio: '4/5' }}>
           {mainImage ? (
             <Image
-              src={supabaseImg(mainImage.url, 600)}
+              src={supabaseImg(mainImage.url, 400)}
               alt={product.name}
               fill
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 25vw"
               placeholder="blur"
               blurDataURL={BLUR_PLACEHOLDER}
               onLoad={() => setImgLoaded(true)}
@@ -68,10 +68,10 @@ const ProductCard = React.memo(function ProductCard({ product }: ProductCardProp
           )}
           {secondImage && everHovered && (
             <Image
-              src={supabaseImg(secondImage.url, 600)}
+              src={supabaseImg(secondImage.url, 400)}
               alt={product.name}
               fill
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 25vw"
               placeholder="blur"
               blurDataURL={BLUR_PLACEHOLDER}
               onLoad={() => setSecondImgLoaded(true)}

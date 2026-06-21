@@ -87,6 +87,7 @@ export const adminApi = {
   syncProduct: (id: string) => api.post(`admin/products/${id}/sync`, {}, { timeout: 120000 }),
   syncAllProducts: () => api.post('admin/products/sync-all', {}, { timeout: 300000 }),
   getOrders: (params?: any) => api.get('admin/orders', { params }),
+  getCancelledOrders: (params?: any) => api.get('admin/orders/cancelled', { params }),
   updateOrderStatus: (id: string, status: string) => api.put(`admin/orders/${id}`, { status }),
   getCustomers: (params?: any) => api.get('admin/customers', { params }),
   getCoupons: () => api.get('admin/coupons'),

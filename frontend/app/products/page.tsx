@@ -50,7 +50,7 @@ function ProductsContent() {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-dark-950">
+    <div className="min-h-screen overflow-x-hidden bg-white dark:bg-dark-950">
       {/* Page Header */}
       <div className="border-b border-gray-100 bg-gradient-to-r from-gray-50 to-primary-50/30 dark:border-dark-800 dark:bg-dark-900">
         <div className="container-main py-8">
@@ -116,7 +116,7 @@ function ProductsContent() {
 
             {/* Loading / Error States */}
             {isLoading && (
-              <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="grid grid-cols-2 gap-3 sm:gap-5 xl:grid-cols-3">
                 {[...Array(6)].map((_, i) => (
                   <div key={i} className="flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white dark:border-dark-700 dark:bg-dark-800">
                     <div className="aspect-[4/5] animate-pulse bg-gray-100 dark:bg-dark-700" />
@@ -149,7 +149,7 @@ function ProductsContent() {
             ) : (
               <>
                 <motion.div
-                  className={view === 'grid' ? 'grid gap-5 sm:grid-cols-2 xl:grid-cols-3' : 'flex flex-col gap-4'}
+                  className={view === 'grid' ? 'grid grid-cols-2 gap-3 sm:gap-5 xl:grid-cols-3' : 'flex flex-col gap-4'}
                   initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
                   {products.map((product: any, i: number) => (
                     <motion.div key={product.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}

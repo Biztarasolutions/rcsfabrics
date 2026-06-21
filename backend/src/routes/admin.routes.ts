@@ -7,6 +7,7 @@ import {
   getAdminProducts as getProducts,
   getAdminOrders as getOrders,
   updateOrderStatus,
+  getCancelledOrders,
   getDashboardStats,
   getCustomers,
   getCoupons,
@@ -50,6 +51,7 @@ router.get('/inventory', getInventory);
 router.patch('/products/:id/stock', adjustStock);
 
 // Order Management
+router.get('/orders/cancelled', getCancelledOrders);
 router.get('/orders', getOrders);
 router.put('/orders/:id', updateOrderStatus);
 

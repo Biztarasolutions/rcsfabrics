@@ -922,7 +922,7 @@ export const getAdminOrders = async (
       limit as string
     );
 
-    const where: any = {};
+    const where: any = { status: { not: 'CANCELLED' } };
     if (status) {
       where.status = status;
     }
@@ -931,7 +931,7 @@ export const getAdminOrders = async (
       prisma.order.findMany({
         where,
         include: {
-          user: { select: { email: true, firstName: true, lastName: true } },
+          user: { select: { email: true, firstName: true, lastName: true, phone: true } },
           items: {
             select: {
               id: true,
@@ -940,6 +940,7 @@ export const getAdminOrders = async (
               total: true,
               productName: true,
               productImage: true,
+              product: { select: { sku: true, code: true } },
             },
           },
         },
@@ -974,6 +975,56 @@ export const getAdminOrders = async (
         message: 'Internal server error',
         statusCode: 500,
       } as ApiResponse);
+    }
+  }
+};
+
+export const getCancelledOrders = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.user || req.user.role !== 'ADMIN') throw new ApiError(403, 'Forbidden');
+
+    const { page, limit } = req.query;
+    const { page: parsedPage, limit: parsedLimit, skip } = parsePagination(page as string, limit as string);
+
+    const [orders, total] = await Promise.all([
+      prisma.order.findMany({
+        where: { status: 'CANCELLED' },
+        include: {
+          user: { select: { email: true, firstName: true, lastName: true, phone: true } },
+          items: {
+            select: {
+              id: true,
+              quantity: true,
+              pricePerMeter: true,
+              total: true,
+              productName: true,
+              productImage: true,
+              product: { select: { sku: true, code: true } },
+            },
+          },
+        },
+        skip,
+        take: parsedLimit,
+        orderBy: { updatedAt: 'desc' },
+      }),
+      prisma.order.count({ where: { status: 'CANCELLED' } }),
+    ]);
+
+    const meta = createPaginationMeta(total, parsedPage, parsedLimit);
+
+    res.json({
+      success: true,
+      data: { orders, ...meta },
+      statusCode: 200,
+    } as ApiResponse);
+  } catch (error) {
+    if (error instanceof ApiError) {
+      res.status(error.statusCode).json({ success: false, message: error.message, statusCode: error.statusCode } as ApiResponse);
+    } else {
+      res.status(500).json({ success: false, message: 'Internal server error', statusCode: 500 } as ApiResponse);
     }
   }
 };

@@ -13,6 +13,7 @@ const NAV = [
   { label: 'Banners', href: '/admin/banners', icon: '🖼️' },
   { label: 'Coupons', href: '/admin/coupons', icon: '🎟️' },
   { label: 'Analytics', href: '/admin/analytics', icon: '📈' },
+  { label: 'Cancelled Orders', href: '/admin/cancelled-orders', icon: '❌' },
   { label: 'Settings', href: '/admin/settings', icon: '⚙️' },
 ];
 
