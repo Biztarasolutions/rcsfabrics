@@ -230,71 +230,88 @@ export default function OrderDetailPage() {
             {/* Price breakdown */}
             <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-dark-700 dark:bg-dark-800">
               <h2 className="mb-4 text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Price Summary</h2>
-              <div className="space-y-2.5 text-sm">
-                {/* Items subtotal */}
-                <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                  <span>Items subtotal</span>
-                  <span className="font-medium text-gray-900 dark:text-white">{formatPrice(order.subtotal)}</span>
-                </div>
+              {(() => {
+                // Store discount = original (base) price minus the price actually paid, per item.
+                // base price comes from the product relation; pricePerMeter is what was charged.
+                const items = order.items || [];
+                const mrpTotal = items.reduce((s: number, it: any) => {
+                  const base = Number(it.product?.basePrice ?? it.pricePerMeter);
+                  return s + base * it.quantity;
+                }, 0);
+                const paidTotal = items.reduce((s: number, it: any) => s + Number(it.pricePerMeter) * it.quantity, 0);
+                const storeDiscount = Math.max(0, mrpTotal - paidTotal);
+                const couponDiscount = Number(order.discountAmount || 0);
+                const totalSaved = storeDiscount + couponDiscount;
+                return (
+                  <div className="space-y-2.5 text-sm">
+                    {/* MRP total (only if there's a store discount) */}
+                    {storeDiscount > 0.01 && (
+                      <div className="flex justify-between text-gray-500 dark:text-gray-400">
+                        <span>Items (MRP)</span>
+                        <span className="line-through">{formatPrice(mrpTotal)}</span>
+                      </div>
+                    )}
 
-                {/* Per-item discounts (product price vs base) — shown if items have a discount embedded */}
-                {(() => {
-                  const itemsTotal = order.items?.reduce((s: number, item: any) => s + (item.quantity * item.pricePerMeter), 0) || 0;
-                  const storeDiscount = itemsTotal - (order.subtotal || itemsTotal);
-                  return storeDiscount > 0.01 ? (
-                    <div className="flex justify-between text-green-600 dark:text-green-400">
-                      <span className="flex items-center gap-1">🏷️ Store discount</span>
-                      <span className="font-medium">−{formatPrice(storeDiscount)}</span>
+                    {/* Store discount */}
+                    {storeDiscount > 0.01 && (
+                      <div className="flex justify-between text-green-600 dark:text-green-400">
+                        <span className="flex items-center gap-1">🏷️ Store discount</span>
+                        <span className="font-medium">−{formatPrice(storeDiscount)}</span>
+                      </div>
+                    )}
+
+                    {/* Items subtotal (price after store discount) */}
+                    <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                      <span>Items subtotal</span>
+                      <span className="font-medium text-gray-900 dark:text-white">{formatPrice(order.subtotal)}</span>
                     </div>
-                  ) : null;
-                })()}
 
-                {/* Coupon discount */}
-                {order.discountAmount > 0 && (
-                  <div className="flex justify-between text-green-600 dark:text-green-400">
-                    <span className="flex items-center gap-1">
-                      🎟️ Coupon
-                      {order.couponCode && (
-                        <span className="font-mono text-xs bg-green-100 dark:bg-green-900/30 px-1.5 py-0.5 rounded">
-                          {order.couponCode}
+                    {/* Coupon discount */}
+                    {couponDiscount > 0 && (
+                      <div className="flex justify-between text-green-600 dark:text-green-400">
+                        <span className="flex items-center gap-1">
+                          🎟️ Coupon
+                          {order.couponCode && (
+                            <span className="font-mono text-xs bg-green-100 dark:bg-green-900/30 px-1.5 py-0.5 rounded">
+                              {order.couponCode}
+                            </span>
+                          )}
                         </span>
-                      )}
-                    </span>
-                    <span className="font-medium">−{formatPrice(order.discountAmount)}</span>
+                        <span className="font-medium">−{formatPrice(couponDiscount)}</span>
+                      </div>
+                    )}
+
+                    {/* Shipping */}
+                    <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                      <span>Shipping</span>
+                      <span className={order.shippingCost > 0 ? 'font-medium text-gray-900 dark:text-white' : 'font-medium text-green-600 dark:text-green-400'}>
+                        {order.shippingCost > 0 ? formatPrice(order.shippingCost) : 'Free'}
+                      </span>
+                    </div>
+
+                    {/* Tax if any */}
+                    {order.tax > 0 && (
+                      <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                        <span>Tax</span>
+                        <span className="font-medium text-gray-900 dark:text-white">{formatPrice(order.tax)}</span>
+                      </div>
+                    )}
+
+                    {/* Total savings summary */}
+                    {totalSaved > 0.01 && (
+                      <div className="rounded-lg bg-green-50 dark:bg-green-950/20 px-3 py-2 flex justify-between text-green-700 dark:text-green-400">
+                        <span className="text-xs font-semibold">You saved</span>
+                        <span className="text-xs font-bold">{formatPrice(totalSaved)}</span>
+                      </div>
+                    )}
+
+                    <div className="flex justify-between border-t-2 border-gray-100 pt-3 dark:border-dark-700 text-base font-bold text-gray-900 dark:text-white">
+                      <span>Total Paid</span>
+                      <span className="text-primary-600 dark:text-primary-400">{formatPrice(order.total)}</span>
+                    </div>
                   </div>
-                )}
-
-                {/* Shipping */}
-                <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                  <span>Shipping</span>
-                  <span className={order.shippingCost > 0 ? 'font-medium text-gray-900 dark:text-white' : 'font-medium text-green-600 dark:text-green-400'}>
-                    {order.shippingCost > 0 ? formatPrice(order.shippingCost) : 'Free'}
-                  </span>
-                </div>
-
-                {/* Tax if any */}
-                {order.tax > 0 && (
-                  <div className="flex justify-between text-gray-600 dark:text-gray-400">
-                    <span>Tax</span>
-                    <span className="font-medium text-gray-900 dark:text-white">{formatPrice(order.tax)}</span>
-                  </div>
-                )}
-
-                {/* Total savings summary */}
-                {(order.discountAmount > 0 || order.shippingCost === 0) && (
-                  <div className="rounded-lg bg-green-50 dark:bg-green-950/20 px-3 py-2 flex justify-between text-green-700 dark:text-green-400">
-                    <span className="text-xs font-semibold">You saved</span>
-                    <span className="text-xs font-bold">
-                      {formatPrice((order.discountAmount || 0) + (order.shippingCost === 0 ? 0 : 0))}
-                    </span>
-                  </div>
-                )}
-
-                <div className="flex justify-between border-t-2 border-gray-100 pt-3 dark:border-dark-700 text-base font-bold text-gray-900 dark:text-white">
-                  <span>Total Paid</span>
-                  <span className="text-primary-600 dark:text-primary-400">{formatPrice(order.total)}</span>
-                </div>
-              </div>
+                );
+              })()}
             </div>
 
             {/* Payment info */}
