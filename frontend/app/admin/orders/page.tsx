@@ -139,7 +139,8 @@ export default function AdminOrdersPage() {
                     {order.user?.phone && <p className="text-xs text-gray-400">{order.user.phone}</p>}
                   </td>
                   <td className="px-5 py-3.5 hidden md:table-cell text-gray-500 dark:text-gray-400 text-xs">
-                    {new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    <p>{new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                    <p className="text-gray-400 dark:text-gray-500">{new Date(order.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</p>
                   </td>
                   <td className="px-5 py-3.5">
                     <div className="flex -space-x-2">

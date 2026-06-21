@@ -916,15 +916,26 @@ export const getAdminOrders = async (
       throw new ApiError(403, 'Only admins can access this');
     }
 
-    const { page, limit, status } = req.query;
+    const { page, limit, status, search } = req.query;
     const { page: parsedPage, limit: parsedLimit, skip } = parsePagination(
       page as string,
-      limit as string
+      limit as string,
+      status === 'ALL' ? 5000 : 100
     );
 
-    const where: any = { status: { not: 'CANCELLED' } };
-    if (status) {
-      where.status = status;
+    const where: any = status === 'ALL'
+      ? {}
+      : status
+        ? { status }
+        : { status: { not: 'CANCELLED' } };
+
+    if (search) {
+      where.OR = [
+        { orderNumber: { contains: search as string, mode: 'insensitive' } },
+        { user: { firstName: { contains: search as string, mode: 'insensitive' } } },
+        { user: { lastName: { contains: search as string, mode: 'insensitive' } } },
+        { user: { email: { contains: search as string, mode: 'insensitive' } } },
+      ];
     }
 
     const [orders, total] = await Promise.all([
@@ -1676,10 +1687,35 @@ export const getCustomerDetail = async (
         createdAt: true,
         isActive: true,
         orders: {
+          where: {},  // no filter — ALL orders including CANCELLED
           orderBy: { createdAt: 'desc' },
-          include: {
+          select: {
+            id: true,
+            orderNumber: true,
+            status: true,
+            paymentStatus: true,
+            paymentMethod: true,
+            total: true,
+            subtotal: true,
+            shippingCost: true,
+            tax: true,
+            discountAmount: true,
+            couponCode: true,
+            shippingAddress: true,
+            utrReference: true,
+            razorpayPaymentId: true,
+            createdAt: true,
+            updatedAt: true,
             items: {
-              include: { product: { select: { sku: true, code: true } } },
+              select: {
+                id: true,
+                productName: true,
+                productImage: true,
+                quantity: true,
+                pricePerMeter: true,
+                total: true,
+                product: { select: { sku: true, code: true } },
+              },
             },
           },
         },

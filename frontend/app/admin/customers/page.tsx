@@ -22,18 +22,17 @@ function parseAddress(raw: any) {
 }
 
 function CustomerDrawer({ customer, onClose }: { customer: any; onClose: () => void }) {
-  // Compute this customer's full history client-side from the live orders endpoint,
-  // so it works without the dedicated /admin/customers/:id route on the backend.
-  const { data: allOrders = [], isLoading } = useQuery({
-    queryKey: ['admin-all-orders-customer'],
-    queryFn: () => adminApi.getOrders({ limit: 1000 }).then(r => r.data.data?.orders ?? r.data.data ?? []),
+  // Full history from the customer-detail endpoint — returns ALL orders including cancelled.
+  const { data: detail, isLoading } = useQuery({
+    queryKey: ['admin-customer-detail', customer.id],
+    queryFn: () => adminApi.getCustomerDetail(customer.id).then(r => r.data.data),
   });
 
   const orders = useMemo(
-    () => (allOrders as any[])
-      .filter((o) => o.userId === customer.id)
+    () => ((detail?.orders ?? []) as any[])
+      .slice()
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
-    [allOrders, customer.id]
+    [detail]
   );
 
   const totalSpent = orders.reduce((s: number, o: any) => s + Number(o.total || 0), 0);
@@ -118,7 +117,16 @@ function CustomerDrawer({ customer, onClose }: { customer: any; onClose: () => v
                               <p className="font-bold text-sm text-gray-900 dark:text-white">{formatPrice(order.total)}</p>
                               <p className="text-[10px] text-gray-400">
                                 {new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                {' · '}
+                                {new Date(order.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
                               </p>
+                              {order.status === 'CANCELLED' && (
+                                <p className="text-[10px] text-red-400">
+                                  Cancelled {new Date(order.updatedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                                  {' · '}
+                                  {new Date(order.updatedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                              )}
                             </div>
                           </div>
 

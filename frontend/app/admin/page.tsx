@@ -16,9 +16,12 @@ const STATUS_COLORS: Record<string, string> = {
 const STATUS_OPTIONS = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'];
 
 export default function AdminDashboard() {
-  const [status, setStatus] = useState(''); // '' = all statuses
+  const [statuses, setStatuses] = useState<string[]>([]); // empty = all
+  const toggleStatus = (s: string) =>
+    setStatuses((prev) => prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]);
+  const hasFilter = statuses.length > 0;
 
-  // Customers / products / low-stock from the stats endpoint (status-independent).
+  // Catalog/customer totals (status-independent) from the stats endpoint.
   const { data: stats = null, isLoading: statsLoading } = useQuery({
     queryKey: ['admin-stats'],
     queryFn: () => adminApi.getStats().then(res => res.data.data),
@@ -26,33 +29,35 @@ export default function AdminDashboard() {
     refetchIntervalInBackground: false,
   });
 
-  // All orders — used to compute status-filtered order count/revenue and the recent list
-  // client-side (the deployed stats endpoint ignores the status param).
+  // Fetch ALL orders (including cancelled) in a single call for client-side filtering.
   const { data: allOrders = [], isLoading: ordersLoading } = useQuery({
-    queryKey: ['admin-all-orders'],
-    queryFn: () => adminApi.getOrders({ limit: 1000 }).then(res => res.data.data?.orders ?? res.data.data ?? []),
+    queryKey: ['admin-all-orders-merged'],
+    queryFn: () =>
+      adminApi.getOrders({ limit: 5000, status: 'ALL' }).then(r => r.data.data?.orders ?? r.data.data ?? []),
     refetchInterval: 30 * 1000,
     refetchIntervalInBackground: false,
   });
 
-  const { filteredOrders, orderCount, orderRevenue } = useMemo(() => {
-    const orders = (allOrders as any[]).filter((o) => (status ? o.status === status : true));
+  const { filteredOrders, orderCount, orderRevenue, customerCount, productCount } = useMemo(() => {
+    const orders = (allOrders as any[]).filter((o) => (hasFilter ? statuses.includes(o.status) : true));
     const sorted = [...orders].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     return {
       filteredOrders: sorted,
       orderCount: orders.length,
       orderRevenue: orders.reduce((s, o) => s + Number(o.total || 0), 0),
+      customerCount: new Set(orders.map((o) => o.userId)).size,
+      productCount: new Set(orders.flatMap((o) => (o.items || []).map((it: any) => it.productName))).size,
     };
-  }, [allOrders, status]);
+  }, [allOrders, statuses, hasFilter]);
 
   const ordersData = { orders: filteredOrders.slice(0, 5) };
 
-  const statusLabel = status ? status.charAt(0) + status.slice(1).toLowerCase() : 'All statuses';
+  const statusLabel = hasFilter ? statuses.join(', ') : 'All statuses';
   const STAT_CARDS = stats ? [
     { label: 'Total Revenue', value: formatPrice(orderRevenue), icon: '💰', sub: statusLabel },
     { label: 'Total Orders', value: String(orderCount), icon: '📦', sub: statusLabel },
-    { label: 'Total Customers', value: String(stats.totalCustomers), icon: '👥', sub: 'Registered users' },
-    { label: 'Products', value: String(stats.totalProducts), icon: '🧵', sub: 'In catalog' },
+    { label: 'Total Customers', value: String(hasFilter ? customerCount : stats.totalCustomers), icon: '👥', sub: hasFilter ? 'In selection' : 'Registered users' },
+    { label: 'Products', value: String(hasFilter ? productCount : stats.totalProducts), icon: '🧵', sub: hasFilter ? 'In selection' : 'In catalog' },
     { label: 'Avg Order Value', value: formatPrice(orderRevenue / (orderCount || 1)), icon: '📊', sub: statusLabel },
     { label: 'Low Stock Items', value: String(stats.lowStockCount || 0), icon: '⚠️', sub: 'Below 10m', warning: (stats.lowStockCount || 0) > 0 },
   ] : [];
@@ -65,17 +70,26 @@ export default function AdminDashboard() {
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Good morning, Admin! 👋</h2>
           <p className="mt-1 text-gray-500 dark:text-gray-400">Here&apos;s what&apos;s happening with RCS Fabrics today.</p>
         </div>
-        {/* Status filter */}
-        <select value={status} onChange={(e) => setStatus(e.target.value)}
-          className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 outline-none dark:border-dark-700 dark:bg-dark-800 dark:text-gray-200">
-          <option value="">All Statuses</option>
-          {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
-        </select>
+        {/* Multi-select status filter */}
+        <div className="flex flex-wrap items-center gap-2">
+          {STATUS_OPTIONS.map((s) => {
+            const active = statuses.includes(s);
+            return (
+              <button key={s} onClick={() => toggleStatus(s)}
+                className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${active ? 'border-primary-500 bg-primary-600 text-white' : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:border-dark-700 dark:bg-dark-800 dark:text-gray-300'}`}>
+                {s}
+              </button>
+            );
+          })}
+          {hasFilter && (
+            <button onClick={() => setStatuses([])} className="text-xs font-medium text-gray-400 hover:underline">Clear</button>
+          )}
+        </div>
       </div>
 
       {/* Stats grid */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {statsLoading ? (
+        {(statsLoading || ordersLoading) ? (
            [...Array(6)].map((_: any, i: number) => (
              <div key={i} className="h-32 animate-pulse rounded-2xl bg-gray-100 dark:bg-dark-800" />
            ))
@@ -120,7 +134,7 @@ export default function AdminDashboard() {
                 <tbody className="divide-y divide-gray-50 dark:divide-dark-700">
                   {ordersData.orders.map((order: any) => (
                     <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-dark-700/50 transition-colors">
-                      <td className="py-3 font-mono text-xs text-gray-600 dark:text-gray-400">#{order.id.slice(-8).toUpperCase()}</td>
+                      <td className="py-3 font-mono text-xs text-gray-600 dark:text-gray-400">#{order.orderNumber || order.id.slice(-8).toUpperCase()}</td>
                       <td className="py-3 font-medium text-gray-900 dark:text-white">{order.user?.firstName} {order.user?.lastName}</td>
                       <td className="py-3 font-semibold text-gray-900 dark:text-white">{formatPrice(order.total)}</td>
                       <td className="py-3"><span className={`badge ${STATUS_COLORS[order.status]}`}>{order.status}</span></td>

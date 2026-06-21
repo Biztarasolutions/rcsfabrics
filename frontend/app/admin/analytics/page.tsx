@@ -158,7 +158,10 @@ export default function AnalyticsPage() {
   const [from, setFrom] = useState(toYMD(addDays(today, -29)));
   const [to, setTo] = useState(toYMD(today));
   const [activePreset, setActivePreset] = useState(1); // '30 days'
-  const [status, setStatus] = useState(''); // '' = all (except cancelled)
+  const [statuses, setStatuses] = useState<string[]>([]); // empty = all (except cancelled)
+  const hasFilter = statuses.length > 0;
+  const toggleStatus = (s: string) =>
+    setStatuses((prev) => prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]);
 
   const applyPreset = (days: number, idx: number) => {
     setActivePreset(idx);
@@ -174,8 +177,9 @@ export default function AnalyticsPage() {
   // Compute analytics client-side from the live orders endpoint so it works regardless of
   // whether the dedicated /admin/analytics route is deployed on the backend.
   const { data: allOrders = [], isLoading } = useQuery({
-    queryKey: ['admin-orders-for-analytics'],
-    queryFn: () => adminApi.getOrders({ limit: 1000 }).then(r => r.data.data?.orders ?? r.data.data ?? []),
+    queryKey: ['admin-orders-for-analytics-merged'],
+    queryFn: () =>
+      adminApi.getOrders({ limit: 5000, status: 'ALL' }).then(r => r.data.data?.orders ?? r.data.data ?? []),
     refetchInterval: 60 * 1000,
   });
   const { data: stats } = useQuery({
@@ -197,7 +201,7 @@ export default function AnalyticsPage() {
     const inRange = orders.filter((o) => {
       const k = ymd(o.createdAt);
       if (k < from || k > to) return false;
-      return status ? o.status === status : o.status !== 'CANCELLED';
+      return hasFilter ? statuses.includes(o.status) : o.status !== 'CANCELLED';
     });
 
     const totalRevenue = inRange.reduce((s, o) => s + Number(o.total || 0), 0);
@@ -236,7 +240,7 @@ export default function AnalyticsPage() {
       newCustomers, repeatCustomers,
       totalCustomers: stats?.totalCustomers ?? periodUsers.length,
     };
-  }, [allOrders, from, to, status, stats]);
+  }, [allOrders, from, to, statuses, hasFilter, stats]);
 
   const daily: { date: string; revenue: number; orders: number }[] = analytics.daily;
   const topProducts: { name: string; quantity: number; revenue: number }[] = analytics.topProducts;
@@ -279,12 +283,22 @@ export default function AnalyticsPage() {
               onChange={e => { setTo(e.target.value); setActivePreset(-1); }}
               className="bg-transparent text-sm text-gray-700 dark:text-gray-200 outline-none"/>
           </div>
-          {/* Status filter */}
-          <select value={status} onChange={e => setStatus(e.target.value)}
-            className="rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 outline-none dark:border-dark-700 dark:bg-dark-800 dark:text-gray-200">
-            <option value="">All (excl. cancelled)</option>
-            {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
+        </div>
+
+        {/* Multi-select status filter */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-gray-400">Status:</span>
+          {STATUS_OPTIONS.map((s) => {
+            const active = statuses.includes(s);
+            return (
+              <button key={s} onClick={() => toggleStatus(s)}
+                className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${active ? 'border-primary-500 bg-primary-600 text-white' : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:border-dark-700 dark:bg-dark-800 dark:text-gray-300'}`}>
+                {s}
+              </button>
+            );
+          })}
+          {!hasFilter && <span className="text-xs text-gray-400">(showing all except cancelled)</span>}
+          {hasFilter && <button onClick={() => setStatuses([])} className="text-xs font-medium text-gray-400 hover:underline">Clear</button>}
         </div>
       </div>
 

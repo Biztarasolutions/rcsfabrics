@@ -2,7 +2,7 @@ import { PrismaClient } from '@prisma/client';
 
 export const generateOrderNumber = async (prisma: PrismaClient): Promise<string> => {
   const count = await prisma.order.count();
-  return `RCS-${String(count + 1).padStart(6, '0')}`;
+  return `RCS-${String(count + 10001).padStart(6, '0')}`;
 };
 
 export const calculateOrderTotal = (
