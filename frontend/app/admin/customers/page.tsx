@@ -291,9 +291,12 @@ export default function AdminCustomersPage() {
                     {new Date(customer.joined).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                   </td>
                   <td className="px-5 py-4 hidden lg:table-cell text-xs text-gray-500 dark:text-gray-400">
-                    {customer.lastSeen
-                      ? new Date(customer.lastSeen).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-                      : '—'}
+                    {customer.lastSeen ? (
+                      <>
+                        <p>{new Date(customer.lastSeen).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                        <p className="text-gray-400 dark:text-gray-500">{new Date(customer.lastSeen).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</p>
+                      </>
+                    ) : '—'}
                   </td>
                   <td className="px-5 py-4">
                     <span className={`badge ${customer.status === 'Active' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-600 dark:bg-dark-700 dark:text-gray-400'}`}>

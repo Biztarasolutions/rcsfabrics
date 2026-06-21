@@ -297,7 +297,6 @@ export default function AnalyticsPage() {
               </button>
             );
           })}
-          {!hasFilter && <span className="text-xs text-gray-400">(showing all except cancelled)</span>}
           {hasFilter && <button onClick={() => setStatuses([])} className="text-xs font-medium text-gray-400 hover:underline">Clear</button>}
         </div>
       </div>

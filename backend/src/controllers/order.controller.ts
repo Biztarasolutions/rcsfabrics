@@ -352,7 +352,7 @@ export const cancelOrder = async (
     );
     const updated = await prisma.order.update({
       where: { id },
-      data: { status: 'CANCELLED' },
+      data: { status: 'CANCELLED', cancelledBy: 'CUSTOMER' },
     });
     res.json({ success: true, message: 'Order cancelled', data: updated, statusCode: 200 } as ApiResponse);
   } catch (error) {

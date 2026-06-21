@@ -17,7 +17,6 @@ const STATUS_OPTIONS = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCEL
 
 export default function AdminDashboard() {
   const [statuses, setStatuses] = useState<string[]>([]); // empty = all
-  const [dropdownOpen, setDropdownOpen] = useState(false);
   const toggleStatus = (s: string) =>
     setStatuses((prev) => prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]);
   const hasFilter = statuses.length > 0;
@@ -53,13 +52,12 @@ export default function AdminDashboard() {
 
   const ordersData = { orders: filteredOrders.slice(0, 5) };
 
-  const statusLabel = hasFilter ? statuses.join(', ') : 'All statuses';
   const STAT_CARDS = stats ? [
-    { label: 'Total Revenue', value: formatPrice(orderRevenue), icon: '💰', sub: statusLabel },
-    { label: 'Total Orders', value: String(orderCount), icon: '📦', sub: statusLabel },
+    { label: 'Total Revenue', value: formatPrice(orderRevenue), icon: '💰', sub: hasFilter ? statuses.join(', ') : undefined },
+    { label: 'Total Orders', value: String(orderCount), icon: '📦', sub: hasFilter ? statuses.join(', ') : undefined },
     { label: 'Total Customers', value: String(hasFilter ? customerCount : stats.totalCustomers), icon: '👥', sub: hasFilter ? 'In selection' : 'Registered users' },
     { label: 'Products', value: String(hasFilter ? productCount : stats.totalProducts), icon: '🧵', sub: hasFilter ? 'In selection' : 'In catalog' },
-    { label: 'Avg Order Value', value: formatPrice(orderRevenue / (orderCount || 1)), icon: '📊', sub: statusLabel },
+    { label: 'Avg Order Value', value: formatPrice(orderRevenue / (orderCount || 1)), icon: '📊', sub: hasFilter ? statuses.join(', ') : undefined },
     { label: 'Low Stock Items', value: String(stats.lowStockCount || 0), icon: '⚠️', sub: 'Below 10m', warning: (stats.lowStockCount || 0) > 0 },
   ] : [];
 
@@ -71,38 +69,19 @@ export default function AdminDashboard() {
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Good morning, Admin! 👋</h2>
           <p className="mt-1 text-gray-500 dark:text-gray-400">Here&apos;s what&apos;s happening with RCS Fabrics today.</p>
         </div>
-        {/* Multi-select status filter dropdown */}
-        <div className="relative">
-          <button
-            onClick={() => setDropdownOpen(o => !o)}
-            className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 dark:border-dark-700 dark:bg-dark-800 dark:text-gray-300">
-            <span>
-              {hasFilter ? statuses.join(', ') : 'All Statuses'}
-            </span>
-            <svg className={`h-4 w-4 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/></svg>
-          </button>
-          {dropdownOpen && (
-            <div className="absolute right-0 z-20 mt-2 w-48 rounded-xl border border-gray-200 bg-white shadow-lg dark:border-dark-700 dark:bg-dark-800">
-              {STATUS_OPTIONS.map((s) => {
-                const active = statuses.includes(s);
-                return (
-                  <button key={s} onClick={() => toggleStatus(s)}
-                    className={`flex w-full items-center gap-2.5 px-4 py-2.5 text-sm transition-colors first:rounded-t-xl last:rounded-b-xl ${active ? 'bg-primary-50 text-primary-700 dark:bg-primary-950/20 dark:text-primary-400' : 'text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-dark-700'}`}>
-                    <span className={`h-2 w-2 rounded-full ${active ? 'bg-primary-600' : 'border border-gray-300 dark:border-dark-500'}`}/>
-                    {s}
-                    {active && <span className="ml-auto text-primary-600 dark:text-primary-400">✓</span>}
-                  </button>
-                );
-              })}
-              {hasFilter && (
-                <button onClick={() => { setStatuses([]); setDropdownOpen(false); }}
-                  className="w-full rounded-b-xl border-t border-gray-100 px-4 py-2 text-xs font-medium text-gray-400 hover:bg-gray-50 dark:border-dark-700 dark:hover:bg-dark-700">
-                  Clear filter
-                </button>
-              )}
-            </div>
-          )}
-          {dropdownOpen && <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(false)}/>}
+        {/* Multi-select status filter */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-gray-400">Status:</span>
+          {STATUS_OPTIONS.map((s) => {
+            const active = statuses.includes(s);
+            return (
+              <button key={s} onClick={() => toggleStatus(s)}
+                className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${active ? 'border-primary-500 bg-primary-600 text-white' : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:border-dark-700 dark:bg-dark-800 dark:text-gray-300'}`}>
+                {s}
+              </button>
+            );
+          })}
+          {hasFilter && <button onClick={() => setStatuses([])} className="text-xs font-medium text-gray-400 hover:underline">Clear</button>}
         </div>
       </div>
 

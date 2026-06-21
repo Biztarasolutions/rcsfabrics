@@ -1057,6 +1057,7 @@ export const updateOrderStatus = async (
       data: {
         status,
         paymentStatus,
+        ...(status === 'CANCELLED' && { cancelledBy: req.user!.email }),
       },
       include: {
         items: true,

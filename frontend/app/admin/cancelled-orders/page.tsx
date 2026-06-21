@@ -31,12 +31,13 @@ export default function CancelledOrdersPage() {
                 <th className="px-5 py-4">Products</th>
                 <th className="px-5 py-4">Total</th>
                 <th className="px-5 py-4">Payment</th>
+                <th className="px-5 py-4">Cancelled By</th>
                 <th className="px-5 py-4">Cancelled At</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 dark:divide-dark-700">
               {isLoading ? (
-                <tr><td colSpan={6} className="py-20 text-center text-gray-500">Loading...</td></tr>
+                <tr><td colSpan={7} className="py-20 text-center text-gray-500">Loading...</td></tr>
               ) : ordersData.orders?.map((order: any) => (
                 <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-dark-700/30 transition-colors">
                   <td className="px-5 py-4">
@@ -77,6 +78,19 @@ export default function CancelledOrdersPage() {
                       {order.paymentStatus}
                     </span>
                   </td>
+                  <td className="px-5 py-4 text-xs">
+                    {order.cancelledBy === 'CUSTOMER' ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2.5 py-1 text-orange-700 dark:bg-orange-950/20 dark:text-orange-400">
+                        👤 Customer
+                      </span>
+                    ) : order.cancelledBy ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-blue-700 dark:bg-blue-950/20 dark:text-blue-400" title={order.cancelledBy}>
+                        🛡️ {order.cancelledBy.split('@')[0]}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    )}
+                  </td>
                   <td className="px-5 py-4 text-xs text-gray-500 dark:text-gray-400">
                     <p>{new Date(order.updatedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
                     <p className="mt-0.5">{new Date(order.updatedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</p>
@@ -92,6 +106,7 @@ export default function CancelledOrdersPage() {
             <p className="text-gray-500">No cancelled orders</p>
           </div>
         )}
+
       </div>
 
       {ordersData.pages > 1 && (

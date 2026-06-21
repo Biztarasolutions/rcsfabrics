@@ -210,6 +210,7 @@ model Order {
   razorpayPaymentId String?        @db.VarChar(255)
   trackingNumber    String?        @db.VarChar(255)
   utrReference      String?        @db.VarChar(255)
+  cancelledBy       String?        @db.VarChar(100)
   items             OrderItem[]
   user              User           @relation(fields: [userId], references: [id])
 
