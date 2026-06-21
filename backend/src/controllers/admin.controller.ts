@@ -1068,12 +1068,24 @@ export const updateOrderStatus = async (
       );
     }
 
+    // Resolve admin display name for cancelledBy (JWT only carries email).
+    let cancelledByValue: string | undefined;
+    if (status === 'CANCELLED') {
+      const adminUser = await prisma.user.findUnique({
+        where: { id: req.user!.id },
+        select: { firstName: true, lastName: true, email: true },
+      });
+      cancelledByValue = adminUser
+        ? [adminUser.firstName, adminUser.lastName].filter(Boolean).join(' ').trim() || adminUser.email
+        : req.user!.email;
+    }
+
     const order = await prisma.order.update({
       where: { id },
       data: {
         status,
         paymentStatus,
-        ...(status === 'CANCELLED' && { cancelledBy: req.user!.email }),
+        ...(status === 'CANCELLED' && { cancelledBy: cancelledByValue }),
       },
       include: {
         items: true,
