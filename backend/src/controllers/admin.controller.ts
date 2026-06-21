@@ -1386,19 +1386,22 @@ export const createCoupon = async (
       expiresAt,
     } = req.body;
 
-    if (!code || !discountType || !discountValue || !expiresAt) {
-      throw new ApiError(400, 'Code, type, value, and expiry are required');
+    if (!code || !discountType || !discountValue) {
+      throw new ApiError(400, 'Code, type, and value are required');
     }
+
+    // If no expiry given, set far future (effectively no expiry until manually deactivated)
+    const expiry = expiresAt ? new Date(expiresAt) : new Date('2099-12-31T23:59:59Z');
 
     const coupon = await prisma.coupon.create({
       data: {
         code: code.toUpperCase(),
         discountType,
         discountValue,
-        minOrderAmount,
-        maxUses,
+        minOrderAmount: minOrderAmount || null,
+        maxUses: maxUses || null,
         startsAt: new Date(),
-        expiresAt: new Date(expiresAt),
+        expiresAt: expiry,
         isActive: true,
       },
     });
@@ -1423,6 +1426,23 @@ export const createCoupon = async (
         statusCode: 500,
       } as ApiResponse);
     }
+  }
+};
+
+export const updateCoupon = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { isActive } = req.body;
+    const coupon = await prisma.coupon.update({
+      where: { id },
+      data: { isActive },
+    });
+    res.json({ success: true, message: 'Coupon updated', data: coupon, statusCode: 200 } as ApiResponse);
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Internal server error', statusCode: 500 } as ApiResponse);
   }
 };
 
@@ -1628,6 +1648,47 @@ export const deleteCategory = async (
 };
 
 // ── Customer Management ──────────────────────────────────────────────────
+
+export const getCustomerDetail = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.user || req.user.role !== 'ADMIN') throw new ApiError(403, 'Forbidden');
+    const { id } = req.params;
+
+    const customer = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phone: true,
+        createdAt: true,
+        isActive: true,
+        orders: {
+          orderBy: { createdAt: 'desc' },
+          include: {
+            items: {
+              include: { product: { select: { sku: true, code: true } } },
+            },
+          },
+        },
+      },
+    });
+
+    if (!customer) throw new ApiError(404, 'Customer not found');
+
+    res.json({ success: true, data: customer, statusCode: 200 } as ApiResponse);
+  } catch (error) {
+    if (error instanceof ApiError) {
+      res.status(error.statusCode).json({ success: false, message: error.message, statusCode: error.statusCode } as ApiResponse);
+    } else {
+      res.status(500).json({ success: false, message: 'Internal server error', statusCode: 500 } as ApiResponse);
+    }
+  }
+};
 
 export const getCustomers = async (
   _req: AuthRequest,

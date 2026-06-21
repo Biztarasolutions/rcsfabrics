@@ -10,8 +10,10 @@ import {
   getCancelledOrders,
   getDashboardStats,
   getCustomers,
+  getCustomerDetail,
   getCoupons,
   createCoupon,
+  updateCoupon,
   deleteCoupon,
   getCategories,
   createCategory,
@@ -57,6 +59,7 @@ router.put('/orders/:id', updateOrderStatus);
 
 // Customer Management
 router.get('/customers', getCustomers);
+router.get('/customers/:id', getCustomerDetail);
 
 // Dashboard
 router.get('/dashboard/stats', getDashboardStats);
@@ -65,6 +68,7 @@ router.get('/analytics', getAnalytics);
 // Coupon Management
 router.get('/coupons', getCoupons);
 router.post('/coupons', createCoupon);
+router.patch('/coupons/:id', updateCoupon);
 router.delete('/coupons/:id', deleteCoupon);
 
 // Category Management
