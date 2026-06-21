@@ -110,6 +110,8 @@ export default function CheckoutPage() {
           price: item.product.discountPrice || item.product.basePrice,
         })),
         shippingAddress: address,
+        shippingCost: shipping,
+        tax: 0,
         paymentMethod: paymentMethod === 'upi' ? 'UPI' : paymentMethod.toUpperCase(),
         couponCode: couponData?.code,
       };

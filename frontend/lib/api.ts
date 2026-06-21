@@ -9,7 +9,9 @@ const normalizedBaseURL = API_URL.endsWith('/') ? API_URL : `${API_URL}/`;
 const api = axios.create({
   baseURL: normalizedBaseURL,
   headers: { 'Content-Type': 'application/json' },
-  timeout: 15000,
+  // Render free tier spins down after idle and can take 30-60s to cold-start.
+  // A short timeout makes the first request after idle fail (showing as zeros / "not found").
+  timeout: 60000,
 });
 
 // Request interceptor — attach token
@@ -25,6 +27,10 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res,
   (error: AxiosError<{ message?: string }>) => {
+    // Timeout / no response — usually the server waking up from idle (Render free tier cold start)
+    if (error.code === 'ECONNABORTED' || !error.response) {
+      return Promise.reject(new Error('Server is waking up, please try again in a moment.'));
+    }
     const message =
       error.response?.data?.message || error.message || 'Something went wrong';
     return Promise.reject(new Error(message));
