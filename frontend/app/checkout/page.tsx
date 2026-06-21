@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -84,6 +84,126 @@ function OrderSummary({ items, subtotal, shipping, discount, total, coupon, setC
         </div>
       )}
     </div>
+  );
+}
+
+const CONFETTI_COLORS = ['#16a34a', '#d4af37', '#3b82f6', '#f59e0b', '#ec4899', '#8b5cf6', '#10b981'];
+
+function ThankYouScreen({ order }: { order: any }) {
+  const stageRef = useRef<HTMLDivElement>(null);
+
+  const deliveryDate = new Date(order.createdAt || Date.now());
+  deliveryDate.setDate(deliveryDate.getDate() + 7);
+
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    const pieces: HTMLDivElement[] = [];
+    for (let i = 0; i < 60; i++) {
+      const el = document.createElement('div');
+      const size = 6 + Math.random() * 6;
+      el.style.cssText = [
+        'position:absolute',
+        `left:${Math.random() * 100}%`,
+        'top:-16px',
+        `width:${size}px`,
+        `height:${6 + Math.random() * 10}px`,
+        `background:${CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)]}`,
+        `border-radius:${Math.random() > 0.5 ? '50%' : '2px'}`,
+        'opacity:0',
+        'pointer-events:none',
+        `animation:rcs-fall ${1.4 + Math.random()}s ease-in ${0.3 + Math.random() * 0.8}s both`,
+      ].join(';');
+      stage.appendChild(el);
+      pieces.push(el);
+    }
+    return () => pieces.forEach(el => el.remove());
+  }, []);
+
+  return (
+    <>
+      <style>{`
+        @keyframes rcs-fall {
+          0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
+          80%  { opacity: 1; }
+          100% { transform: translateY(620px) rotate(720deg); opacity: 0; }
+        }
+        @keyframes rcs-circle-pop {
+          0%   { r: 0; opacity: 0; }
+          60%  { r: 42; opacity: 1; }
+          80%  { r: 38; }
+          100% { r: 40; opacity: 1; }
+        }
+        @keyframes rcs-check-draw {
+          0%   { stroke-dashoffset: 120; }
+          100% { stroke-dashoffset: 0; }
+        }
+      `}</style>
+      <div ref={stageRef} className="relative min-h-screen overflow-hidden bg-gray-50 py-16 dark:bg-dark-950">
+        <div className="container-main max-w-lg text-center">
+
+          {/* Animated checkmark */}
+          <div className="flex justify-center">
+            <svg width="90" height="90" viewBox="0 0 90 90" aria-hidden="true">
+              <circle
+                cx="45" cy="45"
+                fill="#16a34a"
+                style={{ animation: 'rcs-circle-pop 0.45s cubic-bezier(.34,1.56,.64,1) 0.05s both' }}
+              />
+              <polyline
+                points="26,46 39,59 64,33"
+                fill="none" stroke="white" strokeWidth="5.5" strokeLinecap="round" strokeLinejoin="round"
+                style={{ strokeDasharray: 120, strokeDashoffset: 120, animation: 'rcs-check-draw 0.45s ease-out 0.4s both' }}
+              />
+            </svg>
+          </div>
+
+          <motion.h1
+            initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.75, duration: 0.4 }}
+            className="mt-6 font-display text-3xl font-bold text-gray-900 dark:text-white"
+          >
+            Thank you for shopping with us!
+          </motion.h1>
+
+          <motion.p
+            initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9, duration: 0.4 }}
+            className="mt-2 text-gray-500 dark:text-gray-400"
+          >
+            Your order has been placed successfully.
+          </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.05, duration: 0.4 }}
+            className="mt-8 rounded-2xl border border-gray-200 bg-white p-6 text-left dark:border-dark-700 dark:bg-dark-800 space-y-4"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-500">Order Number</span>
+              <span className="font-mono font-bold text-primary-600 dark:text-primary-400">
+                #{order.orderNumber || order.id?.slice(-8).toUpperCase()}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-500">Total Paid</span>
+              <span className="font-bold text-gray-900 dark:text-white">{formatPrice(order.total)}</span>
+            </div>
+            <div className="flex items-center justify-between border-t border-gray-100 pt-4 dark:border-dark-700">
+              <span className="text-sm text-gray-500">Expected Delivery</span>
+              <span className="font-semibold text-green-600 dark:text-green-400">
+                by {deliveryDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+              </span>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.2, duration: 0.4 }}
+            className="mt-6 flex gap-3"
+          >
+            <Link href={`/account/orders/${order.id}`} className="button-secondary flex-1 py-3 text-center">View Order Details</Link>
+            <Link href="/products" className="button-primary flex-1 py-3 text-center">Continue Shopping</Link>
+          </motion.div>
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -273,47 +393,7 @@ export default function CheckoutPage() {
     codEnabled && { id: 'cod' as const, label: 'Cash on Delivery', sub: 'Pay when order arrives', icon: '💵' },
   ].filter(Boolean) as { id: 'upi' | 'razorpay' | 'cod'; label: string; sub: string; icon: string }[];
 
-  if (placedOrder) {
-    const deliveryDate = new Date(placedOrder.createdAt || Date.now());
-    deliveryDate.setDate(deliveryDate.getDate() + 7);
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-dark-950 py-16">
-        <div className="container-main max-w-lg text-center">
-          <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', damping: 20 }}>
-            <div className="flex justify-center">
-              <div className="flex h-24 w-24 items-center justify-center rounded-full bg-green-100 text-5xl dark:bg-green-900/30">🎉</div>
-            </div>
-            <h1 className="mt-6 font-display text-3xl font-bold text-gray-900 dark:text-white">Thank you for shopping with us!</h1>
-            <p className="mt-2 text-gray-500 dark:text-gray-400">Your order has been placed successfully.</p>
-
-            <div className="mt-8 rounded-2xl border border-gray-200 bg-white p-6 text-left dark:border-dark-700 dark:bg-dark-800 space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-500">Order Number</span>
-                <span className="font-mono font-bold text-primary-600 dark:text-primary-400">
-                  #{placedOrder.orderNumber || placedOrder.id?.slice(-8).toUpperCase()}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-500">Total Paid</span>
-                <span className="font-bold text-gray-900 dark:text-white">{formatPrice(placedOrder.total)}</span>
-              </div>
-              <div className="flex items-center justify-between border-t border-gray-100 pt-4 dark:border-dark-700">
-                <span className="text-sm text-gray-500">Expected Delivery</span>
-                <span className="font-semibold text-green-600 dark:text-green-400">
-                  by {deliveryDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
-                </span>
-              </div>
-            </div>
-
-            <div className="mt-6 flex gap-3">
-              <Link href={`/account/orders/${placedOrder.id}`} className="button-secondary flex-1 py-3 text-center">View Order Details</Link>
-              <Link href="/products" className="button-primary flex-1 py-3 text-center">Continue Shopping</Link>
-            </div>
-          </motion.div>
-        </div>
-      </div>
-    );
-  }
+  if (placedOrder) return <ThankYouScreen order={placedOrder} />;
 
   if (items.length === 0 && !placing) {
     return (
