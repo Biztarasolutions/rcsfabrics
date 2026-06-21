@@ -16,7 +16,7 @@ const STATUS_COLORS: Record<string, string> = {
 const STATUS_OPTIONS = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'];
 
 export default function AdminDashboard() {
-  const [statuses, setStatuses] = useState<string[]>([]); // empty = all
+  const [statuses, setStatuses] = useState<string[]>(['DELIVERED']);
   const toggleStatus = (s: string) =>
     setStatuses((prev) => prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]);
   const hasFilter = statuses.length > 0;
