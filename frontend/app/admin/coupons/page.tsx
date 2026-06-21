@@ -133,19 +133,23 @@ export default function AdminCouponsPage() {
                       }
                     </td>
                     <td className="px-5 py-4">
-                      <button
-                        onClick={() => toggleMutation.mutate({ id: coupon.id, isActive: !coupon.isActive })}
-                        disabled={toggleMutation.isPending}
-                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-all disabled:opacity-50 ${
-                          coupon.isActive
-                            ? 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400'
-                            : 'bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-dark-700 dark:text-gray-400'
-                        }`}
-                        title={coupon.isActive ? 'Click to deactivate' : 'Click to activate'}
-                      >
-                        <span className={`h-1.5 w-1.5 rounded-full ${coupon.isActive ? 'bg-green-500' : 'bg-gray-400'}`}/>
-                        {coupon.isActive ? 'Active' : 'Inactive'}
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => toggleMutation.mutate({ id: coupon.id, isActive: !coupon.isActive })}
+                          disabled={toggleMutation.isPending}
+                          title={coupon.isActive ? 'Click to turn off' : 'Click to turn on'}
+                          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 disabled:opacity-50 focus:outline-none ${
+                            coupon.isActive ? 'bg-green-500' : 'bg-gray-300 dark:bg-dark-600'
+                          }`}
+                        >
+                          <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200 ${
+                            coupon.isActive ? 'translate-x-5' : 'translate-x-0'
+                          }`}/>
+                        </button>
+                        <span className={`text-xs font-semibold ${coupon.isActive ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'}`}>
+                          {coupon.isActive ? 'On' : 'Off'}
+                        </span>
+                      </div>
                     </td>
                     <td className="px-5 py-4 text-right">
                       <button

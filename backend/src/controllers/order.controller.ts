@@ -77,6 +77,7 @@ export const createOrder = async (
 
     // Apply coupon if provided
     let discountAmount = 0;
+    let appliedCouponId: string | null = null;
     if (couponCode) {
       const coupon = await prisma.coupon.findUnique({
         where: { code: couponCode },
@@ -87,6 +88,7 @@ export const createOrder = async (
           ? (subtotal * coupon.discountValue) / 100
           : coupon.discountValue;
         discountAmount = Math.min(discount, coupon.maxDiscount || discount);
+        appliedCouponId = coupon.id;
       }
     }
 
@@ -133,6 +135,14 @@ export const createOrder = async (
         })
       )
     );
+
+    // Increment coupon usage count
+    if (appliedCouponId) {
+      await prisma.coupon.update({
+        where: { id: appliedCouponId },
+        data: { usedCount: { increment: 1 } },
+      });
+    }
 
     // Create Razorpay order for online payments (RAZORPAY or UPI)
     let razorpayOrderId: string | undefined;
