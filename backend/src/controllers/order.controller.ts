@@ -7,10 +7,22 @@ import { generateOrderNumber, calculateOrderTotal } from '@/utils/order.util';
 import { parsePagination, createPaginationMeta } from '@/utils/pagination.util';
 import { ApiError } from '@/middleware/errorHandler';
 
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID || '',
-  key_secret: process.env.RAZORPAY_KEY_SECRET || '',
-});
+// Lazily create the Razorpay client. The Razorpay constructor throws if keys are missing,
+// so constructing at module load time crashes the entire server when env vars aren't set.
+// Initialize on first use instead, and surface a clean error rather than a boot crash.
+let razorpayClient: InstanceType<typeof Razorpay> | null = null;
+const getRazorpay = (): InstanceType<typeof Razorpay> => {
+  if (!razorpayClient) {
+    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+      throw new ApiError(503, 'Online payments are not configured. Please contact support or use another payment method.');
+    }
+    razorpayClient = new Razorpay({
+      key_id: process.env.RAZORPAY_KEY_ID,
+      key_secret: process.env.RAZORPAY_KEY_SECRET,
+    });
+  }
+  return razorpayClient;
+};
 
 export const createOrder = async (
   req: AuthRequest,
@@ -126,7 +138,7 @@ export const createOrder = async (
     let razorpayOrderId: string | undefined;
     if (paymentMethod === 'RAZORPAY' || paymentMethod === 'UPI') {
       try {
-        const rzOrder = await razorpay.orders.create({
+        const rzOrder = await getRazorpay().orders.create({
           amount: Math.round(total * 100),
           currency: 'INR',
           receipt: order.orderNumber,

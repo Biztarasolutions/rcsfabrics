@@ -5,10 +5,20 @@ import { productService } from './productService';
 
 const prisma = new PrismaClient();
 
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID || '',
-  key_secret: process.env.RAZORPAY_KEY_SECRET || '',
-});
+// Lazy init — constructing Razorpay with empty keys throws and would crash the server on boot.
+let razorpayClient: InstanceType<typeof Razorpay> | null = null;
+const getRazorpay = (): InstanceType<typeof Razorpay> => {
+  if (!razorpayClient) {
+    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+      throw new Error('Razorpay is not configured (missing RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET)');
+    }
+    razorpayClient = new Razorpay({
+      key_id: process.env.RAZORPAY_KEY_ID,
+      key_secret: process.env.RAZORPAY_KEY_SECRET,
+    });
+  }
+  return razorpayClient;
+};
 
 function generateOrderNumber() {
   const y = new Date().getFullYear();
@@ -92,7 +102,7 @@ export class OrderService {
 
     // 5. Create Razorpay order (if not COD)
     if (data.paymentMethod === 'RAZORPAY') {
-      const rzOrder = await razorpay.orders.create({
+      const rzOrder = await getRazorpay().orders.create({
         amount: Math.round(total * 100),
         currency: 'INR',
         receipt: order.orderNumber,

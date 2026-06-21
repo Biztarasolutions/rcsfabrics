@@ -2,13 +2,19 @@
 import { createClient } from '@supabase/supabase-js';
 import { sendEmail } from '@/utils/email';
 
-// Supabase client for backend (service role key recommended for inserts)
-const supabaseUrl = process.env.SUPABASE_URL || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-if (!supabaseUrl || !supabaseServiceKey) {
-  throw new Error('Supabase URL or Service Role Key not set in environment');
-}
-export const supabase = createClient(supabaseUrl, supabaseServiceKey);
+// Lazy Supabase client — constructing at module load with missing env crashes the server on boot.
+let supabaseClient: any = null;
+const getSupabase = (): any => {
+  if (!supabaseClient) {
+    const supabaseUrl = process.env.SUPABASE_URL || '';
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error('Supabase URL or Service Role Key not set in environment');
+    }
+    supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
+  }
+  return supabaseClient;
+};
 
 export interface BulkEnquiry {
   name: string;
@@ -22,7 +28,7 @@ export interface BulkEnquiry {
 }
 
 export const insertBulkEnquiry = async (data: BulkEnquiry) => {
-  const { data: inserted, error } = await supabase.from('bulk_enquiries').insert([data]);
+  const { data: inserted, error } = await getSupabase().from('bulk_enquiries').insert([data]);
   if (error) {
     console.error('Supabase insert error:', error);
     throw error;
