@@ -1052,6 +1052,22 @@ export const updateOrderStatus = async (
     const { id } = req.params;
     const { status, paymentStatus } = req.body;
 
+    // Fetch current order before updating so we can conditionally restore inventory.
+    const existing = await prisma.order.findUnique({ where: { id }, include: { items: true } });
+    if (!existing) throw new ApiError(404, 'Order not found');
+
+    // Restore stock when transitioning INTO cancelled (not if already cancelled).
+    if (status === 'CANCELLED' && existing.status !== 'CANCELLED') {
+      await Promise.all(
+        existing.items.map((item) =>
+          prisma.product.update({
+            where: { id: item.productId },
+            data: { totalStock: { increment: item.quantity } },
+          })
+        )
+      );
+    }
+
     const order = await prisma.order.update({
       where: { id },
       data: {
