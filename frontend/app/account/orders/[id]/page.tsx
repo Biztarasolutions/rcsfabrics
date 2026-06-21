@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { orderApi } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
@@ -28,6 +28,7 @@ const METHOD_LABEL: Record<string, string> = {
 
 function CancelBlock({ orderId }: { orderId: string }) {
   const queryClient = useQueryClient();
+  const router = useRouter();
   const [confirming, setConfirming] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -35,12 +36,12 @@ function CancelBlock({ orderId }: { orderId: string }) {
     setLoading(true);
     try {
       await orderApi.cancelOrder(orderId);
-      toast.success('Order cancelled successfully');
-      await queryClient.invalidateQueries({ queryKey: ['order', orderId] });
-      await queryClient.invalidateQueries({ queryKey: ['my-orders'] });
+      toast.success('Order cancelled. Inventory restored.');
+      queryClient.invalidateQueries({ queryKey: ['my-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['order', orderId] });
+      router.push('/account/orders');
     } catch (err: any) {
-      toast.error(err.message || 'Failed to cancel');
-    } finally {
+      toast.error(err.message || 'Failed to cancel order');
       setLoading(false);
       setConfirming(false);
     }
@@ -209,7 +210,12 @@ export default function OrderDetailPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-gray-900 dark:text-white">{item.productName}</p>
-                    <p className="text-sm text-gray-500">{item.quantity}m × {formatPrice(item.pricePerMeter)}/m</p>
+                    {(item.product?.sku || item.product?.code) && (
+                      <p className="text-[10px] font-mono text-gray-400 bg-gray-50 dark:bg-dark-700 px-1.5 py-0.5 rounded inline-block mt-0.5">
+                        {item.product?.sku || `Code: ${item.product?.code}`}
+                      </p>
+                    )}
+                    <p className="text-sm text-gray-500 mt-0.5">{item.quantity}m × {formatPrice(item.pricePerMeter)}/m</p>
                   </div>
                   <p className="font-bold text-gray-900 dark:text-white shrink-0">
                     {formatPrice(item.total ?? item.quantity * item.pricePerMeter)}

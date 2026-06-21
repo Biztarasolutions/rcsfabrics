@@ -17,11 +17,15 @@ export default function AdminDashboard() {
   const { data: stats = null, isLoading: statsLoading } = useQuery({
     queryKey: ['admin-stats'],
     queryFn: () => adminApi.getStats().then(res => res.data.data),
+    refetchInterval: 30 * 1000,
+    refetchIntervalInBackground: false,
   });
 
   const { data: ordersData = { orders: [] }, isLoading: ordersLoading } = useQuery({
     queryKey: ['admin-recent-orders'],
     queryFn: () => adminApi.getOrders({ limit: 5 }).then(res => res.data.data),
+    refetchInterval: 30 * 1000,
+    refetchIntervalInBackground: false,
   });
 
   const STAT_CARDS = stats ? [
