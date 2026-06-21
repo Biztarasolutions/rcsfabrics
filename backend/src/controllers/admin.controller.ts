@@ -1026,9 +1026,35 @@ export const getCancelledOrders = async (
 
     const meta = createPaginationMeta(total, parsedPage, parsedLimit);
 
+    // Resolve old email-format cancelledBy values to display names (for records
+    // created before the admin had a name saved in their profile).
+    const emailsToResolve = [...new Set(
+      orders
+        .map((o: any) => o.cancelledBy)
+        .filter((v: string | null) => v && v.includes('@'))
+    )];
+    let emailNameMap: Record<string, string> = {};
+    if (emailsToResolve.length > 0) {
+      const admins = await prisma.user.findMany({
+        where: { email: { in: emailsToResolve } },
+        select: { email: true, firstName: true, lastName: true },
+      });
+      for (const admin of admins) {
+        const fullName = [admin.firstName, admin.lastName].filter(Boolean).join(' ').trim();
+        emailNameMap[admin.email] = fullName || admin.email;
+      }
+    }
+
+    const resolvedOrders = orders.map((o: any) => ({
+      ...o,
+      cancelledBy: o.cancelledBy && o.cancelledBy.includes('@')
+        ? (emailNameMap[o.cancelledBy] || o.cancelledBy)
+        : o.cancelledBy,
+    }));
+
     res.json({
       success: true,
-      data: { orders, ...meta },
+      data: { orders: resolvedOrders, ...meta },
       statusCode: 200,
     } as ApiResponse);
   } catch (error) {

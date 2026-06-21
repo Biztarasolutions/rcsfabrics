@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/store';
@@ -24,15 +24,27 @@ const SIDEBAR_COLLAPSED_KEY = 'admin-sidebar-collapsed';
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { logout } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   const handleLogout = () => {
     logout();
     queryClient.clear();
     router.push('/auth');
   };
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   useEffect(() => {
     const stored = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
@@ -179,15 +191,47 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </button>
             <h1 className="truncate text-lg font-semibold text-gray-900 dark:text-white">{currentLabel}</h1>
           </div>
-          <div className="flex shrink-0 items-center gap-3">
+          <div ref={userMenuRef} className="relative flex shrink-0 items-center">
             <button
               type="button"
-              onClick={handleLogout}
-              className="text-sm font-medium text-red-600 hover:text-red-700 dark:text-red-400"
+              onClick={() => setUserMenuOpen((v) => !v)}
+              className="flex items-center gap-2 rounded-full border border-gray-200 pl-2 pr-3 py-1.5 text-sm font-medium hover:bg-gray-50 dark:border-dark-700 dark:hover:bg-dark-800 transition-colors"
             >
-              Logout
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary-600 text-xs font-bold text-white">
+                {user?.firstName?.[0]?.toUpperCase() || 'A'}
+              </div>
+              <span className="hidden sm:block text-gray-700 dark:text-gray-200">
+                {user?.firstName || 'Admin'}
+              </span>
+              <svg className="h-3.5 w-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
             </button>
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-600 text-sm font-bold text-white">A</div>
+
+            {userMenuOpen && (
+              <div className="absolute right-0 top-full mt-2 w-52 rounded-2xl border border-gray-100 bg-white p-2 shadow-xl dark:border-dark-700 dark:bg-dark-800 z-50">
+                <div className="px-3 py-2 mb-1 border-b border-gray-100 dark:border-dark-700">
+                  <p className="text-xs font-semibold text-gray-900 dark:text-white">{user?.firstName} {user?.lastName}</p>
+                  <p className="text-xs text-gray-400 truncate">{user?.email}</p>
+                </div>
+                <Link href="/account" onClick={() => setUserMenuOpen(false)}
+                  className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-dark-700 transition-colors">
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                  My Account
+                </Link>
+                <Link href="/" onClick={() => setUserMenuOpen(false)}
+                  className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-dark-700 transition-colors">
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                  Back to Store
+                </Link>
+                <div className="my-1 border-t border-gray-100 dark:border-dark-700"/>
+                <button onClick={() => { setUserMenuOpen(false); handleLogout(); }}
+                  className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/20 transition-colors">
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                  Logout
+                </button>
+              </div>
+            )}
           </div>
         </header>
 
