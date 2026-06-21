@@ -31,7 +31,7 @@ const UPI_KEYS = [
 
 export default function AdminSettingsPage() {
   const queryClient = useQueryClient();
-  const { user, setUser } = useAuthStore();
+  const { setUser } = useAuthStore();
 
   // Admin profile state
   const [profileForm, setProfileForm] = React.useState({ firstName: '', lastName: '', phone: '' });
