@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCartStore, useAuthStore, useThemeStore, useWishlistStore, useUIStore } from '@/lib/store';
+import { queryClient } from '@/components/common/Providers';
 
 const NAV_LINKS = [
   { label: 'Home', href: '/' },
@@ -65,6 +66,7 @@ export default function Header() {
 
   const handleLogout = () => {
     logout();
+    queryClient.clear();
     setUserMenuOpen(false);
     router.push('/');
   };

@@ -5,7 +5,7 @@ import { Toaster } from 'react-hot-toast';
 import { useThemeStore } from '@/lib/store';
 import CartSidebar from '@/components/common/CartSidebar';
 
-const queryClient = new QueryClient({
+export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60 * 30, // 30 minutes - keep data fresh longer

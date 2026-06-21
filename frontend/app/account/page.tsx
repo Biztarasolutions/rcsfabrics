@@ -7,6 +7,7 @@ import { formatPrice } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { authApi, orderApi, userApi } from '@/lib/api';
+import { queryClient } from '@/components/common/Providers';
 import toast from 'react-hot-toast';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -84,7 +85,7 @@ export default function AccountPage() {
     country: 'India',
   });
 
-  const handleLogout = () => { logout(); router.push('/'); };
+  const handleLogout = () => { logout(); queryClient.clear(); router.push('/'); };
 
   const handleSaveProfile = async () => {
     setSavingProfile(true);
