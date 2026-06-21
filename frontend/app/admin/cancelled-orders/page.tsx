@@ -85,7 +85,7 @@ export default function CancelledOrdersPage() {
                       </span>
                     ) : order.cancelledBy ? (
                       <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-blue-700 dark:bg-blue-950/20 dark:text-blue-400" title={order.cancelledBy}>
-                        🛡️ {order.cancelledBy.split('@')[0]}
+                        🛡️ {order.cancelledBy.includes('@') ? 'Admin' : order.cancelledBy}
                       </span>
                     ) : (
                       <span className="text-gray-400">—</span>
