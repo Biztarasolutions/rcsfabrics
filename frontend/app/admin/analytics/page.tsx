@@ -151,11 +151,14 @@ function MetricCard({ icon, label, value, sub, color = 'bg-primary-50 dark:bg-pr
 }
 
 // ── Main page ────────────────────────────────────────────────────────────
+const STATUS_OPTIONS = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'];
+
 export default function AnalyticsPage() {
   const today = new Date();
   const [from, setFrom] = useState(toYMD(addDays(today, -29)));
   const [to, setTo] = useState(toYMD(today));
   const [activePreset, setActivePreset] = useState(1); // '30 days'
+  const [status, setStatus] = useState(''); // '' = all (except cancelled)
 
   const applyPreset = (days: number, idx: number) => {
     setActivePreset(idx);
@@ -169,8 +172,8 @@ export default function AnalyticsPage() {
   };
 
   const { data: analytics, isLoading } = useQuery({
-    queryKey: ['admin-analytics', from, to],
-    queryFn: () => adminApi.getAnalytics({ from, to }).then(r => r.data.data),
+    queryKey: ['admin-analytics', from, to, status],
+    queryFn: () => adminApi.getAnalytics({ from, to, status: status || undefined }).then(r => r.data.data),
   });
 
   const daily: { date: string; revenue: number; orders: number }[] = analytics?.daily ?? [];
@@ -214,6 +217,12 @@ export default function AnalyticsPage() {
               onChange={e => { setTo(e.target.value); setActivePreset(-1); }}
               className="bg-transparent text-sm text-gray-700 dark:text-gray-200 outline-none"/>
           </div>
+          {/* Status filter */}
+          <select value={status} onChange={e => setStatus(e.target.value)}
+            className="rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 outline-none dark:border-dark-700 dark:bg-dark-800 dark:text-gray-200">
+            <option value="">All (excl. cancelled)</option>
+            {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
         </div>
       </div>
 

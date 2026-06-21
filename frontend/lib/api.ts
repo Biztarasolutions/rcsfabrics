@@ -78,7 +78,7 @@ export const orderApi = {
 };
 
 export const adminApi = {
-  getStats: () => api.get('admin/dashboard/stats'),
+  getStats: (params?: { status?: string }) => api.get('admin/dashboard/stats', { params }),
   getAdminProducts: (params?: any) => api.get('admin/products', { params }),
   createProductGroup: async (data: any) => {
     const res = await api.post('admin/products/group', data);
@@ -114,7 +114,7 @@ export const adminApi = {
   deleteBanner: (id: string) => api.delete(`admin/banners/${id}`),
   getSettings: () => api.get('admin/settings'),
   updateSetting: (key: string, value: string) => api.put(`admin/settings/${key}`, { value }),
-  getAnalytics: (params?: { from?: string; to?: string }) => api.get('admin/analytics', { params }),
+  getAnalytics: (params?: { from?: string; to?: string; status?: string }) => api.get('admin/analytics', { params }),
 };
 
 export const publicApi = {

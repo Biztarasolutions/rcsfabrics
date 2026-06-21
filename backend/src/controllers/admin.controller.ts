@@ -1084,10 +1084,15 @@ export const getDashboardStats = async (
       throw new ApiError(403, 'Only admins can access this');
     }
 
+    // Optional status filter — affects order count + revenue (not customers/products)
+    const { status } = req.query as { status?: string };
+    const orderWhere: any = status ? { status } : {};
+
     const [totalOrders, totalRevenue, totalCustomers, totalProducts] = await Promise.all([
-      prisma.order.count(),
+      prisma.order.count({ where: orderWhere }),
       prisma.order.aggregate({
         _sum: { total: true },
+        where: orderWhere,
       }),
       prisma.user.count({ where: { role: 'CUSTOMER' } }),
       prisma.product.count(),
@@ -1125,17 +1130,20 @@ export const getAnalytics = async (req: AuthRequest, res: Response): Promise<voi
   try {
     if (!req.user || req.user.role !== 'ADMIN') throw new ApiError(403, 'Forbidden');
 
-    const { from, to } = req.query as { from?: string; to?: string };
+    const { from, to, status } = req.query as { from?: string; to?: string; status?: string };
 
     const startDate = from ? new Date(from) : new Date(Date.now() - 29 * 24 * 60 * 60 * 1000);
     const endDate = to ? new Date(to) : new Date();
     endDate.setHours(23, 59, 59, 999);
 
-    // All non-cancelled orders in date range
+    // Status filter: specific status if given, otherwise all except CANCELLED
+    const statusFilter: any = status ? { status } : { status: { not: 'CANCELLED' } };
+
+    // Orders in date range matching status filter
     const orders = await prisma.order.findMany({
       where: {
         createdAt: { gte: startDate, lte: endDate },
-        status: { not: 'CANCELLED' },
+        ...statusFilter,
       },
       select: {
         id: true,
@@ -1192,7 +1200,7 @@ export const getAnalytics = async (req: AuthRequest, res: Response): Promise<voi
     // Top products in period (from order items)
     const topProductsRaw = await prisma.orderItem.groupBy({
       by: ['productName'],
-      where: { order: { createdAt: { gte: startDate, lte: endDate } } },
+      where: { order: { createdAt: { gte: startDate, lte: endDate }, ...statusFilter } },
       _sum: { quantity: true, total: true },
       orderBy: { _sum: { total: 'desc' } },
       take: 5,

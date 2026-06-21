@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api';
@@ -11,38 +11,51 @@ const STATUS_COLORS: Record<string, string> = {
   PROCESSING: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
   SHIPPED: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
   DELIVERED: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+  CANCELLED: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
 };
+const STATUS_OPTIONS = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'];
 
 export default function AdminDashboard() {
+  const [status, setStatus] = useState(''); // '' = all statuses
+
   const { data: stats = null, isLoading: statsLoading } = useQuery({
-    queryKey: ['admin-stats'],
-    queryFn: () => adminApi.getStats().then(res => res.data.data),
+    queryKey: ['admin-stats', status],
+    queryFn: () => adminApi.getStats({ status: status || undefined }).then(res => res.data.data),
     refetchInterval: 30 * 1000,
     refetchIntervalInBackground: false,
   });
 
   const { data: ordersData = { orders: [] }, isLoading: ordersLoading } = useQuery({
-    queryKey: ['admin-recent-orders'],
-    queryFn: () => adminApi.getOrders({ limit: 5 }).then(res => res.data.data),
+    queryKey: ['admin-recent-orders', status],
+    queryFn: () => adminApi.getOrders({ limit: 5, status: status || undefined }).then(res => res.data.data),
     refetchInterval: 30 * 1000,
     refetchIntervalInBackground: false,
   });
 
+  const statusLabel = status ? status.charAt(0) + status.slice(1).toLowerCase() : 'All time';
   const STAT_CARDS = stats ? [
-    { label: 'Total Revenue', value: formatPrice(stats.totalRevenue), icon: '💰', sub: 'All time' },
-    { label: 'Total Orders', value: String(stats.totalOrders), icon: '📦', sub: 'All time' },
+    { label: 'Total Revenue', value: formatPrice(stats.totalRevenue), icon: '💰', sub: statusLabel },
+    { label: 'Total Orders', value: String(stats.totalOrders), icon: '📦', sub: statusLabel },
     { label: 'Total Customers', value: String(stats.totalCustomers), icon: '👥', sub: 'Registered users' },
     { label: 'Products', value: String(stats.totalProducts), icon: '🧵', sub: 'In catalog' },
-    { label: 'Avg Order Value', value: formatPrice(stats.totalRevenue / (stats.totalOrders || 1)), icon: '📊', sub: 'Average' },
+    { label: 'Avg Order Value', value: formatPrice(stats.totalRevenue / (stats.totalOrders || 1)), icon: '📊', sub: statusLabel },
     { label: 'Low Stock Items', value: String(stats.lowStockCount || 0), icon: '⚠️', sub: 'Below 10m', warning: (stats.lowStockCount || 0) > 0 },
   ] : [];
 
   return (
     <div className="space-y-6">
       {/* Welcome */}
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Good morning, Admin! 👋</h2>
-        <p className="mt-1 text-gray-500 dark:text-gray-400">Here&apos;s what&apos;s happening with RCS Fabrics today.</p>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Good morning, Admin! 👋</h2>
+          <p className="mt-1 text-gray-500 dark:text-gray-400">Here&apos;s what&apos;s happening with RCS Fabrics today.</p>
+        </div>
+        {/* Status filter */}
+        <select value={status} onChange={(e) => setStatus(e.target.value)}
+          className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 outline-none dark:border-dark-700 dark:bg-dark-800 dark:text-gray-200">
+          <option value="">All Statuses</option>
+          {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
       </div>
 
       {/* Stats grid */}
