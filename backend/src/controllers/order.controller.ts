@@ -363,3 +363,37 @@ export const cancelOrder = async (
     }
   }
 };
+
+export const validateCoupon = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.userId) throw new ApiError(401, 'Unauthorized');
+    const { code, amount } = req.body;
+    if (!code) throw new ApiError(400, 'Coupon code is required');
+
+    const coupon = await prisma.coupon.findUnique({ where: { code: String(code).toUpperCase() } });
+    if (!coupon || !coupon.isActive) throw new ApiError(404, 'Invalid or expired coupon code');
+
+    const minOrder = (coupon as any).minOrderAmount ?? 0;
+    if (amount < minOrder) throw new ApiError(400, `Minimum order of ${minOrder} required for this coupon`);
+
+    const discount = coupon.discountType === 'PERCENTAGE'
+      ? Math.round((Number(amount) * coupon.discountValue) / 100)
+      : coupon.discountValue;
+    const finalDiscount = coupon.maxDiscount ? Math.min(discount, coupon.maxDiscount) : discount;
+
+    res.json({
+      success: true,
+      data: { code: coupon.code, type: coupon.discountType === 'PERCENTAGE' ? 'PERCENT' : 'FIXED', value: coupon.discountValue, discount: finalDiscount },
+      statusCode: 200,
+    } as ApiResponse);
+  } catch (error) {
+    if (error instanceof ApiError) {
+      res.status(error.statusCode).json({ success: false, message: error.message, statusCode: error.statusCode } as ApiResponse);
+    } else {
+      res.status(500).json({ success: false, message: 'Internal server error', statusCode: 500 } as ApiResponse);
+    }
+  }
+};

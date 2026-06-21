@@ -50,7 +50,7 @@ function CancelBlock({ orderId }: { orderId: string }) {
   return (
     <div className="rounded-2xl border border-red-200 bg-red-50 p-5 dark:border-red-900/40 dark:bg-red-950/20">
       <p className="font-semibold text-red-800 dark:text-red-300">Cancel this order?</p>
-      <p className="mt-1 text-sm text-red-600 dark:text-red-400">You can cancel before the order is shipped. Stock will be restored.</p>
+      <p className="mt-1 text-sm text-red-600 dark:text-red-400">You can cancel before the order is shipped.</p>
       {confirming ? (
         <div className="mt-3 flex gap-3">
           <button onClick={handleCancel} disabled={loading}
@@ -140,7 +140,7 @@ export default function OrderDetailPage() {
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 text-xl dark:bg-red-950/40">✕</div>
                 <div>
                   <p className="font-semibold">Order Cancelled</p>
-                  <p className="text-xs text-red-500">This order has been cancelled and inventory has been restored.</p>
+                  <p className="text-xs text-red-500">This order has been cancelled.</p>
                 </div>
               </div>
             ) : (
@@ -210,11 +210,18 @@ export default function OrderDetailPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-gray-900 dark:text-white">{item.productName}</p>
-                    {(item.product?.sku || item.product?.code) && (
-                      <p className="text-[10px] font-mono text-gray-400 bg-gray-50 dark:bg-dark-700 px-1.5 py-0.5 rounded inline-block mt-0.5">
-                        {item.product?.sku || `Code: ${item.product?.code}`}
-                      </p>
-                    )}
+                    <div className="flex flex-wrap gap-1 mt-0.5">
+                      {(item.product?.sku || item.product?.code) && (
+                        <p className="text-[10px] font-mono text-gray-400 bg-gray-50 dark:bg-dark-700 px-1.5 py-0.5 rounded">
+                          {item.product?.sku || `Code: ${item.product?.code}`}
+                        </p>
+                      )}
+                      {item.product?.color && (
+                        <p className="text-[10px] bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded">
+                          {item.product.color}
+                        </p>
+                      )}
+                    </div>
                     <p className="text-sm text-gray-500 mt-0.5">{item.quantity}m × {formatPrice(item.pricePerMeter)}/m</p>
                   </div>
                   <p className="font-bold text-gray-900 dark:text-white shrink-0">

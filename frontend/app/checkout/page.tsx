@@ -12,6 +12,43 @@ import { useQuery } from '@tanstack/react-query';
 
 const STEPS = ['Cart Review', 'Shipping Address', 'Payment'];
 
+function OrderSummary({ items, subtotal, shipping, discount, total, coupon, setCoupon, couponData, onApplyCoupon }: {
+  items: any[]; subtotal: number; shipping: number; discount: number; total: number;
+  coupon: string; setCoupon: (v: string) => void; couponData: any; onApplyCoupon: () => void;
+}) {
+  return (
+    <div className="sticky top-24 rounded-2xl border border-gray-200 bg-gray-50 p-6 dark:border-dark-700 dark:bg-dark-800">
+      <h3 className="font-display text-xl font-bold text-gray-900 dark:text-white">Order Summary</h3>
+      <div className="mt-4 max-h-60 space-y-3 overflow-y-auto scrollbar-hide">
+        {items.map((item) => (
+          <div key={item.id} className="flex items-center gap-3">
+            <Image src={item.product.images?.[0]?.url || '/placeholder.png'} alt={item.product.name} width={48} height={48} className="rounded-lg object-cover"/>
+            <div className="flex-1 min-w-0">
+              <p className="truncate text-sm font-medium text-gray-900 dark:text-white">{item.product.name}</p>
+              <p className="text-xs text-gray-500">{item.quantity}m</p>
+            </div>
+            <p className="text-sm font-semibold">{formatPrice((item.product.discountPrice || item.product.basePrice) * item.quantity)}</p>
+          </div>
+        ))}
+      </div>
+      <div className="mt-5 space-y-2 border-t border-gray-200 pt-4 dark:border-dark-700 text-sm">
+        <div className="flex justify-between text-gray-600 dark:text-gray-400"><span>Subtotal</span><span>{formatPrice(subtotal)}</span></div>
+        <div className="flex justify-between text-gray-600 dark:text-gray-400"><span>Shipping</span><span>{shipping === 0 ? '🎁 Free' : formatPrice(shipping)}</span></div>
+        {couponData && <div className="flex justify-between text-green-600"><span>Discount ({couponData.code})</span><span>-{formatPrice(discount)}</span></div>}
+        <div className="flex justify-between border-t border-gray-200 pt-3 dark:border-dark-700 font-bold text-base text-gray-900 dark:text-white"><span>Total</span><span>{formatPrice(total)}</span></div>
+      </div>
+      {!couponData && (
+        <div className="mt-4 flex gap-2">
+          <input value={coupon} onChange={(e) => setCoupon(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && onApplyCoupon()}
+            placeholder="Coupon code" className="input-field flex-1 py-2 text-sm"/>
+          <button onClick={onApplyCoupon} className="button-secondary px-4 py-2 text-sm">Apply</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function CheckoutPage() {
   const [step, setStep] = useState(0);
   const [address, setAddress] = useState({
@@ -25,6 +62,7 @@ export default function CheckoutPage() {
   const [couponData, setCouponData] = useState<any>(null);
   const [placing, setPlacing] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'razorpay' | 'upi' | 'cod'>('upi');
+  const [placedOrder, setPlacedOrder] = useState<any>(null);
 
   const { items, clearCart, totalPrice } = useCartStore();
   const { user } = useAuthStore();
@@ -136,7 +174,7 @@ export default function CheckoutPage() {
               });
               clearCart();
               toast.success('🎉 Payment successful! Your order is confirmed.');
-              router.push(`/account/orders/${order.id}`);
+              setPlacedOrder(order);
             } catch {
               toast.error('Payment verification failed. Please contact support with your order ID.');
             }
@@ -175,7 +213,7 @@ export default function CheckoutPage() {
 
       clearCart();
       toast.success('🎉 Order placed successfully!');
-      router.push(`/account/orders/${order.id}`);
+      setPlacedOrder(order);
     } catch (error: any) {
       toast.error(error.message || 'Failed to place order. Please try again.');
       setPlacing(false);
@@ -192,35 +230,47 @@ export default function CheckoutPage() {
     codEnabled && { id: 'cod' as const, label: 'Cash on Delivery', sub: 'Pay when order arrives', icon: '💵' },
   ].filter(Boolean) as { id: 'upi' | 'razorpay' | 'cod'; label: string; sub: string; icon: string }[];
 
-  const OrderSummary = () => (
-    <div className="sticky top-24 rounded-2xl border border-gray-200 bg-gray-50 p-6 dark:border-dark-700 dark:bg-dark-800">
-      <h3 className="font-display text-xl font-bold text-gray-900 dark:text-white">Order Summary</h3>
-      <div className="mt-4 max-h-60 space-y-3 overflow-y-auto scrollbar-hide">
-        {items.map((item) => (
-          <div key={item.id} className="flex items-center gap-3">
-            <Image src={item.product.images?.[0]?.url || '/placeholder.png'} alt={item.product.name} width={48} height={48} className="rounded-lg object-cover"/>
-            <div className="flex-1 min-w-0">
-              <p className="truncate text-sm font-medium text-gray-900 dark:text-white">{item.product.name}</p>
-              <p className="text-xs text-gray-500">{item.quantity}m</p>
+  if (placedOrder) {
+    const deliveryDate = new Date(placedOrder.createdAt || Date.now());
+    deliveryDate.setDate(deliveryDate.getDate() + 7);
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-dark-950 py-16">
+        <div className="container-main max-w-lg text-center">
+          <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', damping: 20 }}>
+            <div className="flex justify-center">
+              <div className="flex h-24 w-24 items-center justify-center rounded-full bg-green-100 text-5xl dark:bg-green-900/30">🎉</div>
             </div>
-            <p className="text-sm font-semibold">{formatPrice((item.product.discountPrice || item.product.basePrice) * item.quantity)}</p>
-          </div>
-        ))}
-      </div>
-      <div className="mt-5 space-y-2 border-t border-gray-200 pt-4 dark:border-dark-700 text-sm">
-        <div className="flex justify-between text-gray-600 dark:text-gray-400"><span>Subtotal</span><span>{formatPrice(subtotal)}</span></div>
-        <div className="flex justify-between text-gray-600 dark:text-gray-400"><span>Shipping</span><span>{shipping === 0 ? '🎁 Free' : formatPrice(shipping)}</span></div>
-        {couponData && <div className="flex justify-between text-green-600"><span>Discount ({couponData.code})</span><span>-{formatPrice(discount)}</span></div>}
-        <div className="flex justify-between border-t border-gray-200 pt-3 dark:border-dark-700 font-bold text-base text-gray-900 dark:text-white"><span>Total</span><span>{formatPrice(total)}</span></div>
-      </div>
-      {!couponData && (
-        <div className="mt-4 flex gap-2">
-          <input value={coupon} onChange={(e) => setCoupon(e.target.value)} placeholder="Coupon code" className="input-field flex-1 py-2 text-sm"/>
-          <button onClick={handleCoupon} className="button-secondary px-4 py-2 text-sm">Apply</button>
+            <h1 className="mt-6 font-display text-3xl font-bold text-gray-900 dark:text-white">Thank you for shopping with us!</h1>
+            <p className="mt-2 text-gray-500 dark:text-gray-400">Your order has been placed successfully.</p>
+
+            <div className="mt-8 rounded-2xl border border-gray-200 bg-white p-6 text-left dark:border-dark-700 dark:bg-dark-800 space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-500">Order Number</span>
+                <span className="font-mono font-bold text-primary-600 dark:text-primary-400">
+                  #{placedOrder.orderNumber || placedOrder.id?.slice(-8).toUpperCase()}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-500">Total Paid</span>
+                <span className="font-bold text-gray-900 dark:text-white">{formatPrice(placedOrder.total)}</span>
+              </div>
+              <div className="flex items-center justify-between border-t border-gray-100 pt-4 dark:border-dark-700">
+                <span className="text-sm text-gray-500">Expected Delivery</span>
+                <span className="font-semibold text-green-600 dark:text-green-400">
+                  by {deliveryDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-6 flex gap-3">
+              <Link href={`/account/orders/${placedOrder.id}`} className="button-secondary flex-1 py-3 text-center">View Order Details</Link>
+              <Link href="/products" className="button-primary flex-1 py-3 text-center">Continue Shopping</Link>
+            </div>
+          </motion.div>
         </div>
-      )}
-    </div>
-  );
+      </div>
+    );
+  }
 
   if (items.length === 0 && !placing) {
     return (
@@ -376,7 +426,12 @@ export default function CheckoutPage() {
               </motion.div>
             )}
           </div>
-          <div><OrderSummary /></div>
+          <div>
+            <OrderSummary
+              items={items} subtotal={subtotal} shipping={shipping} discount={discount} total={total}
+              coupon={coupon} setCoupon={setCoupon} couponData={couponData} onApplyCoupon={handleCoupon}
+            />
+          </div>
         </div>
       </div>
 

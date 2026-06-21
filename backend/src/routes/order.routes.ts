@@ -5,10 +5,12 @@ import {
   getOrderById,
   verifyPayment,
   cancelOrder,
+  validateCoupon,
 } from '@/controllers/order.controller';
 
 const router = Router();
 
+router.post('/validate-coupon', validateCoupon);
 router.post('/', createOrder);
 router.get('/', getOrders);
 router.post('/:id/verify', verifyPayment);

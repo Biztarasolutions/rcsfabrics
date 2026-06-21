@@ -316,11 +316,18 @@ export default function AdminOrdersPage() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-sm text-gray-900 dark:text-white">{item.productName}</p>
-                          {(item.product?.sku || item.product?.code) && (
-                            <p className="text-[10px] font-mono bg-gray-100 dark:bg-dark-600 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded inline-block mt-0.5">
-                              {item.product?.sku || `Code: ${item.product?.code}`}
-                            </p>
-                          )}
+                          <div className="flex flex-wrap gap-1 mt-0.5">
+                            {(item.product?.sku || item.product?.code) && (
+                              <p className="text-[10px] font-mono bg-gray-100 dark:bg-dark-600 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded">
+                                {item.product?.sku || `Code: ${item.product?.code}`}
+                              </p>
+                            )}
+                            {item.product?.color && (
+                              <p className="text-[10px] bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded">
+                                {item.product.color}
+                              </p>
+                            )}
+                          </div>
                           <p className="text-xs text-gray-500 mt-1">{item.quantity}m × {formatPrice(item.pricePerMeter)}/m</p>
                         </div>
                         <p className="font-bold text-sm text-gray-900 dark:text-white shrink-0">{formatPrice(item.total)}</p>
@@ -330,46 +337,70 @@ export default function AdminOrdersPage() {
                 </div>
 
                 {/* ── Price Breakdown ── */}
-                <div>
-                  <p className="mb-2 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Price Breakdown</p>
-                  <div className="rounded-xl border border-gray-100 dark:border-dark-700 overflow-hidden">
-                    <div className="space-y-0 divide-y divide-gray-50 dark:divide-dark-700 text-sm">
-                      <div className="flex justify-between px-4 py-3 text-gray-600 dark:text-gray-400">
-                        <span>Items subtotal</span>
-                        <span className="font-medium text-gray-900 dark:text-white">{formatPrice(selectedOrder.subtotal)}</span>
-                      </div>
-                      {selectedOrder.discountAmount > 0 && (
-                        <div className="flex justify-between px-4 py-3 bg-green-50 dark:bg-green-950/20">
-                          <span className="text-green-700 dark:text-green-400 flex items-center gap-1.5">
-                            🎟️ Coupon discount
-                            {selectedOrder.couponCode && (
-                              <span className="font-mono text-xs bg-green-100 dark:bg-green-900/40 px-1.5 py-0.5 rounded border border-green-200 dark:border-green-800">
-                                {selectedOrder.couponCode}
+                {(() => {
+                  const items = selectedOrder.items || [];
+                  const mrpTotal = items.reduce((s: number, it: any) => {
+                    const base = Number(it.product?.basePrice ?? it.pricePerMeter);
+                    return s + base * it.quantity;
+                  }, 0);
+                  const paidSubtotal = items.reduce((s: number, it: any) => s + Number(it.pricePerMeter) * it.quantity, 0);
+                  const storeDiscount = Math.max(0, mrpTotal - paidSubtotal);
+                  const couponDiscount = Number(selectedOrder.discountAmount || 0);
+                  return (
+                    <div>
+                      <p className="mb-2 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Price Breakdown</p>
+                      <div className="rounded-xl border border-gray-100 dark:border-dark-700 overflow-hidden">
+                        <div className="space-y-0 divide-y divide-gray-50 dark:divide-dark-700 text-sm">
+                          {storeDiscount > 0.01 && (
+                            <div className="flex justify-between px-4 py-3 text-gray-500 dark:text-gray-400">
+                              <span>Items (MRP)</span>
+                              <span className="line-through">{formatPrice(mrpTotal)}</span>
+                            </div>
+                          )}
+                          {storeDiscount > 0.01 && (
+                            <div className="flex justify-between px-4 py-3 bg-green-50 dark:bg-green-950/20">
+                              <span className="text-green-700 dark:text-green-400">🏷️ Store discount</span>
+                              <span className="font-semibold text-green-700 dark:text-green-400">−{formatPrice(storeDiscount)}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between px-4 py-3 text-gray-600 dark:text-gray-400">
+                            <span>Items subtotal</span>
+                            <span className="font-medium text-gray-900 dark:text-white">{formatPrice(selectedOrder.subtotal)}</span>
+                          </div>
+                          {couponDiscount > 0 && (
+                            <div className="flex justify-between px-4 py-3 bg-green-50 dark:bg-green-950/20">
+                              <span className="text-green-700 dark:text-green-400 flex items-center gap-1.5">
+                                🎟️ Coupon
+                                {selectedOrder.couponCode && (
+                                  <span className="font-mono text-xs bg-green-100 dark:bg-green-900/40 px-1.5 py-0.5 rounded border border-green-200 dark:border-green-800">
+                                    {selectedOrder.couponCode}
+                                  </span>
+                                )}
                               </span>
-                            )}
-                          </span>
-                          <span className="font-semibold text-green-700 dark:text-green-400">−{formatPrice(selectedOrder.discountAmount)}</span>
+                              <span className="font-semibold text-green-700 dark:text-green-400">−{formatPrice(couponDiscount)}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between px-4 py-3 text-gray-600 dark:text-gray-400">
+                            <span>Shipping</span>
+                            <span className={selectedOrder.shippingCost > 0 ? 'font-medium text-gray-900 dark:text-white' : 'font-medium text-green-600 dark:text-green-400'}>
+                              {selectedOrder.shippingCost > 0 ? formatPrice(selectedOrder.shippingCost) : 'Free'}
+                            </span>
+                          </div>
+                          {selectedOrder.tax > 0 && (
+                            <div className="flex justify-between px-4 py-3 text-gray-600 dark:text-gray-400">
+                              <span>Tax</span>
+                              <span className="font-medium text-gray-900 dark:text-white">{formatPrice(selectedOrder.tax)}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between px-4 py-3 bg-gray-50 dark:bg-dark-700 font-bold text-base text-gray-900 dark:text-white">
+                            <span>Total</span>
+                            <span className="text-primary-600 dark:text-primary-400">{formatPrice(selectedOrder.total)}</span>
+                          </div>
                         </div>
-                      )}
-                      <div className="flex justify-between px-4 py-3 text-gray-600 dark:text-gray-400">
-                        <span>Shipping</span>
-                        <span className={selectedOrder.shippingCost > 0 ? 'font-medium text-gray-900 dark:text-white' : 'font-medium text-green-600 dark:text-green-400'}>
-                          {selectedOrder.shippingCost > 0 ? formatPrice(selectedOrder.shippingCost) : 'Free'}
-                        </span>
-                      </div>
-                      {selectedOrder.tax > 0 && (
-                        <div className="flex justify-between px-4 py-3 text-gray-600 dark:text-gray-400">
-                          <span>Tax</span>
-                          <span className="font-medium text-gray-900 dark:text-white">{formatPrice(selectedOrder.tax)}</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between px-4 py-3 bg-gray-50 dark:bg-dark-700 font-bold text-base text-gray-900 dark:text-white">
-                        <span>Total</span>
-                        <span className="text-primary-600 dark:text-primary-400">{formatPrice(selectedOrder.total)}</span>
                       </div>
                     </div>
-                  </div>
-                </div>
+                  );
+                })()}
 
                 {/* ── Tracking ── */}
                 {selectedOrder.trackingNumber && (
