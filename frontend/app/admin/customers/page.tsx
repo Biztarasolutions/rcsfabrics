@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api';
@@ -21,15 +21,23 @@ function parseAddress(raw: any) {
   try { return JSON.parse(raw); } catch { return null; }
 }
 
-function CustomerDrawer({ customerId, onClose }: { customerId: string; onClose: () => void }) {
-  const { data: customer, isLoading } = useQuery({
-    queryKey: ['admin-customer-detail', customerId],
-    queryFn: () => adminApi.getCustomerDetail(customerId).then(r => r.data.data),
-    enabled: !!customerId,
+function CustomerDrawer({ customer, onClose }: { customer: any; onClose: () => void }) {
+  // Compute this customer's full history client-side from the live orders endpoint,
+  // so it works without the dedicated /admin/customers/:id route on the backend.
+  const { data: allOrders = [], isLoading } = useQuery({
+    queryKey: ['admin-all-orders-customer'],
+    queryFn: () => adminApi.getOrders({ limit: 1000 }).then(r => r.data.data?.orders ?? r.data.data ?? []),
   });
 
-  const totalSpent = customer?.orders?.reduce((s: number, o: any) => s + Number(o.total), 0) || 0;
-  const orderCount = customer?.orders?.length || 0;
+  const orders = useMemo(
+    () => (allOrders as any[])
+      .filter((o) => o.userId === customer.id)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+    [allOrders, customer.id]
+  );
+
+  const totalSpent = orders.reduce((s: number, o: any) => s + Number(o.total || 0), 0);
+  const orderCount = orders.length;
 
   return (
     <div className="fixed inset-0 z-50 flex" onClick={(e) => e.target === e.currentTarget && onClose()}>
@@ -45,29 +53,22 @@ function CustomerDrawer({ customerId, onClose }: { customerId: string; onClose: 
         </div>
 
         <div className="p-6 space-y-6">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-20">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-600 border-t-transparent"/>
-            </div>
-          ) : !customer ? (
-            <p className="text-center text-gray-500 py-10">Customer not found</p>
-          ) : (
-            <>
+          <>
               {/* Profile card */}
               <div className="flex items-start gap-4 rounded-2xl border border-gray-200 bg-gray-50 p-5 dark:border-dark-700 dark:bg-dark-700/50">
                 <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 text-xl font-bold text-white">
-                  {`${customer.firstName || '?'}${customer.lastName || '?'}`.slice(0, 2).toUpperCase()}
+                  {(customer.name || '??').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-lg font-bold text-gray-900 dark:text-white">{customer.firstName} {customer.lastName}</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-white">{customer.name}</p>
                   <p className="text-sm text-gray-500">{customer.email}</p>
-                  {customer.phone && <p className="text-sm text-gray-500">📞 {customer.phone}</p>}
+                  {customer.phone && customer.phone !== 'N/A' && <p className="text-sm text-gray-500">📞 {customer.phone}</p>}
                   <p className="mt-1 text-xs text-gray-400">
-                    Joined {new Date(customer.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    Joined {new Date(customer.joined).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
                   </p>
                 </div>
-                <span className={`badge shrink-0 ${customer.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                  {customer.isActive ? 'Active' : 'Inactive'}
+                <span className={`badge shrink-0 ${customer.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                  {customer.status}
                 </span>
               </div>
 
@@ -92,11 +93,15 @@ function CustomerDrawer({ customerId, onClose }: { customerId: string; onClose: 
                   Order History ({orderCount})
                 </p>
 
-                {orderCount === 0 ? (
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-10">
+                    <div className="h-7 w-7 animate-spin rounded-full border-4 border-primary-600 border-t-transparent"/>
+                  </div>
+                ) : orderCount === 0 ? (
                   <p className="rounded-xl border border-dashed border-gray-200 py-8 text-center text-sm text-gray-400 dark:border-dark-600">No orders yet</p>
                 ) : (
                   <div className="space-y-4">
-                    {customer.orders.map((order: any) => {
+                    {orders.map((order: any) => {
                       const addr = parseAddress(order.shippingAddress);
                       return (
                         <div key={order.id} className="rounded-xl border border-gray-200 bg-white overflow-hidden dark:border-dark-700 dark:bg-dark-800">
@@ -171,8 +176,7 @@ function CustomerDrawer({ customerId, onClose }: { customerId: string; onClose: 
                   </div>
                 )}
               </div>
-            </>
-          )}
+          </>
         </div>
       </motion.div>
     </div>
@@ -182,7 +186,7 @@ function CustomerDrawer({ customerId, onClose }: { customerId: string; onClose: 
 export default function AdminCustomersPage() {
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('spent');
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
 
   const { data: customers = [] } = useQuery({
     queryKey: ['admin-customers'],
@@ -260,7 +264,7 @@ export default function AdminCustomersPage() {
                 <motion.tr key={customer.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.04 }}
                   className="hover:bg-gray-50 dark:hover:bg-dark-700/30 transition-colors cursor-pointer"
-                  onClick={() => setSelectedCustomerId(customer.id)}>
+                  onClick={() => setSelectedCustomer(customer)}>
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
                       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-700 text-sm font-bold text-white">
@@ -290,7 +294,7 @@ export default function AdminCustomersPage() {
                   </td>
                   <td className="px-5 py-4 text-right">
                     <button
-                      onClick={(e) => { e.stopPropagation(); setSelectedCustomerId(customer.id); }}
+                      onClick={(e) => { e.stopPropagation(); setSelectedCustomer(customer); }}
                       className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-dark-600 dark:text-gray-300 dark:hover:bg-dark-700 transition-colors">
                       View
                     </button>
@@ -307,10 +311,10 @@ export default function AdminCustomersPage() {
 
       {/* Customer Detail Drawer */}
       <AnimatePresence>
-        {selectedCustomerId && (
+        {selectedCustomer && (
           <CustomerDrawer
-            customerId={selectedCustomerId}
-            onClose={() => setSelectedCustomerId(null)}
+            customer={selectedCustomer}
+            onClose={() => setSelectedCustomer(null)}
           />
         )}
       </AnimatePresence>
