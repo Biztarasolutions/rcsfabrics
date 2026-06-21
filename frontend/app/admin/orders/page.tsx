@@ -114,6 +114,7 @@ export default function AdminOrdersPage() {
                   <td className="px-5 py-3.5">
                     <p className="font-semibold text-gray-900 dark:text-white">{order.user?.firstName} {order.user?.lastName}</p>
                     <p className="text-xs text-gray-500">{order.user?.email}</p>
+                    {order.user?.phone && <p className="text-xs text-gray-400">{order.user.phone}</p>}
                   </td>
                   <td className="px-5 py-3.5 hidden md:table-cell text-gray-500 dark:text-gray-400 text-xs">
                     {new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}

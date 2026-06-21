@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useCartStore, useAuthStore } from '@/lib/store';
-import { orderApi, publicApi } from '@/lib/api';
+import { orderApi, publicApi, userApi } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
@@ -15,9 +15,12 @@ const STEPS = ['Cart Review', 'Shipping Address', 'Payment'];
 export default function CheckoutPage() {
   const [step, setStep] = useState(0);
   const [address, setAddress] = useState({
-    firstName: '', lastName: '', email: '', phone: '',
+    firstName: '', lastName: '', phone: '',
     street: '', city: '', state: '', postalCode: '', country: 'India',
   });
+  const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
+  const [selectedAddressIdx, setSelectedAddressIdx] = useState<number | null>(null);
+  const [showNewForm, setShowNewForm] = useState(false);
   const [coupon, setCoupon] = useState('');
   const [couponData, setCouponData] = useState<any>(null);
   const [placing, setPlacing] = useState(false);
@@ -47,15 +50,19 @@ export default function CheckoutPage() {
   }, [razorpayEnabled, upiEnabled]);
 
   useEffect(() => {
-    if (user) {
-      setAddress(prev => ({
-        ...prev,
-        firstName: user.firstName || '',
-        lastName: user.lastName || '',
-        email: user.email || '',
-        phone: user.phone || prev.phone,
-      }));
-    }
+    if (!user) return;
+    userApi.getAddresses().then(res => {
+      const addrs = res.data?.data ?? res.data ?? [];
+      setSavedAddresses(addrs);
+      if (addrs.length > 0) {
+        setSelectedAddressIdx(0);
+        const a = addrs[0];
+        setAddress({ firstName: a.firstName || '', lastName: a.lastName || '', phone: a.phone || '', street: a.street || a.addressLine1 || '', city: a.city || '', state: a.state || '', postalCode: a.postalCode || a.zipCode || '', country: 'India' });
+        setShowNewForm(false);
+      } else {
+        setShowNewForm(true);
+      }
+    }).catch(() => setShowNewForm(true));
   }, [user]);
 
   useEffect(() => {
@@ -140,7 +147,7 @@ export default function CheckoutPage() {
               router.push(`/account/orders/${order.id}`);
             },
           },
-          prefill: { name: `${address.firstName} ${address.lastName}`, email: address.email, contact: address.phone },
+          prefill: { name: `${address.firstName} ${address.lastName}`, email: user?.email, contact: address.phone },
           theme: { color: '#000000' },
         };
 
@@ -269,30 +276,62 @@ export default function CheckoutPage() {
 
             {/* Step 1 — Shipping */}
             {step === 1 && (
-              <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-dark-700 dark:bg-dark-800">
+              <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
+                className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-dark-700 dark:bg-dark-800">
                 <h2 className="font-display text-xl font-bold text-gray-900 dark:text-white">Shipping Address</h2>
-                <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                  {[
-                    { name: 'firstName', label: 'First Name', placeholder: 'Priya' },
-                    { name: 'lastName', label: 'Last Name', placeholder: 'Sharma' },
-                    { name: 'email', label: 'Email', placeholder: 'you@example.com', full: true },
-                    { name: 'phone', label: 'Phone', placeholder: '+91 98765 43210' },
-                    { name: 'street', label: 'Street Address', placeholder: '123, Main Street', full: true },
-                    { name: 'city', label: 'City', placeholder: 'Mumbai' },
-                    { name: 'state', label: 'State', placeholder: 'Maharashtra' },
-                    { name: 'postalCode', label: 'PIN Code', placeholder: '400001' },
-                  ].map((f) => (
-                    <div key={f.name} className={(f as any).full ? 'sm:col-span-2' : ''}>
-                      <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{f.label}</label>
-                      <input name={f.name} value={(address as any)[f.name]} placeholder={f.placeholder}
-                        onChange={(e) => setAddress({ ...address, [e.target.name]: e.target.value })}
-                        className="input-field"/>
-                    </div>
-                  ))}
-                </div>
+
+                {/* Saved addresses */}
+                {savedAddresses.length > 0 && (
+                  <div className="mt-5 space-y-3">
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Select a saved address</p>
+                    {savedAddresses.map((a, idx) => (
+                      <button key={idx} type="button"
+                        onClick={() => {
+                          setSelectedAddressIdx(idx);
+                          setShowNewForm(false);
+                          setAddress({ firstName: a.firstName || '', lastName: a.lastName || '', phone: a.phone || '', street: a.street || a.addressLine1 || '', city: a.city || '', state: a.state || '', postalCode: a.postalCode || a.zipCode || '', country: 'India' });
+                        }}
+                        className={`w-full rounded-xl border-2 p-4 text-left transition-colors ${selectedAddressIdx === idx && !showNewForm ? 'border-primary-500 bg-primary-50/30 dark:border-primary-500/50 dark:bg-primary-950/10' : 'border-gray-200 dark:border-dark-700'}`}>
+                        <p className="font-semibold text-gray-900 dark:text-white text-sm">{a.firstName} {a.lastName}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">{a.street || a.addressLine1}, {a.city}, {a.state} — {a.postalCode || a.zipCode}</p>
+                        {a.phone && <p className="text-xs text-gray-400 mt-0.5">{a.phone}</p>}
+                      </button>
+                    ))}
+                    <button type="button"
+                      onClick={() => { setSelectedAddressIdx(null); setShowNewForm(true); setAddress({ firstName: user?.firstName || '', lastName: user?.lastName || '', phone: user?.phone || '', street: '', city: '', state: '', postalCode: '', country: 'India' }); }}
+                      className={`w-full rounded-xl border-2 border-dashed p-4 text-sm font-medium transition-colors ${showNewForm ? 'border-primary-500 bg-primary-50/30 text-primary-700 dark:border-primary-500/50 dark:bg-primary-950/10 dark:text-primary-400' : 'border-gray-200 text-gray-500 hover:border-gray-300 dark:border-dark-700'}`}>
+                      + Add New Address
+                    </button>
+                  </div>
+                )}
+
+                {/* Address form */}
+                {showNewForm && (
+                  <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                    {[
+                      { name: 'firstName', label: 'First Name', placeholder: 'Priya' },
+                      { name: 'lastName', label: 'Last Name', placeholder: 'Sharma' },
+                      { name: 'phone', label: 'Phone', placeholder: '+91 98765 43210', full: true },
+                      { name: 'street', label: 'Street Address', placeholder: '123, Main Street', full: true },
+                      { name: 'city', label: 'City', placeholder: 'Mumbai' },
+                      { name: 'state', label: 'State', placeholder: 'Maharashtra' },
+                      { name: 'postalCode', label: 'PIN Code', placeholder: '400001' },
+                    ].map((f) => (
+                      <div key={f.name} className={(f as any).full ? 'sm:col-span-2' : ''}>
+                        <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{f.label}</label>
+                        <input name={f.name} value={(address as any)[f.name]} placeholder={f.placeholder}
+                          onChange={(e) => setAddress({ ...address, [e.target.name]: e.target.value })}
+                          className="input-field"/>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 <div className="mt-6 flex gap-3">
                   <button onClick={() => setStep(0)} className="button-secondary flex-1 py-3">← Back</button>
-                  <button onClick={() => setStep(2)} className="button-primary flex-1 py-3">Continue to Payment →</button>
+                  <button onClick={() => setStep(2)}
+                    disabled={!address.firstName || !address.street || !address.city}
+                    className="button-primary flex-1 py-3 disabled:opacity-60">Continue to Payment →</button>
                 </div>
               </motion.div>
             )}

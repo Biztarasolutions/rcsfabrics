@@ -1,9 +1,8 @@
-export const generateOrderNumber = (): string => {
-  const timestamp = Date.now().toString().slice(-8);
-  const random = Math.floor(Math.random() * 10000)
-    .toString()
-    .padStart(4, '0');
-  return `ORD-${timestamp}-${random}`;
+import { PrismaClient } from '@prisma/client';
+
+export const generateOrderNumber = async (prisma: PrismaClient): Promise<string> => {
+  const count = await prisma.order.count();
+  return `RCS-${String(count + 1).padStart(6, '0')}`;
 };
 
 export const calculateOrderTotal = (
@@ -22,23 +21,12 @@ export const calculateDiscount = (
   maxDiscount?: number
 ): number => {
   let discount = 0;
-
-  if (discountType === 'PERCENTAGE') {
-    discount = (basePrice * discountValue) / 100;
-  } else {
-    discount = discountValue;
-  }
-
-  if (maxDiscount && discount > maxDiscount) {
-    discount = maxDiscount;
-  }
-
+  if (discountType === 'PERCENTAGE') discount = (basePrice * discountValue) / 100;
+  else discount = discountValue;
+  if (maxDiscount && discount > maxDiscount) discount = maxDiscount;
   return Math.round(discount * 100) / 100;
 };
 
 export const formatPrice = (price: number): string => {
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-  }).format(price);
+  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(price);
 };

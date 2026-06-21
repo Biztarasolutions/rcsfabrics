@@ -169,9 +169,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <h1 className="truncate text-lg font-semibold text-gray-900 dark:text-white">{currentLabel}</h1>
           </div>
           <div className="flex shrink-0 items-center gap-3">
-            <span className="hidden rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700 sm:inline dark:bg-green-900/30 dark:text-green-400">
-              ● Live
-            </span>
             <button
               type="button"
               onClick={() => {

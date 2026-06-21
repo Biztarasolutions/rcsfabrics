@@ -1597,8 +1597,9 @@ export const getCustomers = async (
           select: { orders: true },
         },
         orders: {
-          select: { total: true },
-          take: 100, // Limit to prevent fetching too much data
+          select: { total: true, createdAt: true },
+          orderBy: { createdAt: 'desc' },
+          take: 100,
         },
       },
       orderBy: { createdAt: 'desc' },
@@ -1612,6 +1613,7 @@ export const getCustomers = async (
       orders: c._count.orders,
       spent: c.orders.reduce((s, o) => s + (o.total || 0), 0),
       joined: c.createdAt,
+      lastSeen: c.orders[0]?.createdAt || c.createdAt,
       status: c.isActive ? 'Active' : 'Inactive',
     }));
 

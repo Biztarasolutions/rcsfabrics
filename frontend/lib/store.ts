@@ -87,14 +87,19 @@ interface WishlistStore {
   hasItem: (productId: string) => boolean;
 }
 
-export const useWishlistStore = create<WishlistStore>()((set, get) => ({
-  items: [],
-  setItems: (items) => set({ items }),
-  addItem: (item) => set((s) => ({ items: [...s.items, item] })),
-  removeItem: (productId) =>
-    set((s) => ({ items: s.items.filter((i) => i.productId !== productId) })),
-  hasItem: (productId) => get().items.some((i) => i.productId === productId),
-}));
+export const useWishlistStore = create<WishlistStore>()(
+  persist(
+    (set, get) => ({
+      items: [],
+      setItems: (items) => set({ items }),
+      addItem: (item) => set((s) => ({ items: [...s.items, item] })),
+      removeItem: (productId) =>
+        set((s) => ({ items: s.items.filter((i) => i.productId !== productId) })),
+      hasItem: (productId) => get().items.some((i) => i.productId === productId),
+    }),
+    { name: 'rcs-wishlist' }
+  )
+);
 
 // ─── Theme Store ──────────────────────────────────────────────────────────────
 interface ThemeStore {

@@ -1,12 +1,13 @@
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { orderApi } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
 import { Suspense } from 'react';
 import Image from 'next/image';
 import { BLUR_PLACEHOLDER, supabaseImg } from '@/lib/image';
+import toast from 'react-hot-toast';
 
 const STATUS_COLORS: Record<string, string> = {
   PENDING: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
@@ -17,6 +18,46 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 const TIMELINE_STEPS = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED'];
+
+function CancelOrderButton({ orderId }: { orderId: string }) {
+  const queryClient = useQueryClient();
+  const [confirming, setConfirming] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleCancel = async () => {
+    setLoading(true);
+    try {
+      await orderApi.cancelOrder(orderId);
+      toast.success('Order cancelled');
+      queryClient.invalidateQueries({ queryKey: ['my-orders'] });
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to cancel order');
+    } finally {
+      setLoading(false);
+      setConfirming(false);
+    }
+  };
+
+  if (confirming) {
+    return (
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-gray-500">Cancel order?</span>
+        <button onClick={handleCancel} disabled={loading}
+          className="text-xs font-medium text-red-600 hover:underline disabled:opacity-50">
+          {loading ? 'Cancelling...' : 'Yes, cancel'}
+        </button>
+        <button onClick={() => setConfirming(false)} className="text-xs text-gray-400 hover:underline">No</button>
+      </div>
+    );
+  }
+
+  return (
+    <button onClick={() => setConfirming(true)}
+      className="text-xs font-medium text-red-500 hover:text-red-600 hover:underline">
+      Cancel Order
+    </button>
+  );
+}
 
 function OrderTimeline({ status }: { status: string }) {
   if (status === 'CANCELLED') return (
@@ -82,7 +123,7 @@ function OrdersContent() {
                 <div className="flex flex-wrap gap-4 text-sm">
                   <div>
                     <p className="text-xs text-gray-500 dark:text-gray-400">Order ID</p>
-                    <p className="font-mono font-semibold text-primary-700 dark:text-primary-400">#{order.id.slice(-8).toUpperCase()}</p>
+                    <p className="font-mono font-semibold text-primary-700 dark:text-primary-400">#{order.orderNumber || order.id.slice(-8).toUpperCase()}</p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 dark:text-gray-400">Date</p>
@@ -137,12 +178,14 @@ function OrdersContent() {
 
               {/* Footer */}
               <div className="flex items-center justify-between border-t border-gray-100 px-5 py-3 dark:border-dark-700">
-                <p className="text-sm text-gray-500 dark:text-gray-400"></p>
-                <div className="flex gap-2">
-                   <Link href={`/account/orders/${order.id}`} className="text-sm font-medium text-primary-600 hover:underline dark:text-primary-400">
-                      View Details
-                   </Link>
+                <div>
+                  {!['SHIPPED', 'DELIVERED', 'CANCELLED'].includes(order.status) && (
+                    <CancelOrderButton orderId={order.id} />
+                  )}
                 </div>
+                <Link href={`/account/orders/${order.id}`} className="text-sm font-medium text-primary-600 hover:underline dark:text-primary-400">
+                  View Details
+                </Link>
               </div>
             </div>
           ))}

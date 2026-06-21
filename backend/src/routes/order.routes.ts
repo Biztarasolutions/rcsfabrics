@@ -4,6 +4,7 @@ import {
   getOrders,
   getOrderById,
   verifyPayment,
+  cancelOrder,
 } from '@/controllers/order.controller';
 
 const router = Router();
@@ -11,6 +12,7 @@ const router = Router();
 router.post('/', createOrder);
 router.get('/', getOrders);
 router.post('/:id/verify', verifyPayment);
+router.post('/:id/cancel', cancelOrder);
 router.get('/:id', getOrderById);
 
 export default router;

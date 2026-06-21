@@ -1,12 +1,13 @@
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { orderApi } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
 import Image from 'next/image';
 import { BLUR_PLACEHOLDER, supabaseImg } from '@/lib/image';
+import toast from 'react-hot-toast';
 
 const STATUS_COLORS: Record<string, string> = {
   PENDING: 'bg-yellow-100 text-yellow-700',
@@ -26,6 +27,50 @@ const METHOD_LABEL: Record<string, string> = {
   RAZORPAY: '💳 Razorpay',
   BANK_TRANSFER: '🏦 Bank Transfer',
 };
+
+function CancelBlock({ orderId }: { orderId: string }) {
+  const router = useRouter();
+  const [confirming, setConfirming] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleCancel = async () => {
+    setLoading(true);
+    try {
+      await orderApi.cancelOrder(orderId);
+      toast.success('Order cancelled');
+      router.refresh();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to cancel');
+    } finally {
+      setLoading(false);
+      setConfirming(false);
+    }
+  };
+
+  return (
+    <div className="rounded-2xl border border-red-200 bg-red-50 p-5 dark:border-red-900/40 dark:bg-red-950/20">
+      <p className="font-semibold text-red-800 dark:text-red-300">Cancel this order?</p>
+      <p className="mt-1 text-sm text-red-600 dark:text-red-400">You can cancel before the order is shipped. Stock will be restored.</p>
+      {confirming ? (
+        <div className="mt-3 flex gap-3">
+          <button onClick={handleCancel} disabled={loading}
+            className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50">
+            {loading ? 'Cancelling...' : 'Yes, Cancel Order'}
+          </button>
+          <button onClick={() => setConfirming(false)}
+            className="rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-100">
+            Keep Order
+          </button>
+        </div>
+      ) : (
+        <button onClick={() => setConfirming(true)}
+          className="mt-3 rounded-lg border border-red-300 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100 dark:text-red-300 dark:hover:bg-red-950/40">
+          Cancel Order
+        </button>
+      )}
+    </div>
+  );
+}
 
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -220,6 +265,11 @@ export default function OrderDetailPage() {
                 {order.utrReference && ` UTR: ${order.utrReference}`}
               </p>
             </div>
+          )}
+
+          {/* Cancel order */}
+          {!['SHIPPED', 'DELIVERED', 'CANCELLED'].includes(order.status) && (
+            <CancelBlock orderId={order.id} />
           )}
 
           <div className="flex gap-3 pt-2">

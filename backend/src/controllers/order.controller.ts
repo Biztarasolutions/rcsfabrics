@@ -88,7 +88,7 @@ export const createOrder = async (
     // Create order
     const order = await prisma.order.create({
       data: {
-        orderNumber: generateOrderNumber(),
+        orderNumber: await generateOrderNumber(prisma),
         userId: req.userId,
         shippingAddress: JSON.stringify(shippingAddress),
         items: {
@@ -316,6 +316,38 @@ export const getOrderById = async (
         message: 'Internal server error',
         statusCode: 500,
       } as ApiResponse);
+    }
+  }
+};
+
+export const cancelOrder = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.userId) throw new ApiError(401, 'Unauthorized');
+    const { id } = req.params;
+    const order = await prisma.order.findUnique({ where: { id }, include: { items: true } });
+    if (!order) throw new ApiError(404, 'Order not found');
+    if (order.userId !== req.userId) throw new ApiError(403, 'Forbidden');
+    if (['SHIPPED', 'DELIVERED', 'CANCELLED'].includes(order.status)) {
+      throw new ApiError(400, 'Order cannot be cancelled after it has been shipped');
+    }
+    await Promise.all(
+      order.items.map(item =>
+        prisma.product.update({ where: { id: item.productId }, data: { totalStock: { increment: item.quantity } } })
+      )
+    );
+    const updated = await prisma.order.update({
+      where: { id },
+      data: { status: 'CANCELLED' },
+    });
+    res.json({ success: true, message: 'Order cancelled', data: updated, statusCode: 200 } as ApiResponse);
+  } catch (error) {
+    if (error instanceof ApiError) {
+      res.status(error.statusCode).json({ success: false, message: error.message, statusCode: error.statusCode } as ApiResponse);
+    } else {
+      res.status(500).json({ success: false, message: 'Internal server error', statusCode: 500 } as ApiResponse);
     }
   }
 };

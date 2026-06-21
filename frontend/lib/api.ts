@@ -67,6 +67,7 @@ export const orderApi = {
   getUserOrders: (params?: any) => api.get('orders', { params }),
   getOrderById: (id: string) => api.get(`orders/${id}`),
   getById: (id: string) => api.get(`orders/${id}`),
+  cancelOrder: (id: string) => api.post(`orders/${id}/cancel`),
   validateCoupon: (code: string, amount: number) => api.post('orders/validate-coupon', { code, amount }),
 };
 
