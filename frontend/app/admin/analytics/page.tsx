@@ -158,7 +158,7 @@ export default function AnalyticsPage() {
   const [from, setFrom] = useState(toYMD(addDays(today, -29)));
   const [to, setTo] = useState(toYMD(today));
   const [activePreset, setActivePreset] = useState(1); // '30 days'
-  const [statuses, setStatuses] = useState<string[]>([]); // empty = all (except cancelled)
+  const [statuses, setStatuses] = useState<string[]>(['DELIVERED']);
   const hasFilter = statuses.length > 0;
   const toggleStatus = (s: string) =>
     setStatuses((prev) => prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]);
@@ -201,7 +201,7 @@ export default function AnalyticsPage() {
     const inRange = orders.filter((o) => {
       const k = ymd(o.createdAt);
       if (k < from || k > to) return false;
-      return hasFilter ? statuses.includes(o.status) : o.status !== 'CANCELLED';
+      return hasFilter ? statuses.includes(o.status) : true;
     });
 
     const totalRevenue = inRange.reduce((s, o) => s + Number(o.total || 0), 0);
