@@ -264,7 +264,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
               {PRODUCT.discountPrice && (
                 <div>
                   <p className="text-lg text-gray-400 line-through">{formatPrice(PRODUCT.basePrice)}</p>
-                  <p className="text-sm font-semibold text-green-600">Save {discountBadge}</p>
+                  <p className="text-sm font-semibold text-green-600">Save {formatPrice(PRODUCT.basePrice - (PRODUCT.discountPrice ?? PRODUCT.basePrice))}</p>
                 </div>
               )}
             </div>

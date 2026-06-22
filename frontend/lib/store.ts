@@ -45,38 +45,43 @@ interface CartStore {
   totalPrice: () => number;
 }
 
-export const useCartStore = create<CartStore>()((set, get) => ({
-  items: [],
-  isOpen: false,
-  setItems: (items) => set({ items }),
-  addItem: (item) =>
-    set((s) => {
-      const exists = s.items.find((i) => i.id === item.id);
-      if (exists) {
-        return {
-          items: s.items.map((i) =>
-            i.id === item.id ? { ...i, quantity: i.quantity + item.quantity } : i
-          ),
-        };
-      }
-      return { items: [...s.items, item] };
+export const useCartStore = create<CartStore>()(
+  persist(
+    (set, get) => ({
+      items: [],
+      isOpen: false,
+      setItems: (items) => set({ items }),
+      addItem: (item) =>
+        set((s) => {
+          const exists = s.items.find((i) => i.id === item.id);
+          if (exists) {
+            return {
+              items: s.items.map((i) =>
+                i.id === item.id ? { ...i, quantity: i.quantity + item.quantity } : i
+              ),
+            };
+          }
+          return { items: [...s.items, item] };
+        }),
+      removeItem: (id) => set((s) => ({ items: s.items.filter((i) => i.id !== id) })),
+      updateQty: (id, qty) =>
+        set((s) => ({
+          items: s.items.map((i) => (i.id === id ? { ...i, quantity: qty } : i)),
+        })),
+      clearCart: () => set({ items: [] }),
+      openCart: () => set({ isOpen: true }),
+      closeCart: () => set({ isOpen: false }),
+      toggleCart: () => set((s) => ({ isOpen: !s.isOpen })),
+      totalItems: () => get().items.reduce((sum, i) => sum + i.quantity, 0),
+      totalPrice: () =>
+        get().items.reduce(
+          (sum, i) => sum + (i.product.discountPrice || i.product.basePrice) * i.quantity,
+          0
+        ),
     }),
-  removeItem: (id) => set((s) => ({ items: s.items.filter((i) => i.id !== id) })),
-  updateQty: (id, qty) =>
-    set((s) => ({
-      items: s.items.map((i) => (i.id === id ? { ...i, quantity: qty } : i)),
-    })),
-  clearCart: () => set({ items: [] }),
-  openCart: () => set({ isOpen: true }),
-  closeCart: () => set({ isOpen: false }),
-  toggleCart: () => set((s) => ({ isOpen: !s.isOpen })),
-  totalItems: () => get().items.reduce((sum, i) => sum + i.quantity, 0),
-  totalPrice: () =>
-    get().items.reduce(
-      (sum, i) => sum + (i.product.discountPrice || i.product.basePrice) * i.quantity,
-      0
-    ),
-}));
+    { name: 'rcs-cart', partialize: (s) => ({ items: s.items }) }
+  )
+);
 
 // ─── Wishlist Store ───────────────────────────────────────────────────────────
 interface WishlistStore {
