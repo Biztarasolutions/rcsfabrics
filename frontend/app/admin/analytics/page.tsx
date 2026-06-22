@@ -1,8 +1,10 @@
 'use client';
 import React, { useState, useMemo } from 'react';
+import Image from 'next/image';
 import { useQuery } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
+import { supabaseImg, BLUR_PLACEHOLDER } from '@/lib/image';
 
 // ── Date presets ─────────────────────────────────────────────────────────
 const PRESETS = [
@@ -150,6 +152,58 @@ function MetricCard({ icon, label, value, sub, color = 'bg-primary-50 dark:bg-pr
   );
 }
 
+// ── Product insight card ─────────────────────────────────────────────────
+function ProductInsightCard({
+  title, icon, items, formatValue, barColor = 'bg-primary-500', maxValue, emptyMsg = 'No data yet',
+}: {
+  title: string; icon: string;
+  items: { name: string; image?: string; value: number; sub?: string }[];
+  formatValue: (v: number) => string;
+  barColor?: string; maxValue?: number; emptyMsg?: string;
+}) {
+  const max = maxValue ?? Math.max(...items.map(i => i.value), 1);
+  return (
+    <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-dark-700 dark:bg-dark-800">
+      <div className="mb-5 flex items-center gap-2">
+        <span className="text-xl">{icon}</span>
+        <h3 className="font-semibold text-gray-900 dark:text-white">{title}</h3>
+      </div>
+      {items.length === 0 ? (
+        <p className="py-8 text-center text-sm text-gray-400">{emptyMsg}</p>
+      ) : (
+        <div className="space-y-3.5">
+          {items.map((item, i) => (
+            <div key={i} className="flex items-center gap-3">
+              <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${i === 0 ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-500 dark:bg-dark-700 dark:text-gray-400'}`}>
+                {i + 1}
+              </span>
+              {item.image ? (
+                <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-dark-700">
+                  <Image src={supabaseImg(item.image, 64)} alt={item.name} fill sizes="36px"
+                    placeholder="blur" blurDataURL={BLUR_PLACEHOLDER} className="object-cover" />
+                </div>
+              ) : (
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-sm dark:bg-dark-700">🧵</div>
+              )}
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="truncate text-sm font-medium text-gray-800 dark:text-gray-200">{item.name}</p>
+                  <span className="shrink-0 text-sm font-bold text-gray-900 dark:text-white">{formatValue(item.value)}</span>
+                </div>
+                {item.sub && <p className="text-[10px] text-gray-400 mt-0.5">{item.sub}</p>}
+                <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-gray-100 dark:bg-dark-700">
+                  <div className={`h-full rounded-full ${barColor} transition-all duration-500`}
+                    style={{ width: `${Math.max((item.value / max) * 100, 4)}%` }} />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main page ────────────────────────────────────────────────────────────
 const STATUS_OPTIONS = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'];
 
@@ -185,6 +239,15 @@ export default function AnalyticsPage() {
   const { data: stats } = useQuery({
     queryKey: ['admin-stats-for-analytics'],
     queryFn: () => adminApi.getStats().then(r => r.data.data),
+  });
+
+  const { data: adminProducts = [] } = useQuery({
+    queryKey: ['admin-products-analytics'],
+    queryFn: () => adminApi.getAdminProducts({ limit: 200 }).then(r => {
+      const d = r.data?.data;
+      return d?.products || d || [];
+    }),
+    staleTime: 5 * 60 * 1000,
   });
 
   const analytics = useMemo(() => {
@@ -241,6 +304,66 @@ export default function AnalyticsPage() {
       totalCustomers: stats?.totalCustomers ?? periodUsers.length,
     };
   }, [allOrders, from, to, statuses, hasFilter, stats]);
+
+  // All-time product purchase + cancellation insights (not date-filtered)
+  const orderInsights = useMemo(() => {
+    const orders = allOrders as any[];
+
+    const purchMap: Record<string, { name: string; image?: string; qty: number; rev: number }> = {};
+    orders.filter(o => o.status === 'DELIVERED').forEach(o =>
+      (o.items || []).forEach((it: any) => {
+        const k = it.productId || it.productName || 'unknown';
+        if (!purchMap[k]) purchMap[k] = { name: it.productName || 'Unknown', image: it.productImage, qty: 0, rev: 0 };
+        purchMap[k].qty += Number(it.quantity || 0);
+        purchMap[k].rev += Number(it.total || 0);
+      })
+    );
+    const mostPurchased = Object.values(purchMap)
+      .sort((a, b) => b.qty - a.qty).slice(0, 5)
+      .map(p => ({ name: p.name, image: p.image, value: p.qty, sub: formatPrice(p.rev) }));
+
+    const cancMap: Record<string, { name: string; image?: string; count: number }> = {};
+    orders.filter(o => o.status === 'CANCELLED').forEach(o =>
+      (o.items || []).forEach((it: any) => {
+        const k = it.productId || it.productName || 'unknown';
+        if (!cancMap[k]) cancMap[k] = { name: it.productName || 'Unknown', image: it.productImage, count: 0 };
+        cancMap[k].count += 1;
+      })
+    );
+    const mostCancelled = Object.values(cancMap)
+      .sort((a, b) => b.count - a.count).slice(0, 5)
+      .map(p => ({ name: p.name, image: p.image, value: p.count }));
+
+    return { mostPurchased, mostCancelled };
+  }, [allOrders]);
+
+  // Product review / rating insights
+  const productInsights = useMemo(() => {
+    const prods = adminProducts as any[];
+    if (!prods.length) return { mostReviewed: [], bestRated: [], needsAttention: [] };
+
+    const toItem = (p: any) => ({ name: p.name, image: p.images?.[0]?.url });
+
+    const mostReviewed = [...prods]
+      .filter(p => (p.ratingCount || 0) > 0)
+      .sort((a, b) => (b.ratingCount || 0) - (a.ratingCount || 0))
+      .slice(0, 5)
+      .map(p => ({ ...toItem(p), value: p.ratingCount || 0, sub: `★ ${(p.rating || 0).toFixed(1)} avg` }));
+
+    const bestRated = [...prods]
+      .filter(p => (p.ratingCount || 0) >= 3)
+      .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+      .slice(0, 5)
+      .map(p => ({ ...toItem(p), value: parseFloat((p.rating || 0).toFixed(1)), sub: `${p.ratingCount} reviews` }));
+
+    const needsAttention = [...prods]
+      .filter(p => (p.ratingCount || 0) >= 2 && (p.rating || 0) > 0 && (p.rating || 0) < 4)
+      .sort((a, b) => (a.rating || 0) - (b.rating || 0))
+      .slice(0, 5)
+      .map(p => ({ ...toItem(p), value: parseFloat((p.rating || 0).toFixed(1)), sub: `${p.ratingCount} reviews` }));
+
+    return { mostReviewed, bestRated, needsAttention };
+  }, [adminProducts]);
 
   const daily: { date: string; revenue: number; orders: number }[] = analytics.daily;
   const topProducts: { name: string; quantity: number; revenue: number }[] = analytics.topProducts;
@@ -394,6 +517,63 @@ export default function AnalyticsPage() {
               ) : (
                 <p className="py-10 text-center text-sm text-gray-400">No payment data in this period</p>
               )}
+            </div>
+          </div>
+
+          {/* ── Product Insights ── */}
+          <div>
+            <div className="mb-4 flex items-center gap-2">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">📦 Product Insights</h3>
+              <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500 dark:bg-dark-700 dark:text-gray-400">All time</span>
+            </div>
+            <div className="grid gap-4 lg:grid-cols-2">
+              <ProductInsightCard
+                title="Most Purchased" icon="🏆"
+                items={orderInsights.mostPurchased}
+                formatValue={(v) => `${v}m`}
+                barColor="bg-green-500"
+                emptyMsg="No delivered orders yet"
+              />
+              <ProductInsightCard
+                title="Most Cancelled" icon="🚫"
+                items={orderInsights.mostCancelled}
+                formatValue={(v) => `${v}×`}
+                barColor="bg-red-500"
+                emptyMsg="No cancellations yet — great!"
+              />
+            </div>
+          </div>
+
+          {/* ── Review Insights ── */}
+          <div>
+            <div className="mb-4 flex items-center gap-2">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">⭐ Review Insights</h3>
+              <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500 dark:bg-dark-700 dark:text-gray-400">All time</span>
+            </div>
+            <div className="grid gap-4 lg:grid-cols-3">
+              <ProductInsightCard
+                title="Most Reviewed" icon="💬"
+                items={productInsights.mostReviewed}
+                formatValue={(v) => `${v}`}
+                barColor="bg-blue-500"
+                emptyMsg="No reviews yet"
+              />
+              <ProductInsightCard
+                title="Best Rated" icon="⭐"
+                items={productInsights.bestRated}
+                formatValue={(v) => `★ ${v}`}
+                barColor="bg-amber-500"
+                maxValue={5}
+                emptyMsg="Need 3+ reviews per product"
+              />
+              <ProductInsightCard
+                title="Needs Attention" icon="⚠️"
+                items={productInsights.needsAttention}
+                formatValue={(v) => `★ ${v}`}
+                barColor="bg-orange-500"
+                maxValue={5}
+                emptyMsg="All products rated 4+ ✓"
+              />
             </div>
           </div>
 
