@@ -127,6 +127,11 @@ function AccountPage() {
   });
   const reviewedProductIds = new Set(myReviews.map((r: any) => r.productId));
 
+  // Expanded order details
+  const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
+  const toggleOrderDetails = (id: string) =>
+    setExpandedOrders((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
+
   // Profile Form State
   const [profileForm, setProfileForm] = useState({ firstName: '', lastName: '', email: '', phone: '' });
   const [savingProfile, setSavingProfile] = useState(false);
@@ -530,9 +535,104 @@ function AccountPage() {
                                 })}
                               </div>
                             )}
+                            {/* Footer row — total + toggle */}
                             <div className="mt-3 flex items-center justify-between border-t border-gray-100 pt-3 dark:border-dark-700">
                               <p className="text-sm font-bold text-gray-900 dark:text-white">Total: {formatPrice(order.total)}</p>
+                              <button onClick={() => toggleOrderDetails(order.id)}
+                                className="flex items-center gap-1 text-xs font-semibold text-primary-600 dark:text-primary-400 hover:underline">
+                                {expandedOrders.has(order.id) ? 'Hide details' : 'View details'}
+                                <svg className={`h-3.5 w-3.5 transition-transform ${expandedOrders.has(order.id) ? 'rotate-180' : ''}`}
+                                  fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/>
+                                </svg>
+                              </button>
                             </div>
+
+                            {/* Expandable order details */}
+                            {expandedOrders.has(order.id) && (
+                              <div className="mt-3 rounded-xl bg-gray-50 dark:bg-dark-700/40 p-4 space-y-4 border border-gray-100 dark:border-dark-700">
+                                {/* Price breakdown */}
+                                <div>
+                                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Price Breakdown</p>
+                                  <div className="space-y-1.5">
+                                    <div className="flex justify-between text-sm text-gray-600 dark:text-gray-300">
+                                      <span>Subtotal</span>
+                                      <span>{formatPrice(order.subtotal)}</span>
+                                    </div>
+                                    {order.shippingCost > 0 && (
+                                      <div className="flex justify-between text-sm text-gray-600 dark:text-gray-300">
+                                        <span>Shipping</span>
+                                        <span>{formatPrice(order.shippingCost)}</span>
+                                      </div>
+                                    )}
+                                    {order.tax > 0 && (
+                                      <div className="flex justify-between text-sm text-gray-600 dark:text-gray-300">
+                                        <span>Tax</span>
+                                        <span>{formatPrice(order.tax)}</span>
+                                      </div>
+                                    )}
+                                    {order.discountAmount > 0 && (
+                                      <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
+                                        <span className="flex items-center gap-1.5">
+                                          Discount
+                                          {order.couponCode && (
+                                            <span className="rounded bg-green-100 px-1.5 py-0.5 text-[10px] font-bold text-green-700 dark:bg-green-900/30 dark:text-green-300">
+                                              {order.couponCode}
+                                            </span>
+                                          )}
+                                        </span>
+                                        <span>− {formatPrice(order.discountAmount)}</span>
+                                      </div>
+                                    )}
+                                    <div className="flex justify-between border-t border-gray-200 pt-2 dark:border-dark-600">
+                                      <span className="text-sm font-bold text-gray-900 dark:text-white">Total Paid</span>
+                                      <span className="text-sm font-bold text-primary-600 dark:text-primary-400">{formatPrice(order.total)}</span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Payment info */}
+                                <div>
+                                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Payment Info</p>
+                                  <div className="space-y-1.5">
+                                    <div className="flex justify-between text-sm text-gray-600 dark:text-gray-300">
+                                      <span>Method</span>
+                                      <span className="font-medium">{order.paymentMethod === 'RAZORPAY' ? 'Online (Razorpay)' : order.paymentMethod === 'BANK_TRANSFER' ? 'Bank Transfer' : order.paymentMethod || '—'}</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm text-gray-600 dark:text-gray-300">
+                                      <span>Status</span>
+                                      <span className={`font-semibold ${order.paymentStatus === 'PAID' ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'}`}>
+                                        {order.paymentStatus}
+                                      </span>
+                                    </div>
+                                    {order.utrReference && (
+                                      <div className="flex justify-between text-sm text-gray-600 dark:text-gray-300">
+                                        <span>UTR / Ref No.</span>
+                                        <span className="font-mono text-xs font-medium">{order.utrReference}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Shipping address */}
+                                {order.shippingAddress && (() => {
+                                  try {
+                                    const addr = typeof order.shippingAddress === 'string'
+                                      ? JSON.parse(order.shippingAddress)
+                                      : order.shippingAddress;
+                                    return (
+                                      <div>
+                                        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Delivery Address</p>
+                                        <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                                          {[addr.name, addr.addressLine1, addr.addressLine2, addr.city, addr.state, addr.pincode, addr.phone]
+                                            .filter(Boolean).join(', ')}
+                                        </p>
+                                      </div>
+                                    );
+                                  } catch { return null; }
+                                })()}
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
