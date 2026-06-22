@@ -549,15 +549,32 @@ function AccountPage() {
                             </div>
 
                             {/* Expandable order details */}
-                            {expandedOrders.has(order.id) && (
+                            {expandedOrders.has(order.id) && (() => {
+                              const mrpTotal = order.items?.reduce((sum: number, item: any) =>
+                                sum + ((item.product?.basePrice ?? item.pricePerMeter) * item.quantity), 0) ?? 0;
+                              const storeDiscount = Math.max(0, mrpTotal - (order.subtotal ?? 0));
+                              return (
                               <div className="mt-3 rounded-xl bg-gray-50 dark:bg-dark-700/40 p-4 space-y-4 border border-gray-100 dark:border-dark-700">
                                 {/* Price breakdown */}
                                 <div>
                                   <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Price Breakdown</p>
                                   <div className="space-y-1.5">
-                                    <div className="flex justify-between text-sm text-gray-600 dark:text-gray-300">
-                                      <span>Subtotal</span>
-                                      <span>{formatPrice(order.subtotal)}</span>
+                                    {/* MRP row */}
+                                    <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
+                                      <span>MRP (total)</span>
+                                      <span className={storeDiscount > 0 ? 'line-through' : ''}>{formatPrice(mrpTotal)}</span>
+                                    </div>
+                                    {/* Store discount */}
+                                    {storeDiscount > 0 && (
+                                      <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
+                                        <span>Store Discount</span>
+                                        <span>− {formatPrice(storeDiscount)}</span>
+                                      </div>
+                                    )}
+                                    {/* Subtotal after store discount */}
+                                    <div className="flex justify-between text-sm text-gray-700 dark:text-gray-200">
+                                      <span>{storeDiscount > 0 ? 'Price after discount' : 'Subtotal'}</span>
+                                      <span className="font-medium">{formatPrice(order.subtotal)}</span>
                                     </div>
                                     {order.shippingCost > 0 && (
                                       <div className="flex justify-between text-sm text-gray-600 dark:text-gray-300">
@@ -574,7 +591,7 @@ function AccountPage() {
                                     {order.discountAmount > 0 && (
                                       <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
                                         <span className="flex items-center gap-1.5">
-                                          Discount
+                                          Coupon Discount
                                           {order.couponCode && (
                                             <span className="rounded bg-green-100 px-1.5 py-0.5 text-[10px] font-bold text-green-700 dark:bg-green-900/30 dark:text-green-300">
                                               {order.couponCode}
@@ -582,6 +599,13 @@ function AccountPage() {
                                           )}
                                         </span>
                                         <span>− {formatPrice(order.discountAmount)}</span>
+                                      </div>
+                                    )}
+                                    {/* Total savings summary */}
+                                    {(storeDiscount + (order.discountAmount ?? 0)) > 0 && (
+                                      <div className="flex justify-between rounded-lg bg-green-50 px-2 py-1.5 text-xs font-semibold text-green-700 dark:bg-green-900/20 dark:text-green-400">
+                                        <span>Total savings</span>
+                                        <span>{formatPrice(storeDiscount + (order.discountAmount ?? 0))}</span>
                                       </div>
                                     )}
                                     <div className="flex justify-between border-t border-gray-200 pt-2 dark:border-dark-600">
@@ -632,7 +656,8 @@ function AccountPage() {
                                   } catch { return null; }
                                 })()}
                               </div>
-                            )}
+                              );
+                            })()}
                           </div>
                         ))}
                       </div>
