@@ -25,7 +25,7 @@ const STATUS_OPTIONS = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCEL
 
 export default function AdminDashboard() {
   const { user } = useAuthStore();
-  const [statuses, setStatuses] = useState<string[]>(['DELIVERED']);
+  const [statuses, setStatuses] = useState<string[]>([]);
   const toggleStatus = (s: string) =>
     setStatuses((prev) => prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]);
   const hasFilter = statuses.length > 0;

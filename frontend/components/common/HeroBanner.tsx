@@ -24,7 +24,7 @@ const SLIDES = [
     sub: 'Hand-picked silk fabrics from Varanasi and Mysore. Every thread tells a story of heritage.',
     cta: { label: 'Explore Silks', href: '/products?category=silks' },
     ctaSecondary: { label: 'About Us', href: '/about' },
-    image: 'https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?w=1200&q=80',
+    image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&q=80',
     accent: 'from-secondary-900/80 to-secondary-800/40',
   },
   {

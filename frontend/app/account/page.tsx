@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore, useWishlistStore } from '@/lib/store';
 import { formatPrice } from '@/lib/utils';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { authApi, orderApi, userApi, productApi } from '@/lib/api';
 import { queryClient } from '@/components/common/Providers';
@@ -72,11 +72,22 @@ function ContactChangeField({ label, field, currentValue, change, onStart, onCan
   );
 }
 
+const TAB_SLUGS: Record<string, string> = {
+  'Overview': 'overview', 'My Orders': 'my-orders', 'Profile': 'profile', 'Addresses': 'addresses',
+};
+const SLUG_TO_TAB: Record<string, string> = Object.fromEntries(Object.entries(TAB_SLUGS).map(([k, v]) => [v, k]));
+
 export default function AccountPage() {
-  const [activeTab, setActiveTab] = useState('Overview');
+  const searchParams = useSearchParams();
+  const [activeTab, setActiveTab] = useState(() => SLUG_TO_TAB[searchParams.get('tab') ?? ''] ?? 'Overview');
   const { user, logout } = useAuthStore();
   const { items: wishlistItems } = useWishlistStore();
   const router = useRouter();
+
+  const setTab = (tab: string) => {
+    setActiveTab(tab);
+    router.push(`?tab=${TAB_SLUGS[tab] ?? 'overview'}`, { scroll: false });
+  };
 
   // Redirect if not logged in
   useEffect(() => {
@@ -288,7 +299,11 @@ export default function AccountPage() {
     );
   }
 
-  const isPageLoading = isProfileLoading || isOrdersLoading || isAddressesLoading;
+  const isPageLoading =
+    (activeTab === 'Overview' && (isProfileLoading || isOrdersLoading)) ||
+    (activeTab === 'My Orders' && isOrdersLoading) ||
+    (activeTab === 'Profile' && isProfileLoading) ||
+    (activeTab === 'Addresses' && isAddressesLoading);
   const totalSpent = orders.reduce((sum: number, o: any) => sum + (o.total || 0), 0);
 
   return (
@@ -325,7 +340,7 @@ export default function AccountPage() {
               </div>
               <nav className="space-y-1">
                 {TABS.map((tab) => (
-                  <button key={tab} onClick={() => setActiveTab(tab)}
+                  <button key={tab} onClick={() => setTab(tab)}
                     className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${activeTab === tab ? 'bg-primary-600 text-white shadow-sm shadow-primary-500/25' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-dark-700'}`}>
                     {tab === 'Overview' && '📊'}
                     {tab === 'My Orders' && '📦'}
@@ -397,7 +412,7 @@ export default function AccountPage() {
                               </div>
                             ))}
                           </div>
-                          <button onClick={() => setActiveTab('My Orders')} className="button-secondary mt-4 w-full py-2.5 text-sm font-medium">View All Orders</button>
+                          <button onClick={() => setTab('My Orders')} className="button-secondary mt-4 w-full py-2.5 text-sm font-medium">View All Orders</button>
                         </>
                       )}
                     </div>
