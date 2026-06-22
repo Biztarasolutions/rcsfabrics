@@ -272,7 +272,7 @@ export default function Header() {
                 <button type="button" onClick={closeSearch} className="button-ghost rounded-xl px-4 py-3">✕</button>
               </form>
               <div className="mt-3 flex flex-wrap gap-2">
-                {['Silk', 'Cotton', 'Linen', 'Chiffon', 'Velvet'].map((tag) => (
+                {['Rayon', 'Cotton', 'Linen', 'Chiffon', 'Crepe'].map((tag) => (
                   <button key={tag} onClick={() => { router.push(`/products?search=${tag}`); closeSearch(); }}
                     className="rounded-full border border-gray-200 px-3 py-1 text-xs font-medium text-gray-600 hover:border-primary-400 hover:text-primary-600 dark:border-dark-600 dark:text-gray-400 transition-colors">
                     {tag}

@@ -6,12 +6,12 @@ import '@/styles/main.css';
 
 export const metadata: Metadata = {
   title: 'RCS Fabrics — Premium Luxury Fabrics by the Meter',
-  description: 'Shop premium quality fabrics — silks, cottons, velvets, chiffons and more. Sold by the meter with free shipping on orders above ₹2,000.',
-  keywords: 'fabric, silk, cotton, velvet, premium fabric, fabric by meter, RCS Fabrics, luxury fabric, Indian fabric',
+  description: 'Shop premium quality fabrics — rayon, cotton, linen, chiffon, crepe, satin and more. Sold by the meter with free shipping on orders above ₹2,000.',
+  keywords: 'fabric, rayon, cotton, linen, chiffon, crepe, satin, premium fabric, fabric by meter, RCS Fabrics, luxury fabric, Indian fabric',
   authors: [{ name: 'RCS Fabrics' }],
   openGraph: {
     title: 'RCS Fabrics — Premium Luxury Fabrics by the Meter',
-    description: 'Shop premium quality fabrics — silks, cottons, velvets and more. Sold by the meter.',
+    description: 'Shop premium quality fabrics — rayon, cotton, linen, chiffon and more. Sold by the meter.',
     url: 'https://rcsfabrics.com',
     siteName: 'RCS Fabrics',
     type: 'website',

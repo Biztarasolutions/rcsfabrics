@@ -16,7 +16,7 @@ export default function CategoryShowcase() {
         <div className="text-center">
           <span className="section-tag">🧵 Browse by Type</span>
           <h2 className="section-title mt-3 font-display">Shop by Category</h2>
-          <p className="section-subtitle">From heritage silks to modern blends — find your perfect fabric</p>
+          <p className="section-subtitle">From breathable linens to flowy rayons — find your perfect fabric</p>
         </div>
 
         <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

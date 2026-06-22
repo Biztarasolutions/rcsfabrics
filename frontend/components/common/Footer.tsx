@@ -8,9 +8,9 @@ const FOOTER_SECTIONS = [
     title: 'Shop',
     links: [
       { label: 'All Fabrics', href: '/products' },
-      { label: 'Silks', href: '/products?category=silks' },
-      { label: 'Cottons', href: '/products?category=cottons' },
-      { label: 'Blends', href: '/products?category=blends' },
+      { label: 'Rayon', href: '/products?category=rayon' },
+      { label: 'Cotton', href: '/products?category=cotton' },
+      { label: 'Linen', href: '/products?category=linen' },
       { label: 'New Arrivals', href: '/products?sort=newest' },
       { label: 'Best Sellers', href: '/products?sort=bestsellers' },
     ],
