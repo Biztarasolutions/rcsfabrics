@@ -396,21 +396,33 @@ function AccountPage() {
                       ) : (
                         <>
                           <div className="mt-4 space-y-3">
-                            {orders.slice(0, 3).map((order: any) => (
-                              <div key={order.id} className="flex items-center justify-between rounded-xl bg-gray-50 p-4 dark:bg-dark-700/50 border border-gray-100 dark:border-dark-700">
-                                <div>
-                                  <p className="font-semibold text-gray-900 dark:text-white">{order.orderNumber}</p>
-                                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                                    {order.items?.[0]?.productName || 'Fabric Purchase'}
-                                    {order.items?.length > 1 ? ` + ${order.items.length - 1} more items` : ''} · {new Date(order.createdAt).toLocaleDateString('en-IN')}
-                                  </p>
-                                </div>
-                                <div className="text-right">
-                                  <span className={`badge ${STATUS_COLORS[order.status] || 'bg-gray-100 text-gray-600'}`}>{order.status}</span>
-                                  <p className="mt-1.5 text-sm font-bold text-gray-900 dark:text-white">{formatPrice(order.total)}</p>
-                                </div>
-                              </div>
-                            ))}
+                            {orders.slice(0, 3).map((order: any) => {
+                              const firstItem = order.items?.[0];
+                              return (
+                                <button key={order.id} onClick={() => setTab('My Orders')}
+                                  className="flex w-full items-center gap-3 rounded-xl bg-gray-50 p-3 dark:bg-dark-700/50 border border-gray-100 dark:border-dark-700 hover:border-primary-200 dark:hover:border-primary-800 transition-colors text-left">
+                                  {firstItem?.productImage ? (
+                                    <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-dark-700">
+                                      <Image src={supabaseImg(firstItem.productImage, 96)} alt={firstItem.productName || ''} fill sizes="48px"
+                                        placeholder="blur" blurDataURL={BLUR_PLACEHOLDER} className="object-cover"/>
+                                    </div>
+                                  ) : (
+                                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-xl dark:bg-dark-700">🧵</div>
+                                  )}
+                                  <div className="min-w-0 flex-1">
+                                    <p className="font-semibold text-gray-900 dark:text-white text-sm">{order.orderNumber}</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                      {firstItem?.productName || 'Fabric Purchase'}
+                                      {order.items?.length > 1 ? ` +${order.items.length - 1} more` : ''} · {new Date(order.createdAt).toLocaleDateString('en-IN')}
+                                    </p>
+                                  </div>
+                                  <div className="shrink-0 text-right">
+                                    <span className={`badge text-xs ${STATUS_COLORS[order.status] || 'bg-gray-100 text-gray-600'}`}>{order.status}</span>
+                                    <p className="mt-1 text-sm font-bold text-gray-900 dark:text-white">{formatPrice(order.total)}</p>
+                                  </div>
+                                </button>
+                              );
+                            })}
                           </div>
                           <button onClick={() => setTab('My Orders')} className="button-secondary mt-4 w-full py-2.5 text-sm font-medium">View All Orders</button>
                         </>
@@ -448,10 +460,32 @@ function AccountPage() {
                             </div>
                             <div className="mt-4 space-y-2 border-t border-gray-100 pt-3 dark:border-dark-700">
                               {order.items?.map((item: any, i: number) => (
-                                <div key={i} className="flex justify-between text-sm text-gray-700 dark:text-gray-300">
-                                  <span>{item.productName} <span className="text-gray-400">× {item.quantity}m</span></span>
-                                  <span className="font-medium">{formatPrice((item.pricePerMeter || item.price) * item.quantity)}</span>
-                                </div>
+                                <Link key={i} href={item.product?.slug ? `/products/${item.product.slug}` : '/products'}
+                                  className="flex items-center gap-3 rounded-xl p-2 -mx-2 hover:bg-gray-50 dark:hover:bg-dark-700/50 transition-colors group">
+                                  {item.productImage ? (
+                                    <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-dark-700">
+                                      <Image src={supabaseImg(item.productImage, 128)} alt={item.productName || ''} fill sizes="56px"
+                                        placeholder="blur" blurDataURL={BLUR_PLACEHOLDER} className="object-cover"/>
+                                    </div>
+                                  ) : (
+                                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-2xl dark:bg-dark-700">🧵</div>
+                                  )}
+                                  <div className="min-w-0 flex-1">
+                                    <p className="truncate text-sm font-semibold text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                                      {item.productName}
+                                    </p>
+                                    <div className="flex items-center gap-2 mt-0.5">
+                                      {(item.product?.color || item.colorName) && (
+                                        <span className="text-xs text-gray-500 dark:text-gray-400">{item.product?.color || item.colorName}</span>
+                                      )}
+                                      <span className="text-xs text-gray-400">× {item.quantity}m</span>
+                                    </div>
+                                  </div>
+                                  <div className="shrink-0 text-right">
+                                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{formatPrice((item.pricePerMeter || item.price) * item.quantity)}</p>
+                                    <p className="text-xs text-gray-400">{formatPrice(item.pricePerMeter || item.price)}/m</p>
+                                  </div>
+                                </Link>
                               ))}
                             </div>
                             {order.status === 'DELIVERED' && (
