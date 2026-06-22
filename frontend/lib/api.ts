@@ -162,4 +162,16 @@ export const uploadCategoryImage = async (fileUrl: string): Promise<string> => {
   const publicUrl = publicUrlData.publicUrl;
   return publicUrl;
 };
+export const uploadBannerImage = async (file: File): Promise<string> => {
+  const ext = file.name.split('.').pop() || 'jpg';
+  const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  const { data, error } = await supabase.storage.from('banners').upload(filename, file, {
+    contentType: file.type || 'image/jpeg',
+    upsert: true,
+  });
+  if (error) throw new Error(`Upload failed: ${error.message}`);
+  const { data: pub } = supabase.storage.from('banners').getPublicUrl(data.path);
+  return pub.publicUrl;
+};
+
 export default api;

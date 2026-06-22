@@ -5,8 +5,15 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { BLUR_PLACEHOLDER } from '@/lib/image';
+import { useHomepageData } from '@/hooks/useHomepageData';
 
-const SLIDES = [
+const ACCENTS = [
+  'from-primary-900/80 to-primary-800/40',
+  'from-secondary-900/80 to-secondary-800/40',
+  'from-dark-900/80 to-dark-800/40',
+];
+
+const DEFAULT_SLIDES = [
   {
     id: 1,
     tag: 'New Collection 2025',
@@ -15,7 +22,7 @@ const SLIDES = [
     cta: { label: 'Shop Collection', href: '/products' },
     ctaSecondary: { label: 'View Lookbook', href: '/collections/summer-2025' },
     image: 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=1200&q=80',
-    accent: 'from-primary-900/80 to-primary-800/40',
+    accent: ACCENTS[0],
   },
   {
     id: 2,
@@ -25,42 +32,60 @@ const SLIDES = [
     cta: { label: 'Shop Rayon', href: '/products?category=rayon' },
     ctaSecondary: { label: 'All Fabrics', href: '/products' },
     image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&q=80',
-    accent: 'from-secondary-900/80 to-secondary-800/40',
+    accent: ACCENTS[1],
   },
   {
     id: 3,
     tag: 'Summer Essentials',
     headline: 'Light Cotton\nBreathing Easy',
     sub: 'Lightweight, breathable cottons for the warm season. Comfort meets style in every weave.',
-    cta: { label: 'Shop Cottons', href: '/products?category=cottons' },
+    cta: { label: 'Shop Cottons', href: '/products?category=cotton' },
     ctaSecondary: { label: 'Request Swatch', href: '/contact#swatch' },
     image: 'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=1200&q=80',
-    accent: 'from-dark-900/80 to-dark-800/40',
+    accent: ACCENTS[2],
   },
 ];
 
 export default function HeroBanner() {
+  const { data: homepageData } = useHomepageData();
   const [current, setCurrent] = useState(0);
 
-  useEffect(() => {
-    const timer = setInterval(() => setCurrent((c) => (c + 1) % SLIDES.length), 5500);
-    return () => clearInterval(timer);
-  }, []);
+  const apiBanners: any[] = homepageData?.banners || [];
+  const slides = apiBanners.length > 0
+    ? apiBanners.map((b: any, i: number) => ({
+        id: b.id,
+        tag: b.tag || '',
+        headline: b.title,
+        sub: b.subtitle || '',
+        cta: { label: b.ctaLabel || 'Shop Now', href: b.link || '/products' },
+        ctaSecondary: { label: 'View All', href: '/products' },
+        image: b.image,
+        accent: ACCENTS[i % ACCENTS.length],
+      }))
+    : DEFAULT_SLIDES;
 
-  const slide = SLIDES[current];
+  // Reset to slide 0 when banner source switches (API loads or count changes)
+  useEffect(() => { setCurrent(0); }, [slides.length]);
+
+  useEffect(() => {
+    if (slides.length <= 1) return;
+    const timer = setInterval(() => setCurrent((c) => (c + 1) % slides.length), 5500);
+    return () => clearInterval(timer);
+  }, [slides.length]);
+
+  const slide = slides[current] ?? slides[0];
 
   return (
     <section className="relative h-[90vh] min-h-[600px] max-h-[900px] overflow-hidden">
-      {/* Background image with ken-burns */}
-      {SLIDES.map((s, i: number) => {
+      {/* Background images */}
+      {slides.map((s, i: number) => {
         const isActive = i === current;
-        const isNext = i === (current + 1) % SLIDES.length;
-        // Only mount active + next slide; unmount the rest to avoid loading unused images
+        const isNext = i === (current + 1) % slides.length;
         if (!isActive && !isNext && i !== 0) return null;
         return (
           <div key={s.id}
             className={`absolute inset-0 transition-opacity duration-1000 ${isActive ? 'opacity-100' : 'opacity-0'}`}>
-            <Image src={s.image} alt={s.tag} fill priority={i === 0} sizes="100vw"
+            <Image src={s.image} alt={s.tag || s.headline} fill priority={i === 0} sizes="100vw"
               placeholder="blur" blurDataURL={BLUR_PLACEHOLDER}
               className="object-cover scale-105 animate-float" style={{ animationDuration: '8s' }}/>
             <div className={`absolute inset-0 bg-gradient-to-r ${s.accent}`}/>
@@ -77,13 +102,15 @@ export default function HeroBanner() {
       <div className="relative z-10 flex h-full items-center">
         <div className="container-main">
           <div className="max-w-2xl">
-            <motion.div key={`tag-${current}`} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}>
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/15 px-4 py-1.5 text-sm font-semibold text-white backdrop-blur-sm">
-                <span className="h-1.5 w-1.5 rounded-full bg-primary-400"/>
-                {slide.tag}
-              </span>
-            </motion.div>
+            {slide.tag && (
+              <motion.div key={`tag-${current}`} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}>
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/15 px-4 py-1.5 text-sm font-semibold text-white backdrop-blur-sm">
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary-400"/>
+                  {slide.tag}
+                </span>
+              </motion.div>
+            )}
 
             <motion.h1 key={`title-${current}`} initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
@@ -92,11 +119,13 @@ export default function HeroBanner() {
               {slide.headline}
             </motion.h1>
 
-            <motion.p key={`sub-${current}`} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="mt-6 max-w-lg text-lg text-white/85 leading-relaxed">
-              {slide.sub}
-            </motion.p>
+            {slide.sub && (
+              <motion.p key={`sub-${current}`} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="mt-6 max-w-lg text-lg text-white/85 leading-relaxed">
+                {slide.sub}
+              </motion.p>
+            )}
 
             <motion.div key={`cta-${current}`} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
@@ -114,33 +143,37 @@ export default function HeroBanner() {
               </Link>
             </motion.div>
 
-            {/* Stats */}
-            <motion.div key={`stats-${current}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-              transition={{ duration: 0.6, delay: 0.5 }}
-              className="mt-12 flex gap-8">
-              {[
-                { value: '500+', label: 'Fabric Types' },
-                { value: '10K+', label: 'Happy Customers' },
-                { value: '15+', label: 'Years Experience' },
-              ].map((stat) => (
-                <div key={stat.label}>
-                  <p className="text-2xl font-bold text-white font-display">{stat.value}</p>
-                  <p className="text-sm text-white/70">{stat.label}</p>
-                </div>
-              ))}
-            </motion.div>
+            {/* Stats — only shown on default slides (not custom banners) */}
+            {apiBanners.length === 0 && (
+              <motion.div key={`stats-${current}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                transition={{ duration: 0.6, delay: 0.5 }}
+                className="mt-12 flex gap-8">
+                {[
+                  { value: '500+', label: 'Fabric Types' },
+                  { value: '10K+', label: 'Happy Customers' },
+                  { value: '15+', label: 'Years Experience' },
+                ].map((stat) => (
+                  <div key={stat.label}>
+                    <p className="text-2xl font-bold text-white font-display">{stat.value}</p>
+                    <p className="text-sm text-white/70">{stat.label}</p>
+                  </div>
+                ))}
+              </motion.div>
+            )}
           </div>
         </div>
       </div>
 
       {/* Slide indicators */}
-      <div className="absolute bottom-8 left-1/2 z-10 flex -translate-x-1/2 gap-2">
-        {SLIDES.map((_, i: number) => (
-          <button key={i} onClick={() => setCurrent(i)}
-            className={`rounded-full transition-all duration-300 ${i === current ? 'w-8 bg-white' : 'w-2 bg-white/40 hover:bg-white/60'} h-2`}
-            aria-label={`Slide ${i + 1}`}/>
-        ))}
-      </div>
+      {slides.length > 1 && (
+        <div className="absolute bottom-8 left-1/2 z-10 flex -translate-x-1/2 gap-2">
+          {slides.map((_, i: number) => (
+            <button key={i} onClick={() => setCurrent(i)}
+              className={`rounded-full transition-all duration-300 ${i === current ? 'w-8 bg-white' : 'w-2 bg-white/40 hover:bg-white/60'} h-2`}
+              aria-label={`Slide ${i + 1}`}/>
+          ))}
+        </div>
+      )}
 
       {/* Scroll indicator */}
       <motion.div animate={{ y: [0, 8, 0] }} transition={{ repeat: Infinity, duration: 2 }}
