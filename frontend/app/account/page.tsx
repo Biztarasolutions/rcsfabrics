@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -77,7 +77,7 @@ const TAB_SLUGS: Record<string, string> = {
 };
 const SLUG_TO_TAB: Record<string, string> = Object.fromEntries(Object.entries(TAB_SLUGS).map(([k, v]) => [v, k]));
 
-export default function AccountPage() {
+function AccountPage() {
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState(() => SLUG_TO_TAB[searchParams.get('tab') ?? ''] ?? 'Overview');
   const { user, logout } = useAuthStore();
@@ -725,5 +725,17 @@ export default function AccountPage() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+export default function AccountPageWrapper() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-dark-950">
+        <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary-600 border-t-transparent"/>
+      </div>
+    }>
+      <AccountPage />
+    </Suspense>
   );
 }
