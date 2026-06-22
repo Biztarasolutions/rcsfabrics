@@ -47,7 +47,7 @@ const DEFAULT_SLIDES = [
 ];
 
 export default function HeroBanner() {
-  const { data: homepageData, isLoading } = useHomepageData();
+  const { data: homepageData } = useHomepageData();
   const [current, setCurrent] = useState(0);
 
   // null = still fetching; [] = fetched but empty; [...] = fetched with banners
