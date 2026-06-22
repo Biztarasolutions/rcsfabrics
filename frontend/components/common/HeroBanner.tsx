@@ -47,31 +47,59 @@ const DEFAULT_SLIDES = [
 ];
 
 export default function HeroBanner() {
-  const { data: homepageData } = useHomepageData();
+  const { data: homepageData, isLoading } = useHomepageData();
   const [current, setCurrent] = useState(0);
 
-  const apiBanners: any[] = homepageData?.banners || [];
-  const slides = apiBanners.length > 0
-    ? apiBanners.map((b: any, i: number) => ({
-        id: b.id,
-        tag: b.tag || '',
-        headline: b.title,
-        sub: b.subtitle || '',
-        cta: { label: b.ctaLabel || 'Shop Now', href: b.link || '/products' },
-        ctaSecondary: { label: 'View All', href: '/products' },
-        image: b.image,
-        accent: ACCENTS[i % ACCENTS.length],
-      }))
-    : DEFAULT_SLIDES;
+  // null = still fetching; [] = fetched but empty; [...] = fetched with banners
+  const apiBanners: any[] | null = homepageData ? (homepageData.banners || []) : null;
 
-  // Reset to slide 0 when banner source switches (API loads or count changes)
-  useEffect(() => { setCurrent(0); }, [slides.length]);
+  // Only fall back to DEFAULT_SLIDES after the API has confirmed no banners exist
+  const slides = apiBanners === null
+    ? null
+    : apiBanners.length > 0
+      ? apiBanners.map((b: any, i: number) => ({
+          id: b.id,
+          tag: b.tag || '',
+          headline: b.title,
+          sub: b.subtitle || '',
+          cta: { label: b.ctaLabel || 'Shop Now', href: b.link || '/products' },
+          ctaSecondary: { label: 'View All', href: '/products' },
+          image: b.image,
+          accent: ACCENTS[i % ACCENTS.length],
+        }))
+      : DEFAULT_SLIDES;
+
+  // Reset to slide 0 when slides become available or count changes
+  useEffect(() => { if (slides) setCurrent(0); }, [slides?.length]);
 
   useEffect(() => {
-    if (slides.length <= 1) return;
+    if (!slides || slides.length <= 1) return;
     const timer = setInterval(() => setCurrent((c) => (c + 1) % slides.length), 5500);
     return () => clearInterval(timer);
-  }, [slides.length]);
+  }, [slides?.length]);
+
+  // While API is still loading, show a gradient placeholder — no flash of old default slides
+  if (!slides) {
+    return (
+      <section className="relative h-[90vh] min-h-[600px] max-h-[900px] overflow-hidden bg-gradient-to-r from-primary-900 via-primary-800 to-primary-700 flex items-end">
+        <div className="absolute inset-0 opacity-5"
+          style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23fff' fill-opacity='1'%3E%3Cpath d='M0 0h1v1H0V0zm2 0h1v1H2V0zm2 0h1v1H4V0zm2 0h1v1H6V0zm2 0h1v1H8V0zm2 0h1v1h-1V0zm2 0h1v1h-1V0zm2 0h1v1h-1V0zm2 0h1v1h-1V0zm2 0h1v1h-1V0z'/%3E%3C/g%3E%3C/svg%3E\")" }}/>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"/>
+        <div className="relative z-10 container-main pb-16">
+          <div className="max-w-2xl space-y-4 animate-pulse">
+            <div className="h-6 w-40 rounded-full bg-white/20"/>
+            <div className="h-16 w-96 rounded-xl bg-white/15"/>
+            <div className="h-16 w-72 rounded-xl bg-white/10"/>
+            <div className="h-5 w-80 rounded bg-white/10 mt-2"/>
+            <div className="flex gap-4 mt-6">
+              <div className="h-12 w-36 rounded-xl bg-white/20"/>
+              <div className="h-12 w-32 rounded-xl bg-white/10"/>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   const slide = slides[current] ?? slides[0];
 
@@ -144,7 +172,7 @@ export default function HeroBanner() {
             </motion.div>
 
             {/* Stats — only shown on default slides (not custom banners) */}
-            {apiBanners.length === 0 && (
+            {(apiBanners === null || apiBanners.length === 0) && (
               <motion.div key={`stats-${current}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                 transition={{ duration: 0.6, delay: 0.5 }}
                 className="mt-12 flex gap-8">
