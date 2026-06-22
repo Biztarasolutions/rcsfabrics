@@ -305,12 +305,13 @@ export default function AnalyticsPage() {
     };
   }, [allOrders, from, to, statuses, hasFilter, stats]);
 
-  // All-time product purchase + cancellation insights (not date-filtered)
+  // Product purchase + cancellation insights — filtered to the selected date range
   const orderInsights = useMemo(() => {
-    const orders = allOrders as any[];
+    const ymd = (iso: string) => new Date(iso).toISOString().slice(0, 10);
+    const inRange = (allOrders as any[]).filter(o => { const k = ymd(o.createdAt); return k >= from && k <= to; });
 
     const purchMap: Record<string, { name: string; image?: string; qty: number; rev: number }> = {};
-    orders.filter(o => o.status === 'DELIVERED').forEach(o =>
+    inRange.filter(o => o.status === 'DELIVERED').forEach(o =>
       (o.items || []).forEach((it: any) => {
         const k = it.productId || it.productName || 'unknown';
         if (!purchMap[k]) purchMap[k] = { name: it.productName || 'Unknown', image: it.productImage, qty: 0, rev: 0 };
@@ -323,7 +324,7 @@ export default function AnalyticsPage() {
       .map(p => ({ name: p.name, image: p.image, value: p.qty, sub: formatPrice(p.rev) }));
 
     const cancMap: Record<string, { name: string; image?: string; count: number }> = {};
-    orders.filter(o => o.status === 'CANCELLED').forEach(o =>
+    inRange.filter(o => o.status === 'CANCELLED').forEach(o =>
       (o.items || []).forEach((it: any) => {
         const k = it.productId || it.productName || 'unknown';
         if (!cancMap[k]) cancMap[k] = { name: it.productName || 'Unknown', image: it.productImage, count: 0 };
@@ -335,7 +336,7 @@ export default function AnalyticsPage() {
       .map(p => ({ name: p.name, image: p.image, value: p.count }));
 
     return { mostPurchased, mostCancelled };
-  }, [allOrders]);
+  }, [allOrders, from, to]);
 
   // Product review / rating insights
   const productInsights = useMemo(() => {
@@ -524,7 +525,9 @@ export default function AnalyticsPage() {
           <div>
             <div className="mb-4 flex items-center gap-2">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white">📦 Product Insights</h3>
-              <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500 dark:bg-dark-700 dark:text-gray-400">All time</span>
+              <span className="rounded-full bg-primary-50 px-2 py-0.5 text-xs font-medium text-primary-600 dark:bg-primary-950/30 dark:text-primary-400">
+                {from === to ? from : `${from.slice(5)} – ${to.slice(5)}`}
+              </span>
             </div>
             <div className="grid gap-4 lg:grid-cols-2">
               <ProductInsightCard
