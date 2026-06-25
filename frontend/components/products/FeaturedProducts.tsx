@@ -24,9 +24,9 @@ export default function FeaturedProducts() {
       ) : (
         <motion.div variants={container} initial="hidden" whileInView="show" viewport={{ once: true }}
           className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {products.map((product: any) => (
+          {products.map((product: any, i: number) => (
             <motion.div key={product.id} variants={item}>
-              <ProductCard product={product} />
+              <ProductCard product={product} priority={i < 4} />
             </motion.div>
           ))}
         </motion.div>

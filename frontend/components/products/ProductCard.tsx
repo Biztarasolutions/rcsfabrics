@@ -9,9 +9,9 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { BLUR_PLACEHOLDER, supabaseImg } from '@/lib/image';
 
-interface ProductCardProps { product: Product; }
+interface ProductCardProps { product: Product; priority?: boolean; }
 
-const ProductCard = React.memo(function ProductCard({ product }: ProductCardProps) {
+const ProductCard = React.memo(function ProductCard({ product, priority = false }: ProductCardProps) {
   const [hovered, setHovered] = useState(false);
   const [everHovered, setEverHovered] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
@@ -55,6 +55,7 @@ const ProductCard = React.memo(function ProductCard({ product }: ProductCardProp
               src={supabaseImg(mainImage.url, 400)}
               alt={product.name}
               fill
+              priority={priority}
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 25vw"
               placeholder="blur"
               blurDataURL={BLUR_PLACEHOLDER}

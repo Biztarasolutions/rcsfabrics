@@ -49,6 +49,9 @@ const DEFAULT_SLIDES = [
 export default function HeroBanner() {
   const { data: homepageData } = useHomepageData();
   const [current, setCurrent] = useState(0);
+  // Track which slide images have finished loading — text is hidden until then
+  const [loadedSlides, setLoadedSlides] = useState<Set<number>>(new Set());
+  const markLoaded = (i: number) => setLoadedSlides(prev => new Set([...prev, i]));
 
   // null = still fetching; [] = fetched but empty; [...] = fetched with banners
   const apiBanners: any[] | null = homepageData ? (homepageData.banners || []) : null;
@@ -115,6 +118,7 @@ export default function HeroBanner() {
             className={`absolute inset-0 transition-opacity duration-1000 ${isActive ? 'opacity-100' : 'opacity-0'}`}>
             <Image src={s.image} alt={s.tag || s.headline} fill priority={i === 0} sizes="100vw"
               placeholder="blur" blurDataURL={BLUR_PLACEHOLDER}
+              onLoad={() => markLoaded(i)}
               className="object-cover scale-105 animate-float" style={{ animationDuration: '8s' }}/>
             <div className={`absolute inset-0 bg-gradient-to-r ${s.accent}`}/>
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"/>
@@ -126,8 +130,8 @@ export default function HeroBanner() {
       <div className="absolute inset-0 opacity-5"
         style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23fff' fill-opacity='1'%3E%3Cpath d='M0 0h1v1H0V0zm2 0h1v1H2V0zm2 0h1v1H4V0zm2 0h1v1H6V0zm2 0h1v1H8V0zm2 0h1v1h-1V0zm2 0h1v1h-1V0zm2 0h1v1h-1V0zm2 0h1v1h-1V0zm2 0h1v1h-1V0z'/%3E%3C/g%3E%3C/svg%3E\")" }}/>
 
-      {/* Content */}
-      <div className="relative z-10 flex h-full items-center">
+      {/* Content — hidden until the current slide's image has loaded */}
+      <div className={`relative z-10 flex h-full items-center transition-opacity duration-700 ${loadedSlides.has(current) ? 'opacity-100' : 'opacity-0'}`}>
         <div className="container-main">
           <div className="max-w-2xl">
             {slide.tag && (
