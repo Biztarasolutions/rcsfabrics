@@ -15,7 +15,6 @@ const ProductCard = React.memo(function ProductCard({ product, priority = false 
   const [hovered, setHovered] = useState(false);
   const [everHovered, setEverHovered] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
-  const [secondImgLoaded, setSecondImgLoaded] = useState(false);
   const mainImage = product.images?.find((img) => img.isMain) || product.images?.[0];
   const secondImage = product.images?.[1];
   const discountPercent = product.discountPrice ? calculateDiscount(product.basePrice, product.discountPrice) : 0;
@@ -60,7 +59,7 @@ const ProductCard = React.memo(function ProductCard({ product, priority = false 
               placeholder="blur"
               blurDataURL={BLUR_PLACEHOLDER}
               onLoad={() => setImgLoaded(true)}
-              className={`object-contain transition-all duration-500 ${hovered && secondImage ? 'opacity-0' : 'opacity-100'} ${!imgLoaded ? 'scale-105' : 'scale-100'}`}
+              className={`object-contain transition-opacity duration-500 ${!imgLoaded || (hovered && secondImage) ? 'opacity-0' : 'opacity-100'}`}
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 dark:from-dark-600 dark:to-dark-700">
@@ -75,8 +74,7 @@ const ProductCard = React.memo(function ProductCard({ product, priority = false 
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 25vw"
               placeholder="blur"
               blurDataURL={BLUR_PLACEHOLDER}
-              onLoad={() => setSecondImgLoaded(true)}
-              className={`object-contain transition-all duration-500 ${hovered ? 'opacity-100' : 'opacity-0'} ${!secondImgLoaded ? 'scale-105' : 'scale-100'}`}
+              className={`object-contain transition-opacity duration-500 ${hovered ? 'opacity-100' : 'opacity-0'}`}
             />
           )}
           <div className="absolute left-3 top-3 flex flex-col gap-1.5">
