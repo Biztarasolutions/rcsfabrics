@@ -60,7 +60,7 @@ const ProductCard = React.memo(function ProductCard({ product, priority = false 
               placeholder="blur"
               blurDataURL={BLUR_PLACEHOLDER}
               onLoad={() => setImgLoaded(true)}
-              className={`object-cover transition-all duration-500 ${hovered && secondImage ? 'opacity-0' : 'opacity-100'} ${!imgLoaded ? 'scale-105' : 'scale-100'}`}
+              className={`object-contain transition-all duration-500 ${hovered && secondImage ? 'opacity-0' : 'opacity-100'} ${!imgLoaded ? 'scale-105' : 'scale-100'}`}
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 dark:from-dark-600 dark:to-dark-700">
@@ -76,7 +76,7 @@ const ProductCard = React.memo(function ProductCard({ product, priority = false 
               placeholder="blur"
               blurDataURL={BLUR_PLACEHOLDER}
               onLoad={() => setSecondImgLoaded(true)}
-              className={`object-cover transition-all duration-500 ${hovered ? 'opacity-100' : 'opacity-0'} ${!secondImgLoaded ? 'scale-105' : 'scale-100'}`}
+              className={`object-contain transition-all duration-500 ${hovered ? 'opacity-100' : 'opacity-0'} ${!secondImgLoaded ? 'scale-105' : 'scale-100'}`}
             />
           )}
           <div className="absolute left-3 top-3 flex flex-col gap-1.5">
