@@ -40,7 +40,10 @@ api.interceptors.response.use(
       return Promise.reject(new Error('Server is waking up, please try again in a moment.'));
     }
     // Token expired or invalid — clear auth and redirect to login
-    if (error.response?.status === 401 && typeof window !== 'undefined') {
+    const status = error.response?.status;
+    const msg = error.response?.data?.message || '';
+    const isExpiredToken = status === 401 || (status === 403 && msg.toLowerCase().includes('token'));
+    if (isExpiredToken && typeof window !== 'undefined') {
       localStorage.removeItem('authToken');
       localStorage.removeItem('rcs-auth');
       window.location.href = '/auth';

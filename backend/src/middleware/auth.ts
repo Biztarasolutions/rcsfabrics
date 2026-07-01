@@ -30,10 +30,10 @@ export const authenticateToken = (
     };
     next();
   } catch (error) {
-    res.status(403).json({
+    res.status(401).json({
       success: false,
       message: 'Invalid or expired token',
-      statusCode: 403,
+      statusCode: 401,
     });
   }
 };
