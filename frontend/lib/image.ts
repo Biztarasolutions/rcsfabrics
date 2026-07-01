@@ -9,10 +9,10 @@ export const BLUR_PLACEHOLDER =
  *
  * Non-Supabase URLs (Unsplash, placeholders, etc.) are returned unchanged.
  */
-export function supabaseImg(url: string, width: number, quality = 75): string {
+export function supabaseImg(url: string, width: number, quality = 75, resize: 'contain' | 'cover' | 'fill' = 'contain'): string {
   if (!url || !url.includes('supabase.co/storage/v1/object/public/')) return url;
   const [base, path] = url.split('/storage/v1/object/public/');
   // Strip any existing query string from the path before adding our own
   const cleanPath = path?.split('?')[0] ?? '';
-  return `${base}/storage/v1/render/image/public/${cleanPath}?width=${width}&quality=${quality}&format=webp`;
+  return `${base}/storage/v1/render/image/public/${cleanPath}?width=${width}&quality=${quality}&format=webp&resize=${resize}`;
 }

@@ -209,12 +209,12 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
         <div className="grid gap-12 lg:grid-cols-2">
           {/* Image Gallery */}
           <div className="space-y-4">
-            <div className="relative overflow-hidden rounded-2xl bg-gray-50 dark:bg-dark-800" style={{ aspectRatio: '1' }}
+            <div className="relative overflow-hidden rounded-2xl bg-gray-50 dark:bg-dark-800" style={{ aspectRatio: '4/5' }}
               onMouseEnter={() => setZoomed(true)} onMouseLeave={() => setZoomed(false)}>
               <Image src={supabaseImg(images?.[activeImg]?.url || '', 1000) || 'https://via.placeholder.com/800'} alt={PRODUCT.name}
                 fill priority sizes="(max-width: 1024px) 100vw, 50vw"
                 placeholder="blur" blurDataURL={BLUR_PLACEHOLDER}
-                className={`object-cover transition-transform duration-500 ${zoomed ? 'scale-125' : 'scale-100'}`}/>
+                className={`object-contain transition-transform duration-500 ${zoomed ? 'scale-110' : 'scale-100'}`}/>
               {PRODUCT.discountPrice && discountBadge && (
                 <div className="absolute left-4 top-4 rounded-full bg-red-500 px-3 py-1 text-sm font-bold text-white">{discountBadge}</div>
               )}
@@ -236,7 +236,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
                 <button key={img.id} onClick={() => setActiveImg(i)}
                   className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border-2 transition-all ${i === activeImg ? 'border-primary-500 shadow-md' : 'border-gray-200 dark:border-dark-700 hover:border-primary-300'}`}>
                   <Image src={supabaseImg(img.url, 160)} alt={`View ${i + 1}`} fill sizes="80px"
-                    placeholder="blur" blurDataURL={BLUR_PLACEHOLDER} className="object-cover"/>
+                    placeholder="blur" blurDataURL={BLUR_PLACEHOLDER} className="object-contain"/>
                 </button>
               ))}
             </div>
@@ -464,7 +464,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
                     {p.image ? (
                       <Image src={supabaseImg(p.image, 400)} alt={p.name} fill sizes="200px"
                         placeholder="blur" blurDataURL={BLUR_PLACEHOLDER}
-                        className="object-cover group-hover:scale-105 transition-transform duration-300"/>
+                        className="object-contain transition-transform duration-300"/>
                     ) : (
                       <div className="flex h-full items-center justify-center text-3xl">🧵</div>
                     )}
