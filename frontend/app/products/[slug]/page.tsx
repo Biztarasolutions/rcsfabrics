@@ -230,13 +230,14 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
                 </svg>
               </button>
             </div>
-            {/* Thumbnails */}
+            {/* Thumbnails — same 4:5 ratio as card grid for visual consistency */}
             <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
               {images?.map((img: any, i: number) => (
                 <button key={img.id} onClick={() => setActiveImg(i)}
-                  className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border-2 transition-all ${i === activeImg ? 'border-primary-500 shadow-md' : 'border-gray-200 dark:border-dark-700 hover:border-primary-300'}`}>
+                  className={`relative w-20 shrink-0 overflow-hidden rounded-xl border-2 transition-all ${i === activeImg ? 'border-primary-500 shadow-md' : 'border-gray-200 dark:border-dark-700 hover:border-primary-300'}`}
+                  style={{ aspectRatio: '4/5' }}>
                   <Image src={supabaseImg(img.url, 160)} alt={`View ${i + 1}`} fill sizes="80px"
-                    placeholder="blur" blurDataURL={BLUR_PLACEHOLDER} className="object-contain"/>
+                    placeholder="blur" blurDataURL={BLUR_PLACEHOLDER} className="object-cover object-center"/>
                 </button>
               ))}
             </div>
@@ -460,11 +461,11 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
               {recentlyViewed.slice(0, 5).map((p) => (
                 <Link key={p.id} href={`/products/${p.slug}`}
                   className="group rounded-2xl border border-gray-100 bg-white p-3 transition-shadow hover:shadow-md dark:border-dark-700 dark:bg-dark-800">
-                  <div className="relative aspect-square overflow-hidden rounded-xl bg-gray-50 dark:bg-dark-700">
+                  <div className="relative overflow-hidden rounded-xl bg-gray-50 dark:bg-dark-700" style={{ aspectRatio: '4/5' }}>
                     {p.image ? (
                       <Image src={supabaseImg(p.image, 400)} alt={p.name} fill sizes="200px"
                         placeholder="blur" blurDataURL={BLUR_PLACEHOLDER}
-                        className="object-contain transition-transform duration-300"/>
+                        className="object-cover object-center transition-transform duration-300"/>
                     ) : (
                       <div className="flex h-full items-center justify-center text-3xl">🧵</div>
                     )}

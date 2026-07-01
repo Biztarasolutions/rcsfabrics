@@ -47,8 +47,10 @@ const ProductCard = React.memo(function ProductCard({ product, priority = false 
         onMouseLeave={() => setHovered(false)}
         className="group relative flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all duration-300 sm:hover:-translate-y-1 sm:hover:shadow-product dark:border-dark-700 dark:bg-dark-800"
       >
-        {/* Image */}
-        <div className={`relative overflow-hidden bg-gray-50 dark:bg-dark-700 ${!imgLoaded ? 'animate-pulse' : ''}`} style={{ aspectRatio: '4/5' }}>
+        {/* Image — fixed 4:5 container, centered cover crop for uniform grid */}
+        <div className="relative overflow-hidden bg-gray-50 dark:bg-dark-700" style={{ aspectRatio: '4/5' }}>
+          {/* Pulse skeleton shown until image loads */}
+          {!imgLoaded && <div className="absolute inset-0 animate-pulse bg-gray-100 dark:bg-dark-700"/>}
           {mainImage ? (
             <Image
               src={supabaseImg(mainImage.url, 400)}
@@ -59,7 +61,7 @@ const ProductCard = React.memo(function ProductCard({ product, priority = false 
               placeholder="blur"
               blurDataURL={BLUR_PLACEHOLDER}
               onLoad={() => setImgLoaded(true)}
-              className={`object-contain transition-opacity duration-500 ${!imgLoaded || (hovered && secondImage) ? 'opacity-0' : 'opacity-100'}`}
+              className={`object-cover object-center transition-opacity duration-500 ${!imgLoaded || (hovered && secondImage) ? 'opacity-0' : 'opacity-100'}`}
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 dark:from-dark-600 dark:to-dark-700">
@@ -74,7 +76,7 @@ const ProductCard = React.memo(function ProductCard({ product, priority = false 
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 25vw"
               placeholder="blur"
               blurDataURL={BLUR_PLACEHOLDER}
-              className={`object-contain transition-opacity duration-500 ${hovered ? 'opacity-100' : 'opacity-0'}`}
+              className={`object-cover object-center transition-opacity duration-500 ${hovered ? 'opacity-100' : 'opacity-0'}`}
             />
           )}
           <div className="absolute left-3 top-3 flex flex-col gap-1.5">
