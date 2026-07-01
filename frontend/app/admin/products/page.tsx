@@ -17,7 +17,7 @@ export default function AdminProductsPage() {
   const [page, setPage] = useState(1);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-  const { data: productsData = { products: [], total: 0, pages: 1 }, isLoading } = useQuery({
+  const { data: productsData = { products: [], total: 0, pages: 1 }, isLoading, isError, error } = useQuery({
     queryKey: ['admin-products', search, page],
     queryFn: async () => {
         const response = await adminApi.getAdminProducts({ search, page, limit: 50 });
@@ -76,6 +76,12 @@ export default function AdminProductsPage() {
 
   return (
     <div className="min-w-0 w-full max-w-full space-y-6">
+      {/* API error banner */}
+      {isError && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400">
+          Failed to load products: {(error as Error)?.message || 'Unknown error'}. Try refreshing the page.
+        </div>
+      )}
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>

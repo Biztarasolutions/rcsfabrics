@@ -31,7 +31,7 @@ export default function AdminDashboard() {
   const hasFilter = statuses.length > 0;
 
   // Catalog/customer totals (status-independent) from the stats endpoint.
-  const { data: stats = null, isLoading: statsLoading } = useQuery({
+  const { data: stats = null, isLoading: statsLoading, isError: statsError, error: statsErr } = useQuery({
     queryKey: ['admin-stats'],
     queryFn: () => adminApi.getStats().then(res => res.data.data),
     refetchInterval: 30 * 1000,
@@ -72,6 +72,11 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-6">
+      {statsError && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400">
+          Could not reach the server: {(statsErr as Error)?.message || 'Unknown error'}. The backend may be starting up — wait 30 seconds and refresh.
+        </div>
+      )}
       {/* Welcome */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>

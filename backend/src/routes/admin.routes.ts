@@ -30,6 +30,7 @@ import {
   getSettings,
   updateSetting,
   getAnalytics,
+  migrateProductCodes,
 } from '@/controllers/admin.controller';
 import bulkEnquiryRouter from '@/routes/bulkEnquiry.routes';
 import { createProductGroup } from '@/controllers/productGroupController';
@@ -47,6 +48,7 @@ router.put('/products/:id', updateProduct);
 router.delete('/products/:id', deleteProduct);
 router.post('/products/sync-all', syncAllProductImages);
 router.post('/products/:id/sync', syncProductImages);
+router.post('/products/migrate-codes', migrateProductCodes);
 
 // Inventory Management
 router.get('/inventory', getInventory);

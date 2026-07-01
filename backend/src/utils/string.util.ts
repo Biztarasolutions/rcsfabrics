@@ -49,18 +49,18 @@ export const truncateString = (str: string, length: number): string => {
 /** e.g. 10001 → P10001 */
 export const formatProductCodeSuffix = (code: number | string): string => `P${code}`;
 
-/** Style code: Name-Category-Code (e.g. Polka Dot-Satin-P10001) */
+/** Style code: Code-Name-Category (e.g. P10001-Polka Dot-Satin) */
 export const buildStyleCode = (name: string, categoryName: string, code: number | string): string =>
-  `${name.trim()}-${categoryName.trim()}-${formatProductCodeSuffix(code)}`;
+  `${formatProductCodeSuffix(code)}-${name.trim()}-${categoryName.trim()}`;
 
-/** Product code: Name-Category-Code-Color (e.g. Polka Dot-Satin-P10001-White) */
+/** Product code: Code-Name-Category-Color (e.g. P10001-Polka Dot-Satin-White) */
 export const buildProductCode = (
   name: string,
   categoryName: string,
   colorName: string,
   code: number | string
 ): string =>
-  `${name.trim()}-${categoryName.trim()}-${formatProductCodeSuffix(code)}-${colorName.trim()}`;
+  `${formatProductCodeSuffix(code)}-${name.trim()}-${categoryName.trim()}-${colorName.trim()}`;
 
 /** Legacy style code: 101-SAT-POL */
 export const buildLegacyStyleCode = (
@@ -109,15 +109,26 @@ export const getDriveFolderNameCandidates = (opts: {
 };
 
 /**
- * Extracts and cleans the core design/product name by removing category, code and color suffixes.
- * E.g., "Polka Dot-Satin-P10001-White" -> "Polka Dot"
+ * Extracts the core design name from a full product/style code.
+ * Handles new format "P10001-Polka Dot-Satin[-White]" → "Polka Dot"
+ * and old format "Polka Dot-Satin-P10001[-White]" → "Polka Dot"
  */
 export const extractDesignName = (name: string, categoryName: string, code: number | string): string => {
   let cleaned = name.trim();
-  const suffix = `-${categoryName.trim()}-${formatProductCodeSuffix(code)}`;
-  if (cleaned.includes(suffix)) {
-    cleaned = cleaned.split(suffix)[0];
+  const pcode = formatProductCodeSuffix(code);
+
+  // New format: starts with "P10001-"
+  const newPrefix = `${pcode}-`;
+  if (cleaned.startsWith(newPrefix)) {
+    cleaned = cleaned.slice(newPrefix.length);
+    const catIdx = cleaned.indexOf(`-${categoryName.trim()}`);
+    if (catIdx !== -1) cleaned = cleaned.slice(0, catIdx);
+    return cleaned.trim();
   }
+
+  // Old format: contains "-Satin-P10001"
+  const oldSuffix = `-${categoryName.trim()}-${pcode}`;
+  if (cleaned.includes(oldSuffix)) cleaned = cleaned.split(oldSuffix)[0];
   return cleaned.trim();
 };
 

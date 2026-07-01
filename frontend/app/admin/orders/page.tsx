@@ -43,7 +43,7 @@ export default function AdminOrdersPage() {
   const [page, setPage] = useState(1);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
 
-  const { data: ordersData = { orders: [], total: 0, pages: 1 }, isLoading, dataUpdatedAt } = useQuery({
+  const { data: ordersData = { orders: [], total: 0, pages: 1 }, isLoading, isError, error, dataUpdatedAt } = useQuery({
     queryKey: ['admin-orders', page, filterStatus, search],
     queryFn: () => adminApi.getOrders({ page, limit: 10, status: filterStatus, search }).then(res => res.data.data),
     refetchInterval: 30 * 1000,
@@ -65,6 +65,11 @@ export default function AdminOrdersPage() {
 
   return (
     <div className="space-y-6">
+      {isError && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400">
+          Failed to load orders: {(error as Error)?.message || 'Unknown error'}. Try refreshing the page.
+        </div>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Orders</h2>

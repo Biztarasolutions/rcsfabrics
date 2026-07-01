@@ -2014,5 +2014,54 @@ export const syncAllProductImages = async (
   }
 };
 
+/** Migrate all existing products to the new Code-Name-Category[-Color] naming format */
+export const migrateProductCodes = async (_req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const products = await prisma.product.findMany({
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        color: true,
+        category: { select: { name: true } },
+      },
+    });
+
+    let updated = 0;
+    const errors: string[] = [];
+
+    for (const product of products) {
+      try {
+        const categoryName = product.category?.name || 'Unknown';
+        const colorName = product.color || 'Unknown';
+        const code = product.code ?? '000';
+        const newProductCode = buildProductCode(product.name, categoryName, colorName, code);
+        const newStyleCode = buildStyleCode(product.name, categoryName, code);
+        const newSlug = generateSlug(newProductCode);
+
+        await prisma.product.update({
+          where: { id: product.id },
+          data: { productCode: newProductCode, styleCode: newStyleCode, slug: newSlug },
+        });
+        updated++;
+      } catch (err: any) {
+        errors.push(`"${product.name}" (${product.id}): ${err.message}`);
+      }
+    }
+
+    invalidateProductCaches();
+
+    res.json({
+      success: true,
+      message: `Migrated ${updated}/${products.length} products to new P{code}-Name-Category-Color format.`,
+      data: { updated, total: products.length, errors: errors.length > 0 ? errors : undefined },
+      statusCode: 200,
+    } as ApiResponse);
+  } catch (error: any) {
+    console.error('Migration error:', error);
+    res.status(500).json({ success: false, message: error.message, statusCode: 500 } as ApiResponse);
+  }
+};
+
 
 

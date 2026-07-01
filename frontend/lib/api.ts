@@ -14,22 +14,36 @@ const api = axios.create({
   timeout: 60000,
 });
 
-// Request interceptor — attach token
+// Request interceptor — attach token (reads from localStorage.authToken with Zustand persist fallback)
 api.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('authToken');
+    let token = localStorage.getItem('authToken');
+    if (!token) {
+      try {
+        const stored = JSON.parse(localStorage.getItem('rcs-auth') || '{}');
+        token = stored?.state?.token || null;
+        // Re-sync the separate key so future requests don't need the fallback
+        if (token) localStorage.setItem('authToken', token);
+      } catch {}
+    }
     if (token) config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
 
-// Response interceptor — normalize errors
+// Response interceptor — normalize errors, auto-logout on 401
 api.interceptors.response.use(
   (res) => res,
   (error: AxiosError<{ message?: string }>) => {
     // Timeout / no response — usually the server waking up from idle (Render free tier cold start)
     if (error.code === 'ECONNABORTED' || !error.response) {
       return Promise.reject(new Error('Server is waking up, please try again in a moment.'));
+    }
+    // Token expired or invalid — clear auth and redirect to login
+    if (error.response?.status === 401 && typeof window !== 'undefined') {
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('rcs-auth');
+      window.location.href = '/auth';
     }
     const message =
       error.response?.data?.message || error.message || 'Something went wrong';
