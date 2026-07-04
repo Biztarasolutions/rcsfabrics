@@ -45,18 +45,18 @@ export const cn = (...classes: (string | undefined | null | boolean)[]): string 
 /** e.g. 10001 → P10001 */
 export const formatProductCodeSuffix = (code: number | string): string => `P${code}`;
 
-/** Style code: Name-Category-Code (e.g. Polka Dot-Satin-P10001) */
+/** Style code: Code-Name-Category (e.g. P10001-Polka Dot-Satin) */
 export const buildStyleCode = (name: string, categoryName: string, code: number | string): string =>
-  `${name.trim()}-${categoryName.trim()}-${formatProductCodeSuffix(code)}`;
+  `${formatProductCodeSuffix(code)}-${name.trim()}-${categoryName.trim()}`;
 
-/** Product code: Name-Category-Code-Color (e.g. Polka Dot-Satin-P10001-White) */
+/** Product code: Code-Name-Category-Color (e.g. P10001-Polka Dot-Satin-White) */
 export const buildProductCode = (
   name: string,
   categoryName: string,
   colorName: string,
   code: number | string
 ): string =>
-  `${name.trim()}-${categoryName.trim()}-${formatProductCodeSuffix(code)}-${colorName.trim()}`;
+  `${formatProductCodeSuffix(code)}-${name.trim()}-${categoryName.trim()}-${colorName.trim()}`;
 
 /**
  * Extracts and cleans the core design/product name by removing category, code and color suffixes.

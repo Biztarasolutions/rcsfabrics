@@ -69,7 +69,7 @@ export default function ProductFormAdvanced({ initialData, onClose }: ProductFor
   const [form, setForm] = useState<any>(EMPTY_FORM);
   const [styleCode, setStyleCode] = useState('');
 
-  const { data: categories = [] } = useQuery({
+  const { data: categories = [], isError: catsError } = useQuery({
     queryKey: ['admin-categories-list'],
     queryFn: () => adminApi.getCategories().then(res => res.data.data || []),
   });
@@ -222,13 +222,20 @@ export default function ProductFormAdvanced({ initialData, onClose }: ProductFor
           <div>
             <label className="mb-1.5 block text-sm font-medium">Category *</label>
             <select name="categoryId" value={form.categoryId} onChange={handleChange} className="input-field" required>
-              <option value="">Select Category</option>
+              <option value="">
+                {catsError ? 'Error loading categories — refresh' : categories.length === 0 ? 'No categories yet — add one first' : 'Select Category'}
+              </option>
               {categories.map((c: any) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
                 </option>
               ))}
             </select>
+            {categories.length === 0 && !catsError && (
+              <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+                No categories found. Go to Admin → Categories and add one first.
+              </p>
+            )}
           </div>
           {selectedCategory && (
             <div className="sm:col-span-2 rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-gray-600 dark:border-dark-700 dark:bg-dark-700/40 dark:text-gray-300">
