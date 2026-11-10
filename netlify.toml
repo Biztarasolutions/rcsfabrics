@@ -12,6 +12,12 @@
   status = 200
   force = true
 
+[images]
+  remote_images = ["https://eufihjcpdolquyxucnpf\\.supabase\\.co/storage/v1/object/public/.*"]
+
+[build.environment]
+  NEXT_PUBLIC_IMAGE_CDN = "netlify"
+
 [context.production.environment]
   NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co"
   NEXT_PUBLIC_SUPABASE_ANON_KEY = "public-anon-key"

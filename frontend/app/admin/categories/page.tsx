@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi, uploadCategoryImage } from '@/lib/api';
 import { toast } from 'react-hot-toast';
 import Image from 'next/image';
+import { BLUR_PLACEHOLDER, supabaseImg } from '@/lib/image';
 
 export default function AdminCategoriesPage() {
   const queryClient = useQueryClient();
@@ -166,7 +167,7 @@ export default function AdminCategoriesPage() {
             >
               <div className="flex items-center gap-4">
                 <Image
-                  src={cat.imageUrl || cat.image || 'https://via.placeholder.com/60'}
+                  src={supabaseImg(cat.imageUrl || cat.image || '', 120) || BLUR_PLACEHOLDER}
                   alt={cat.name}
                   width={56}
                   height={56}

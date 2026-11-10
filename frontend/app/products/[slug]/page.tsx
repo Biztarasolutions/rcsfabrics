@@ -211,7 +211,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
           <div className="space-y-4">
             <div className="relative overflow-hidden rounded-2xl bg-gray-50 dark:bg-dark-800" style={{ aspectRatio: '4/5' }}
               onMouseEnter={() => setZoomed(true)} onMouseLeave={() => setZoomed(false)}>
-              <Image src={supabaseImg(images?.[activeImg]?.url || '', 1000) || 'https://via.placeholder.com/800'} alt={PRODUCT.name}
+              <Image src={supabaseImg(images?.[activeImg]?.url || '', 1000) || BLUR_PLACEHOLDER} alt={PRODUCT.name}
                 fill priority sizes="(max-width: 1024px) 100vw, 50vw"
                 placeholder="blur" blurDataURL={BLUR_PLACEHOLDER}
                 className={`object-contain transition-transform duration-500 ${zoomed ? 'scale-110' : 'scale-100'}`}/>
