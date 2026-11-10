@@ -227,7 +227,6 @@ function AccountPage() {
     firstName: '',
     lastName: '',
     phone: '',
-    email: '',
     street: '',
     city: '',
     state: '',
@@ -268,7 +267,6 @@ function AccountPage() {
         firstName: '',
         lastName: '',
         phone: '',
-        email: '',
         street: '',
         city: '',
         state: '',
@@ -735,10 +733,6 @@ function AccountPage() {
                           <div>
                             <label className="text-xs font-semibold text-gray-600 dark:text-gray-400">Last Name</label>
                             <input required value={addressForm.lastName} onChange={(e) => setAddressForm({ ...addressForm, lastName: e.target.value })} className="input-field mt-1 py-2 text-sm" placeholder="Sharma"/>
-                          </div>
-                          <div className="sm:col-span-2">
-                            <label className="text-xs font-semibold text-gray-600 dark:text-gray-400">Email</label>
-                            <input type="email" required value={addressForm.email} onChange={(e) => setAddressForm({ ...addressForm, email: e.target.value })} className="input-field mt-1 py-2 text-sm" placeholder="priya@example.com"/>
                           </div>
                           <div>
                             <label className="text-xs font-semibold text-gray-600 dark:text-gray-400">Phone</label>

@@ -152,7 +152,6 @@ export const addAddress = async (
       firstName,
       lastName,
       phone,
-      email,
       street,
       city,
       state,
@@ -161,13 +160,17 @@ export const addAddress = async (
       isDefault,
     } = req.body;
 
+    // Email always comes from the logged-in account, not the form
+    const account = await prisma.user.findUnique({ where: { id: req.userId }, select: { email: true } });
+    if (!account) throw new ApiError(404, 'User not found');
+
     const address = await prisma.address.create({
       data: {
         userId: req.userId,
         firstName,
         lastName,
         phone,
-        email,
+        email: account.email || '',
         street,
         city,
         state,
@@ -202,7 +205,14 @@ export const updateAddress = async (
     }
 
     const { id } = req.params;
-    const addressData = req.body;
+    // Only these fields may be changed; userId/email are never taken from the request
+    const ALLOWED = ['firstName', 'lastName', 'phone', 'street', 'city', 'state', 'postalCode', 'country', 'isDefault'] as const;
+    const addressData: Record<string, unknown> = {};
+    for (const key of ALLOWED) {
+      if (req.body?.[key] !== undefined) addressData[key] = key === 'isDefault' ? Boolean(req.body[key]) : String(req.body[key]).trim();
+    }
+    const account = await prisma.user.findUnique({ where: { id: req.userId }, select: { email: true } });
+    if (account) addressData.email = account.email || '';
 
     const address = await prisma.address.findUnique({
       where: { id },

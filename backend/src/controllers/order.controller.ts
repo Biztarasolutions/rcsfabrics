@@ -7,6 +7,7 @@ import { generateOrderNumber, calculateOrderTotal } from '@/utils/order.util';
 import { parsePagination, createPaginationMeta } from '@/utils/pagination.util';
 import { ApiError } from '@/middleware/errorHandler';
 import { notifyOrder } from '@/services/orderNotifications';
+import { saveAddressIfNew } from '@/services/addressService';
 
 // Lazily create the Razorpay client. The Razorpay constructor throws if keys are missing,
 // so constructing at module load time crashes the entire server when env vars aren't set.
@@ -210,6 +211,8 @@ export const createOrder = async (
     // Email customer + team now for COD / manual UPI; online payments are announced once verified
     if (!razorpayOrderId || utrReference) {
       void notifyOrder(order.id, 'placed');
+      // COD / manual UPI: the order is placed now, so remember a new address now
+      await saveAddressIfNew(req.userId!, shippingAddress);
     }
 
     res.status(201).json({
@@ -351,6 +354,8 @@ export const verifyPayment = async (
     if (result.count === 0) throw new ApiError(409, 'Order is already paid');
     const updated = await prisma.order.findUnique({ where: { id } });
     void notifyOrder(id, 'paid');
+    // Online payment succeeded — remember a new delivery address for next time
+    if (updated) await saveAddressIfNew(updated.userId, updated.shippingAddress);
 
     res.json({ success: true, message: 'Payment verified', data: updated, statusCode: 200 } as ApiResponse);
   } catch (error) {
