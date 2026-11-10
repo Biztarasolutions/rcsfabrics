@@ -386,7 +386,7 @@ export default function AuthPage() {
             Delivered to You
           </h2>
           <p className="mt-4 text-lg text-white/80">
-            Join 10,000+ designers and makers who trust RCS Fabrics for their premium fabric
+            Join designers and makers who buy from RCS Fabrics for their premium fabric
             needs.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-4">

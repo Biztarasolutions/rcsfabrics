@@ -12,7 +12,7 @@ export default function WhyChoose() {
   ];
   return (
     <section className="why-choose container-main py-12">
-      <h2 className="section-title text-center font-display text-3xl mb-6">Why Thousands Choose RCS Fabrics</h2>
+      <h2 className="section-title text-center font-display text-3xl mb-6">Why Shop With RCS Fabrics</h2>
       <p className="section-subtitle text-center text-lg mb-8">Premium fabrics curated for designers, boutiques, resellers, and creators.</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         {items.map((text, i) => (

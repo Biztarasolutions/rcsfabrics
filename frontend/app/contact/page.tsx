@@ -43,9 +43,9 @@ export default function ContactPage() {
   const faqs = [
     { q: 'What is the minimum order quantity?', a: 'Minimum order is 0.5 meters for most fabrics. Some specialty fabrics require 1 meter minimum.' },
     { q: 'Do you offer samples/swatches?', a: 'Yes! Request physical swatches before committing to a full order. Swatch requests are processed within 2-3 days.' },
-    { q: 'How long does delivery take?', a: 'Standard delivery: 3-5 business days. Express: 1-2 business days. Free shipping on orders above ₹2,000.' },
+    { q: 'How long does delivery take?', a: 'Usually dispatched in 1–2 business days and delivered in 2–5 business days. Free shipping on orders of ₹2,000 or more; ₹150 below that.' },
     { q: 'Can I return fabric?', a: 'We accept returns within 30 days for unused, uncut fabric in original condition. Cut fabric cannot be returned.' },
-    { q: 'Do you offer bulk discounts?', a: 'Yes! Orders above 20 meters get 5% off, above 50 meters get 10% off. Contact us for custom wholesale pricing.' },
+    { q: 'Do you offer bulk discounts?', a: 'Yes — for larger quantities we offer wholesale pricing. Use the Bulk Order form or WhatsApp us for a quote.' },
   ];
 
   return (

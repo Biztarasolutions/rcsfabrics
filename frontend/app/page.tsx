@@ -29,7 +29,7 @@ export default function HomePage() {
               { icon: '🚚', label: 'Free Shipping', sub: 'Orders above ₹2,000' },
               { icon: '🔄', label: 'Easy Returns', sub: '30-day return policy' },
               { icon: '⚡', label: 'Fast Delivery', sub: '2–5 business days' },
-              { icon: '✅', label: 'Certified Quality', sub: 'Premium mills only' },
+              { icon: '✅', label: 'Quality Checked', sub: 'Inspected before dispatch' },
             ].map((b) => (
               <div key={b.label} className="flex items-center gap-3 py-2">
                 <span className="text-xl">{b.icon}</span>
@@ -100,7 +100,8 @@ export default function HomePage() {
 
 
       {/* 9. Testimonials */}
-      <Testimonials />
+      {/* Hidden until real customer reviews replace the sample quotes */}
+      {sectionToggles.testimonials && <Testimonials />}
 
       {/* 11. Newsletter */}
       <NewsletterSignup />

@@ -3,6 +3,6 @@
   "newArrivals": true,
   "bestSellers": true,
   "about": true,
-  "testimonials": true,
+  "testimonials": false,
   "bulkCTA": true
 }
