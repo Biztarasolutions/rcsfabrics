@@ -1,3 +1,4 @@
+import { randomInt } from 'crypto';
 import { config } from '@/config';
 
 export interface SMSResponse {
@@ -80,7 +81,8 @@ export const sendOTP = async (data: OTPData): Promise<SMSResponse> => {
  * Generate a random 6-digit OTP
  */
 export const generateOTP = (): string => {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  // Cryptographically secure 6-digit code (Math.random is predictable)
+  return randomInt(100000, 1000000).toString();
 };
 
 /**

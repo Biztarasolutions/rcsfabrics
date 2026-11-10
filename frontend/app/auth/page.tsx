@@ -7,6 +7,7 @@ import { authApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { queryClient } from '@/components/common/Providers';
 import Image from 'next/image';
+import ForgotPasswordModal from '@/components/auth/ForgotPasswordModal';
 
 type RegistrationStep = 'details' | 'otp' | 'verified';
 
@@ -30,6 +31,7 @@ interface ValidationState {
 
 export default function AuthPage() {
   const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [forgotOpen, setForgotOpen] = useState(false);
   const [registrationStep, setRegistrationStep] = useState<RegistrationStep>('details');
   const [loginMethod, setLoginMethod] = useState<'password' | 'otp'>('password');
   const [loginOtp, setLoginOtp] = useState('');
@@ -502,7 +504,7 @@ export default function AuthPage() {
                       />
                     </div>
                     <div className="text-right">
-                      <button type="button" className="text-sm text-primary-600 hover:underline dark:text-primary-400">
+                      <button type="button" onClick={() => setForgotOpen(true)} className="text-sm text-primary-600 hover:underline dark:text-primary-400">
                         Forgot password?
                       </button>
                     </div>
@@ -1029,6 +1031,7 @@ export default function AuthPage() {
           )}
         </motion.div>
       </div>
+      <ForgotPasswordModal key={forgotOpen ? 'open' : 'closed'} open={forgotOpen} onClose={() => setForgotOpen(false)} initialIdentifier={loginForm.identifier} />
     </div>
   );
 }

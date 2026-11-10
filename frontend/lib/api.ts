@@ -60,6 +60,8 @@ export const authApi = {
   sendOTP: (data: any) => api.post('auth/send-otp', data),
   verifyOTP: (data: any) => api.post('auth/verify-otp', data),
   sendLoginOTP: (data: any) => api.post('auth/login-otp/send', data),
+  forgotPassword: (data: { identifier: string }) => api.post('auth/forgot-password', data),
+  resetPassword: (data: { identifier: string; otp: string; newPassword: string }) => api.post('auth/reset-password', data),
   getProfile: () => api.get('auth/me'),
   updateProfile: (data: any) => api.put('users/profile', data),
 };

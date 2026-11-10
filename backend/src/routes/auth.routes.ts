@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { login, register, me, sendPhoneOTP, verifyPhoneOTP, sendLoginOTP } from '@/controllers/auth.controller';
 import { authenticateToken } from '@/middleware/auth';
+import { forgotPassword, resetPassword } from '@/controllers/password.controller';
 
 const router = Router();
 
@@ -12,6 +13,8 @@ router.post('/login-otp/send', sendLoginOTP);
 // Registration and authentication routes
 router.post('/register', register);
 router.post('/login', login);
+router.post('/forgot-password', forgotPassword);
+router.post('/reset-password', resetPassword);
 router.get('/me', authenticateToken, me);
 
 export default router;
