@@ -1,8 +1,11 @@
 import type { Metadata } from 'next';
+import { ABOUT } from '@/content/about';
 
 export const metadata: Metadata = {
-  title: 'About Us',
-  description: 'RCS Fabrics is the online store of Rajasthan Cloth Store — quality dress fabrics sold by the metre.',
+  title: ABOUT.meta.title,
+  description: ABOUT.meta.description,
+  alternates: { canonical: '/about' },
+  openGraph: { title: ABOUT.meta.title, description: ABOUT.meta.description, url: '/about', type: 'website' },
 };
 
 export default function Layout({ children }: { children: React.ReactNode }) {

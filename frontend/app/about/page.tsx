@@ -1,89 +1,147 @@
 'use client';
 import React from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
 import Image from 'next/image';
+import { motion, useReducedMotion } from 'framer-motion';
+import { ABOUT } from '@/content/about';
+import { Reveal, Eyebrow, FamilyCard, Timeline, WorldMap } from '@/components/about/AboutPieces';
+
+// Warm ivory / beige / gold palette for this page
+const IVORY = '#faf6ee';
+const BEIGE = '#f3ead9';
+const INK = '#2b2118';
 
 export default function AboutPage() {
+  const reduce = useReducedMotion();
+  const { hero, story, family, journey, philosophy, world, closing } = ABOUT;
+
   return (
-    <div className="min-h-screen bg-white dark:bg-dark-950">
-      {/* Hero */}
-      <div className="relative overflow-hidden h-80 lg:h-[500px]">
-        <Image src="https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=1600&q=80" alt="About RCS Fabrics" fill priority sizes="100vw" className="object-cover object-center"/>
-        <div className="absolute inset-0 bg-gradient-to-r from-dark-900/80 via-dark-900/50 to-transparent"/>
-        <div className="absolute inset-0 flex items-center">
-          <div className="container-main">
-            <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-4 py-1.5 text-sm font-semibold text-white backdrop-blur-sm">🧵 About Us</span>
-              <h1 className="mt-4 font-display text-5xl font-bold text-white lg:text-6xl">Our Story</h1>
-              <p className="mt-4 max-w-lg text-lg text-white/80">Quality fabrics by the metre from Rajasthan Cloth Store, delivered to your doorstep.</p>
-            </motion.div>
-          </div>
-        </div>
-      </div>
-
-      {/* Story */}
-      <section id="story" className="py-16 lg:py-24">
-        <div className="container-main grid gap-12 lg:grid-cols-2 items-center">
-          <div>
-            <span className="section-tag">🧵 Who We Are</span>
-            <h2 className="section-title mt-3 font-display">A Family Cloth Store, Now Online</h2>
-            <p className="mt-5 text-gray-600 dark:text-gray-400 leading-relaxed">
-              RCS Fabrics is the online store of Rajasthan Cloth Store. We sell dress fabrics — poplin, satin, rayon, cotton, stretchable and more — by the metre, so you buy exactly what your stitching project needs.
-            </p>
-            <p className="mt-4 text-gray-600 dark:text-gray-400 leading-relaxed">
-              Whether you are a home stitcher, a boutique or a garment maker, we help you choose the right fabric. Message us on WhatsApp for photos, colour matching or bulk pricing.
-            </p>
-            <div className="mt-8 grid grid-cols-3 gap-6">
-              {[{ v: '0.5 m', l: 'Minimum Order' }, { v: '₹2,000+', l: 'Free Shipping' }, { v: '30 days', l: 'Easy Returns' }].map((s) => (
-                <div key={s.l} className="text-center">
-                  <p className="font-display text-3xl font-bold text-gradient">{s.v}</p>
-                  <p className="mt-1 text-sm text-gray-500">{s.l}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="relative h-48 rounded-2xl overflow-hidden"><Image src="https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?w=500&q=80" alt="Fabric weaving" fill sizes="(max-width: 768px) 100vw, 25vw" className="object-cover"/></div>
-            <div className="relative h-48 rounded-2xl overflow-hidden mt-8"><Image src="https://images.unsplash.com/photo-1584992236310-6edddc08acff?w=500&q=80" alt="Fabric close-up" fill sizes="(max-width: 768px) 100vw, 25vw" className="object-cover"/></div>
-            <div className="relative h-48 rounded-2xl overflow-hidden"><Image src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500&q=80" alt="Draped fabric" fill sizes="(max-width: 768px) 100vw, 25vw" className="object-cover"/></div>
-            <div className="relative h-48 rounded-2xl overflow-hidden mt-8"><Image src="https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=500&q=80" alt="Cotton rolls" fill sizes="(max-width: 768px) 100vw, 25vw" className="object-cover"/></div>
-          </div>
+    <div style={{ backgroundColor: IVORY, color: INK }}>
+      {/* 1 · Hero */}
+      <section className="relative isolate overflow-hidden" aria-labelledby="about-hero-title">
+        <Image src={hero.image} alt={hero.imageAlt} fill priority sizes="100vw" className="-z-20 object-cover" />
+        <div className="absolute inset-0 -z-10 bg-gradient-to-b from-[#1d150e]/80 via-[#2b2118]/65 to-[#2b2118]/85" />
+        <div className="container-main flex min-h-[78vh] flex-col justify-end py-20 sm:py-28">
+          <motion.div
+            initial={reduce ? false : { opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+            className="max-w-3xl"
+          >
+            <Eyebrow light>{hero.eyebrow}</Eyebrow>
+            <h1 id="about-hero-title" className="mt-6 font-display text-5xl leading-[1.05] text-[#fbf5e8] sm:text-6xl lg:text-7xl">
+              {hero.title}
+            </h1>
+            <p className="mt-6 max-w-xl text-lg text-[#efe2c6] sm:text-xl">{hero.subtitle}</p>
+          </motion.div>
         </div>
       </section>
 
-      {/* Quality */}
-      <section id="quality" className="py-16 lg:py-24 bg-gray-50 dark:bg-dark-900/50">
-        <div className="container-main text-center">
-          <span className="section-tag">✅ Our Promise</span>
-          <h2 className="section-title mt-3 font-display">Quality You Can Feel</h2>
-          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              { icon: '🔍', title: 'Checked Before Dispatch', desc: 'Every piece is checked for flaws and measured before it is packed.' },
-              { icon: '📏', title: 'Cut to Your Length', desc: 'Order in 0.5 m steps — no need to buy a full roll.' },
-              { icon: '💬', title: 'Real Help on WhatsApp', desc: 'Ask for extra photos, colour matching or fabric advice before you buy.' },
-              { icon: '↩️', title: 'Easy Returns', desc: '30-day returns on unused, uncut fabric. See our Returns Policy.' },
-            ].map((item) => (
-              <div key={item.title} className="rounded-2xl border border-gray-200 bg-white p-6 text-left dark:border-dark-700 dark:bg-dark-800">
-                <span className="text-3xl">{item.icon}</span>
-                <h3 className="mt-4 font-semibold text-gray-900 dark:text-white">{item.title}</h3>
-                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{item.desc}</p>
+      {/* 2 · Our Story */}
+      <section id="story" className="scroll-mt-24 py-20 sm:py-28" aria-labelledby="story-title">
+        <div className="container-main grid gap-12 lg:grid-cols-12 lg:gap-16">
+          <div className="lg:col-span-4">
+            <Reveal>
+              <Eyebrow>{story.eyebrow}</Eyebrow>
+              <h2 id="story-title" className="mt-5 font-display text-4xl leading-tight sm:text-5xl">{story.title}</h2>
+              <ol className="mt-10 space-y-5 border-l border-[#d9c39a] pl-6">
+                {story.generations.map((g) => (
+                  <li key={g.label}>
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#a07c3b]">{g.label}</p>
+                    <p className="mt-1 font-display text-lg">{g.names}</p>
+                  </li>
+                ))}
+              </ol>
+            </Reveal>
+          </div>
+          <div className="lg:col-span-8">
+            <Reveal delay={0.1}>
+              <div className="space-y-6 text-[17px] leading-[1.85] text-[#5a4b3c] sm:text-lg">
+                {story.paragraphs.map((p, i) => (
+                  <p key={i} className={i === 0 ? 'font-display text-2xl leading-snug text-[#2b2118] sm:text-[28px]' : ''}>{p}</p>
+                ))}
               </div>
-            ))}
+              <blockquote className="mt-10 border-l-2 border-[#c9a24e] pl-6 font-display text-2xl italic text-[#8a6a33]">
+                “{story.pullQuote}”
+              </blockquote>
+            </Reveal>
           </div>
         </div>
       </section>
 
-
-      {/* CTA */}
-      <section className="py-16 bg-gradient-to-r from-primary-700 to-primary-800">
-        <div className="container-main text-center">
-          <h2 className="font-display text-3xl font-bold text-white lg:text-4xl">Find Your Next Fabric</h2>
-          <p className="mt-4 text-white/80">Browse our latest fabrics, sold by the metre.</p>
-          <div className="mt-8 flex flex-wrap justify-center gap-4">
-            <Link href="/products" className="rounded-xl bg-white px-8 py-3.5 font-semibold text-primary-700 shadow-md hover:bg-gray-50 transition-colors">Shop Now</Link>
-            <Link href="/contact" className="rounded-xl border border-white/40 px-8 py-3.5 font-semibold text-white backdrop-blur-sm hover:bg-white/10 transition-colors">Contact Us</Link>
+      {/* 3 · Meet the Family */}
+      <section id="family" className="scroll-mt-24 py-20 sm:py-28" style={{ backgroundColor: BEIGE }} aria-labelledby="family-title">
+        <div className="container-main">
+          <Reveal className="mx-auto max-w-2xl text-center">
+            <div className="flex justify-center"><Eyebrow>{family.eyebrow}</Eyebrow></div>
+            <h2 id="family-title" className="mt-5 font-display text-4xl sm:text-5xl">{family.title}</h2>
+          </Reveal>
+          <div className="mt-16 space-y-20 sm:mt-20 sm:space-y-28">
+            {family.members.map((m, i) => <FamilyCard key={m.name} m={m} index={i} />)}
           </div>
+        </div>
+      </section>
+
+      {/* 4 · Our Journey */}
+      <section className="py-20 sm:py-28" aria-labelledby="journey-title">
+        <div className="container-main">
+          <Reveal className="max-w-2xl">
+            <Eyebrow>{journey.eyebrow}</Eyebrow>
+            <h2 id="journey-title" className="mt-5 font-display text-4xl sm:text-5xl">{journey.title}</h2>
+          </Reveal>
+          <div className="mt-14">
+            <Timeline entries={journey.entries} />
+          </div>
+        </div>
+      </section>
+
+      {/* 5 · Philosophy */}
+      <section id="philosophy" className="relative scroll-mt-24 overflow-hidden py-24 sm:py-32" style={{ backgroundColor: BEIGE }} aria-labelledby="philosophy-title">
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 opacity-60"
+          style={{ backgroundImage: 'repeating-linear-gradient(90deg, rgba(160,124,59,0.06) 0 1px, transparent 1px 7px), repeating-linear-gradient(0deg, rgba(160,124,59,0.05) 0 1px, transparent 1px 7px)' }}
+        />
+        <div className="container-main relative">
+        <Reveal className="mx-auto max-w-3xl text-center">
+          <div className="flex justify-center"><Eyebrow>{philosophy.eyebrow}</Eyebrow></div>
+          <h2 id="philosophy-title" className="mt-6 font-display text-4xl leading-tight sm:text-5xl">{philosophy.title}</h2>
+          <div className="mx-auto mt-8 h-px w-16 bg-[#c9a24e]" />
+          <div className="mt-8 space-y-5 text-lg leading-relaxed text-[#5a4b3c]">
+            {philosophy.paragraphs.map((p) => <p key={p}>{p}</p>)}
+          </div>
+        </Reveal>
+        </div>
+      </section>
+
+      {/* 6 · From Dimapur to the World */}
+      <section className="py-20 sm:py-28" style={{ backgroundColor: INK }} aria-labelledby="world-title">
+        <div className="container-main grid items-center gap-12 lg:grid-cols-12">
+          <Reveal className="lg:col-span-5">
+            <Eyebrow light>{world.eyebrow}</Eyebrow>
+            <h2 id="world-title" className="mt-6 font-display text-3xl leading-snug text-[#fbf5e8] sm:text-4xl">
+              “{world.quote}”
+            </h2>
+            <p className="mt-6 text-lg leading-relaxed text-[#d8c8a8]">{world.text}</p>
+          </Reveal>
+          <Reveal delay={0.15} className="lg:col-span-7">
+            <WorldMap />
+          </Reveal>
+        </div>
+      </section>
+
+      {/* 7 · Closing */}
+      <section className="py-24 sm:py-32" aria-labelledby="closing-title">
+        <div className="container-main">
+        <Reveal className="mx-auto max-w-3xl text-center">
+          <h2 id="closing-title" className="font-display text-4xl leading-tight sm:text-5xl">{closing.title}</h2>
+          <div className="mt-8 space-y-4 text-lg leading-relaxed text-[#5a4b3c]">
+            {closing.paragraphs.map((p) => <p key={p}>{p}</p>)}
+          </div>
+          <Link href={closing.cta.href} className="button-luxury mt-10 inline-flex px-10 py-4 text-base font-semibold">
+            {closing.cta.label}
+          </Link>
+        </Reveal>
         </div>
       </section>
     </div>

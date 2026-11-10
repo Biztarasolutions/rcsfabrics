@@ -30,8 +30,9 @@ const FOOTER_SECTIONS = [
     title: 'Company',
     links: [
       { label: 'About RCS', href: '/about' },
+      { label: 'Meet the Family', href: '/about#family' },
       { label: 'Our Story', href: '/about#story' },
-      { label: 'Quality Promise', href: '/about#quality' },
+      { label: 'Our Philosophy', href: '/about#philosophy' },
       { label: 'Privacy Policy', href: '/privacy' },
       { label: 'Terms of Service', href: '/terms' },
     ],
@@ -56,7 +57,7 @@ export default function Footer() {
               </div>
             </Link>
             <p className="mt-5 text-sm leading-relaxed text-gray-400">
-              Premium luxury fabrics sourced from the finest mills across India and the world. Sold by the meter, crafted for those who value quality.
+              A family fabric business from Dimapur, Nagaland, since 1970 — now online. Quality fabrics sold by the metre.
             </p>
 
             {/* Contact */}
@@ -71,7 +72,7 @@ export default function Footer() {
                 <svg className="h-4 w-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
                 </svg>
-                +91 98765 43210
+                <a href="tel:+919863026598" className="hover:text-primary-400">+91 98630 26598</a>
               </p>
             </div>
 
@@ -113,7 +114,7 @@ export default function Footer() {
             { icon: '🚚', title: 'Free Shipping', desc: 'Orders above ₹2,000' },
             { icon: '↩️', title: 'Easy Returns', desc: '30-day return policy' },
             { icon: '🔒', title: 'Secure Payment', desc: '100% safe checkout' },
-            { icon: '⭐', title: 'Quality Assured', desc: 'Premium certified fabrics' },
+            { icon: '⭐', title: 'Quality Checked', desc: 'Inspected before dispatch' },
           ].map((badge) => (
             <div key={badge.title} className="flex items-center gap-3">
               <span className="text-2xl">{badge.icon}</span>

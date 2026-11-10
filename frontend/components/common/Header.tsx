@@ -206,9 +206,12 @@ export default function Header() {
                   </AnimatePresence>
                 </div>
               ) : (
-                <Link href="/auth" className="button-primary hidden px-4 py-2 text-sm sm:inline-flex">
-                  Login
-                </Link>
+                // Wrapper does the hiding: .button-primary sets display and would override `hidden`
+                <span className="hidden sm:inline-flex">
+                  <Link href="/auth" className="button-primary px-4 py-2 text-sm">
+                    Login
+                  </Link>
+                </span>
               )}
 
               {/* Mobile menu */}

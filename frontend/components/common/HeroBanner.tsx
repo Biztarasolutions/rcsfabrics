@@ -91,9 +91,9 @@ export default function HeroBanner() {
         <div className="relative z-10 container-main pb-16">
           <div className="max-w-2xl space-y-4 animate-pulse">
             <div className="h-6 w-40 rounded-full bg-white/20"/>
-            <div className="h-16 w-96 rounded-xl bg-white/15"/>
-            <div className="h-16 w-72 rounded-xl bg-white/10"/>
-            <div className="h-5 w-80 rounded bg-white/10 mt-2"/>
+            <div className="h-16 w-full max-w-sm rounded-xl bg-white/15"/>
+            <div className="h-16 w-3/4 max-w-xs rounded-xl bg-white/10"/>
+            <div className="h-5 w-5/6 max-w-xs rounded bg-white/10 mt-2"/>
             <div className="flex gap-4 mt-6">
               <div className="h-12 w-36 rounded-xl bg-white/20"/>
               <div className="h-12 w-32 rounded-xl bg-white/10"/>
