@@ -87,18 +87,6 @@ export const ABOUT = {
         focus: ['Customer interactions', 'Inventory', 'Taking the store online'],
       },
       {
-        name: 'Rishika Kashliwal',
-        role: 'Design',
-        initials: 'RK',
-        photo: '',
-        photoAlt: 'Rishika Kashliwal',
-        paragraphs: [
-          'Rishika is the designer behind RCS Fabrics. She brings a creative eye to how our fabrics are presented — from the look and feel of the brand to the way each collection is styled and shown online.',
-          'Her work helps customers see the character, colour and possibilities in every fabric, so choosing the right one feels as personal online as it does in our store.',
-        ],
-        focus: ['Brand & visual design', 'Collection presentation', 'Styling'],
-      },
-      {
         name: 'Rishabh Kashliwal',
         role: 'Technology & Digital Development',
         initials: 'RK',
@@ -109,6 +97,18 @@ export const ABOUT = {
           'He is responsible for building and managing the website, digital infrastructure and technology that create a seamless online shopping experience and support the business’s future growth.',
         ],
         focus: ['Website', 'Digital infrastructure', 'Technology'],
+      },
+      {
+        name: 'Rishika',
+        role: 'Design & Creative Direction',
+        initials: 'R',
+        photo: '',
+        photoAlt: 'Rishika',
+        paragraphs: [
+          'Rishika brings a creative perspective to RCS Fabrics, focusing on fabric styling, design inspiration and the visual presentation of our collections.',
+          'She helps showcase the beauty and versatility of fabrics through creative ideas and thoughtful styling.',
+        ],
+        focus: ['Fabric styling', 'Design inspiration', 'Visual presentation'],
       },
     ] as FamilyMember[],
   },
