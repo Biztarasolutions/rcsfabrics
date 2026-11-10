@@ -6,6 +6,8 @@ export const cache = new NodeCache({ stdTTL: 600 });
 
 /** Routes that must always return fresh data (admin panels, user-specific data). */
 const NO_CACHE_PREFIXES = [
+  '/api/auth', // e.g. /api/auth/me is per-user
+  '/api/settings',
   '/api/admin',
   '/api/orders',
   '/api/cart',
@@ -32,7 +34,9 @@ export const cacheMiddleware = (
 
   const url = req.originalUrl || req.url;
 
-  if (shouldSkipCache(url)) {
+  // Never cache (or serve cached data to) a request made with a login token:
+  // the cache key is the URL only, so per-user responses would leak between users.
+  if (shouldSkipCache(url) || req.headers.authorization || req.headers.cookie) {
     return next();
   }
 
