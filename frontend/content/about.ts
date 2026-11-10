@@ -63,6 +63,18 @@ export const ABOUT = {
     title: 'Meet the Family Behind RCS Fabrics',
     members: [
       {
+        name: 'Late Kundanmal Kashliwal',
+        role: 'Founder · Where It All Began',
+        initials: 'KK',
+        photo: '',
+        photoAlt: 'Late Kundanmal Kashliwal',
+        paragraphs: [
+          'Our grandfather, Late Kundanmal Kashliwal, founded our family fabric business in Dimapur, Nagaland, in 1970.',
+          'He began with a modest collection and a simple vision: to provide customers with quality fabrics and trustworthy service. The values he started with — quality, honesty and trust — remain the foundation of everything we do.',
+        ],
+        focus: ['Founded in 1970', 'Dimapur, Nagaland', 'Quality & trust'],
+      },
+      {
         name: 'Rajesh & Rashmi Kashliwal',
         role: 'The Experience and Foundation',
         initials: 'R&R',
