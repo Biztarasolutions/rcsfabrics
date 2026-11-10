@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
+import { publicApi } from '@/lib/api';
 
 export default function NewsletterSignup() {
   const [email, setEmail] = useState('');
@@ -10,12 +11,17 @@ export default function NewsletterSignup() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return;
+    if (!email || loading) return;
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 800));
-    toast.success('🎉 Welcome! 10% off coupon sent to your inbox.');
-    setEmail('');
-    setLoading(false);
+    try {
+      const res = await publicApi.sendEnquiry({ type: 'newsletter', email });
+      toast.success(res.data?.message || "You're subscribed!");
+      setEmail('');
+    } catch (err: any) {
+      toast.error(err?.message || 'Could not subscribe right now. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -29,9 +35,9 @@ export default function NewsletterSignup() {
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }} transition={{ duration: 0.6 }}>
             <span className="section-tag">💌 Join the Club</span>
-            <h2 className="section-title mt-3 font-display">Get 10% Off Your First Order</h2>
+            <h2 className="section-title mt-3 font-display">Join the RCS Fabrics Club</h2>
             <p className="section-subtitle">
-              Subscribe to receive exclusive offers, fabric launches, and styling inspiration.
+              Get new fabric arrivals, member offers and styling ideas in your inbox.
               Unsubscribe anytime.
             </p>
 
@@ -52,12 +58,12 @@ export default function NewsletterSignup() {
             </form>
 
             <p className="mt-4 text-xs text-gray-500 dark:text-gray-400">
-              By subscribing you agree to our Privacy Policy. No spam, ever.
+              No spam, ever. Unsubscribe anytime.
             </p>
 
             {/* Perks */}
             <div className="mt-8 flex flex-wrap justify-center gap-4">
-              {['10% Off First Order', 'Early Access to New Arrivals', 'Exclusive Member Deals'].map((perk) => (
+              {['Early Access to New Arrivals', 'Member-only Offers', 'Styling Inspiration'].map((perk) => (
                 <span key={perk}
                   className="flex items-center gap-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">
                   <svg className="h-4 w-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">

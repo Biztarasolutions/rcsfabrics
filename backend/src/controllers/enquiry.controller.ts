@@ -36,9 +36,30 @@ export const createEnquiry = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
+    const email = clean(body.email, 255).toLowerCase();
+
+    // Newsletter: just an email, stored once
+    if (body.type === 'newsletter') {
+      if (!EMAIL_RE.test(email)) throw new ApiError(400, 'Please enter a valid email address');
+      const existing = await prisma.bulkOrderInquiry.findFirst({
+        where: { email, inquiryDetails: { startsWith: '[Newsletter]' } },
+        select: { id: true },
+      });
+      if (!existing) {
+        await prisma.bulkOrderInquiry.create({
+          data: { name: 'Newsletter subscriber', email, phone: '-', inquiryDetails: '[Newsletter] Subscribed from website' },
+        });
+      }
+      res.status(201).json({
+        success: true,
+        message: existing ? "You're already subscribed — thank you!" : "You're subscribed! We'll email you new arrivals and offers.",
+        statusCode: 201,
+      } as ApiResponse);
+      return;
+    }
+
     const type = body.type === 'bulk' ? 'bulk' : 'contact';
     const name = clean(body.name, 200);
-    const email = clean(body.email, 255).toLowerCase();
     const phone = clean(body.phone, 20);
     const company = clean(body.company, 255);
 
