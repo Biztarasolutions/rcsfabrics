@@ -25,16 +25,10 @@ const getRazorpay = (): InstanceType<typeof Razorpay> => {
   return razorpayClient;
 };
 
-// ── Order pricing rules (server is the source of truth) ─────────────────
-const FREE_SHIPPING_THRESHOLD = 2000; // ₹
-const FLAT_SHIPPING = 150; // ₹
-const MIN_QTY = 0.5; // metres
-const MAX_QTY_PER_LINE = 1000; // metres
-
-const roundMoney = (n: number): number => Math.round(n * 100) / 100;
-const isHalfMetreStep = (q: number): boolean => Math.abs(q * 2 - Math.round(q * 2)) < 1e-9;
-export const calculateShipping = (subtotal: number): number =>
-  subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : FLAT_SHIPPING;
+import {
+  MIN_QTY, MAX_QTY_PER_LINE, roundMoney, isHalfMetreStep, calculateShipping, couponDiscount,
+} from '@/utils/pricing';
+export { calculateShipping };
 
 /** Load a coupon and check it is usable for this subtotal; returns the discount in ₹. */
 const getValidCoupon = async (code: string, subtotal: number) => {
@@ -50,11 +44,7 @@ const getValidCoupon = async (code: string, subtotal: number) => {
   if (subtotal < minOrder) {
     throw new ApiError(400, `Minimum order of ₹${minOrder} required for this coupon`);
   }
-  const raw = coupon.discountType === 'PERCENTAGE'
-    ? (subtotal * coupon.discountValue) / 100
-    : coupon.discountValue;
-  const capped = coupon.maxDiscount ? Math.min(raw, coupon.maxDiscount) : raw;
-  const discount = roundMoney(Math.max(0, Math.min(capped, subtotal)));
+  const discount = couponDiscount(subtotal, coupon);
   return { coupon, discount };
 };
 

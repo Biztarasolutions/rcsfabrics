@@ -16,7 +16,8 @@
     "db:studio": "prisma studio",
     "seed": "npx prisma db seed",
     "promote-admin": "ts-node -r tsconfig-paths/register src/scripts/promoteAdmin.ts",
-    "migrate:images": "tsx src/scripts/migrateDriveImagesToSupabase.ts"
+    "migrate:images": "tsx src/scripts/migrateDriveImagesToSupabase.ts",
+    "test": "node --import tsx --test test/*.test.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.14.0",
