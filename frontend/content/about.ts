@@ -54,7 +54,7 @@ export const ABOUT = {
     generations: [
       { label: 'First generation', names: 'Late Kundanmal Kashliwal' },
       { label: 'Second generation', names: 'Rajesh & Rashmi Kashliwal' },
-      { label: 'Third generation', names: 'Rishabh & Mayank Kashliwal' },
+      { label: 'Third generation', names: 'Rishabh, Mayank & Rishika Kashliwal' },
     ],
   },
 
