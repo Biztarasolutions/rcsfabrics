@@ -1,11 +1,14 @@
 // Utility functions for frontend
+// ₹449 for whole rupees, ₹449.10 otherwise (never ₹449.1)
 export const formatPrice = (price: number): string => {
+  const value = Math.round((Number(price) || 0) * 100) / 100;
+  const digits = Number.isInteger(value) ? 0 : 2;
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(price);
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  }).format(value);
 };
 
 export const calculateDiscount = (original: number, discounted: number): number => {

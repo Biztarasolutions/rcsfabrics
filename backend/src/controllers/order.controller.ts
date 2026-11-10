@@ -6,6 +6,7 @@ import { AuthRequest, ApiResponse } from '@/types';
 import { generateOrderNumber, calculateOrderTotal } from '@/utils/order.util';
 import { parsePagination, createPaginationMeta } from '@/utils/pagination.util';
 import { ApiError } from '@/middleware/errorHandler';
+import { notifyOrder } from '@/services/orderNotifications';
 
 // Lazily create the Razorpay client. The Razorpay constructor throws if keys are missing,
 // so constructing at module load time crashes the entire server when env vars aren't set.
@@ -216,6 +217,11 @@ export const createOrder = async (
       }
     }
 
+    // Email customer + team now for COD / manual UPI; online payments are announced once verified
+    if (!razorpayOrderId || utrReference) {
+      void notifyOrder(order.id, 'placed');
+    }
+
     res.status(201).json({
       success: true,
       message: 'Order created successfully',
@@ -354,6 +360,7 @@ export const verifyPayment = async (
     });
     if (result.count === 0) throw new ApiError(409, 'Order is already paid');
     const updated = await prisma.order.findUnique({ where: { id } });
+    void notifyOrder(id, 'paid');
 
     res.json({ success: true, message: 'Payment verified', data: updated, statusCode: 200 } as ApiResponse);
   } catch (error) {
@@ -432,14 +439,17 @@ export const cancelOrder = async (
     if (['SHIPPED', 'DELIVERED', 'CANCELLED'].includes(order.status)) {
       throw new ApiError(400, 'Order cannot be cancelled after it has been shipped');
     }
-    await Promise.all(
-      order.items.map(item =>
-        prisma.product.update({ where: { id: item.productId }, data: { totalStock: { increment: item.quantity } } })
-      )
-    );
-    const updated = await prisma.order.update({
-      where: { id },
-      data: { status: 'CANCELLED', cancelledBy: 'CUSTOMER' },
+    // Cancel first (only if not already cancelled/shipped) so stock is restored exactly once
+    const updated = await prisma.$transaction(async (tx) => {
+      const res = await tx.order.updateMany({
+        where: { id, status: { notIn: ['SHIPPED', 'DELIVERED', 'CANCELLED'] } },
+        data: { status: 'CANCELLED', cancelledBy: 'CUSTOMER' },
+      });
+      if (res.count === 0) throw new ApiError(400, 'Order cannot be cancelled');
+      for (const item of order.items) {
+        await tx.product.update({ where: { id: item.productId }, data: { totalStock: { increment: item.quantity } } });
+      }
+      return tx.order.findUnique({ where: { id } });
     });
     res.json({ success: true, message: 'Order cancelled', data: updated, statusCode: 200 } as ApiResponse);
   } catch (error) {

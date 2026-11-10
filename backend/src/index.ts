@@ -13,6 +13,7 @@ import adminRoutes from '@/routes/admin.routes';
 import cartRoutes from '@/routes/cart.routes';
 import wishlistRoutes from '@/routes/wishlist.routes';
 import enquiryRoutes from '@/routes/enquiry.routes';
+import { startUnpaidOrderSweeper } from '@/services/orderNotifications';
 
 import { errorHandler, notFound } from '@/middleware/errorHandler';
 import { authenticateToken } from '@/middleware/auth';
@@ -128,6 +129,7 @@ process.on('SIGINT', async () => {
 });
 
 app.listen(port, () => {
+  startUnpaidOrderSweeper();
   console.log(`⚡ Server is running at http://localhost:${port}`);
   console.log(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
 });

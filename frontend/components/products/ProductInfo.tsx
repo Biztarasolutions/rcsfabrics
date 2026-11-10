@@ -91,7 +91,7 @@ export default function ProductInfo({
           />
           <span className="text-sm text-gray-600 dark:text-gray-400">
             {quantity * (product.discountPrice || product.basePrice) >
-            999999 ? '₹' + (quantity * (product.discountPrice || product.basePrice)).toLocaleString('en-IN', {maximumFractionDigits: 2}) : formatPrice(quantity * (product.discountPrice || product.basePrice))}
+            999999 ? formatPrice(quantity * (product.discountPrice || product.basePrice)) : formatPrice(quantity * (product.discountPrice || product.basePrice))}
           </span>
         </div>
         <p className="text-xs text-gray-500">

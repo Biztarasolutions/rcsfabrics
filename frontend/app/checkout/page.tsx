@@ -542,7 +542,7 @@ export default function CheckoutPage() {
                     {placing
                       ? '⏳ Processing...'
                       : paymentMethod === 'upi'
-                        ? `📲 Pay ₹${total.toFixed(0)} via UPI`
+                        ? `📲 Pay ${formatPrice(total)} via UPI`
                         : `🔒 Place Order · ${formatPrice(total)}`}
                   </button>
                 </div>
