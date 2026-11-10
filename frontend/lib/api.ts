@@ -66,6 +66,12 @@ export const authApi = {
   updateProfile: (data: any) => api.put('users/profile', data),
 };
 
+export const wishlistApi = {
+  list: () => api.get('wishlist'),
+  add: (productId: string) => api.post('wishlist', { productId }),
+  remove: (productId: string) => api.delete(`wishlist/product/${encodeURIComponent(productId)}`),
+};
+
 export const userApi = {
   getAddresses: () => api.get('users/addresses'),
   addAddress: (data: any) => api.post('users/addresses', data),

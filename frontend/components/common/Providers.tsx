@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import { useThemeStore } from '@/lib/store';
 import CartSidebar from '@/components/common/CartSidebar';
+import WishlistSync from '@/components/common/WishlistSync';
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -29,6 +30,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeApplier />
+      <WishlistSync />
       {children}
       <CartSidebar />
       <Toaster

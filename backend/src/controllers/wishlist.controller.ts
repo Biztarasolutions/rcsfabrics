@@ -18,7 +18,7 @@ export const getWishlist = async (
         product: {
           include: {
             images: {
-              where: { isMain: true },
+              orderBy: [{ isMain: 'desc' }, { createdAt: 'asc' }],
               take: 1,
             },
             category: {
@@ -88,7 +88,9 @@ export const addToWishlist = async (
     });
 
     if (existing) {
-      throw new ApiError(400, 'Product already in wishlist');
+      // Idempotent: adding twice is not an error (e.g. syncing a guest wishlist after login)
+      res.json({ success: true, message: 'Product already in wishlist', data: existing, statusCode: 200 } as ApiResponse);
+      return;
     }
 
     const wishlistItem = await prisma.wishlist.create({
@@ -172,6 +174,22 @@ export const removeFromWishlist = async (
         message: 'Internal server error',
         statusCode: 500,
       } as ApiResponse);
+    }
+  }
+};
+
+/** DELETE /api/wishlist/product/:productId — remove by product (what the storefront knows). */
+export const removeProductFromWishlist = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.userId) throw new ApiError(401, 'Unauthorized');
+    const { productId } = req.params;
+    const result = await prisma.wishlist.deleteMany({ where: { userId: req.userId, productId } });
+    res.json({ success: true, message: result.count ? 'Removed from wishlist' : 'Not in wishlist', statusCode: 200 } as ApiResponse);
+  } catch (error) {
+    if (error instanceof ApiError) {
+      res.status(error.statusCode).json({ success: false, message: error.message, statusCode: error.statusCode } as ApiResponse);
+    } else {
+      res.status(500).json({ success: false, message: 'Internal server error', statusCode: 500 } as ApiResponse);
     }
   }
 };

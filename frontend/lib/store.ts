@@ -23,6 +23,8 @@ export const useAuthStore = create<AuthStore>()(
       logout: () => {
         if (typeof window !== 'undefined') localStorage.removeItem('authToken');
         set({ user: null, token: null, isAuthenticated: false });
+        // The account's wishlist lives on the server; don't leave it on a shared device
+        useWishlistStore.getState().setItems([]);
       },
     }),
     { name: 'rcs-auth' }
@@ -92,14 +94,32 @@ interface WishlistStore {
   hasItem: (productId: string) => boolean;
 }
 
+// Logged-in wishlists are saved in the database; guests keep theirs in the browser
+// and it is merged into their account when they log in (see WishlistSync).
+const isLoggedIn = (): boolean =>
+  typeof window !== 'undefined' && !!localStorage.getItem('authToken');
+
+const syncWishlist = (action: 'add' | 'remove', productId: string) => {
+  if (!isLoggedIn()) return;
+  import('@/lib/api')
+    .then(({ wishlistApi }) => (action === 'add' ? wishlistApi.add(productId) : wishlistApi.remove(productId)))
+    .catch((err) => console.error(`[Wishlist] could not ${action} ${productId}:`, err?.message || err));
+};
+
 export const useWishlistStore = create<WishlistStore>()(
   persist(
     (set, get) => ({
       items: [],
       setItems: (items) => set({ items }),
-      addItem: (item) => set((s) => ({ items: [...s.items, item] })),
-      removeItem: (productId) =>
-        set((s) => ({ items: s.items.filter((i) => i.productId !== productId) })),
+      addItem: (item) => {
+        if (get().items.some((i) => i.productId === item.productId)) return;
+        set((s) => ({ items: [...s.items, item] }));
+        syncWishlist('add', item.productId);
+      },
+      removeItem: (productId) => {
+        set((s) => ({ items: s.items.filter((i) => i.productId !== productId) }));
+        syncWishlist('remove', productId);
+      },
       hasItem: (productId) => get().items.some((i) => i.productId === productId),
     }),
     { name: 'rcs-wishlist' }
