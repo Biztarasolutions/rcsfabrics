@@ -141,6 +141,7 @@ export const adminApi = {
 
 export const publicApi = {
   getSettings: () => api.get('settings'),
+  sendEnquiry: (data: Record<string, unknown> & { type: 'contact' | 'bulk' }) => api.post('enquiries', data),
 };
 
 // Upload an image from a URL (e.g., Google Drive share link) to Supabase storage and return its public URL.

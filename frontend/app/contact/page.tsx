@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
+import { publicApi } from '@/lib/api';
 
 export default function ContactPage() {
   const [activeForm, setActiveForm] = useState<'contact' | 'bulk'>('contact');
@@ -9,13 +10,35 @@ export default function ContactPage() {
   const [bulkForm, setBulkForm] = useState({ name: '', company: '', email: '', phone: '', fabric: '', quantity: '', deadline: '', notes: '' });
   const [loading, setLoading] = useState(false);
 
+  const [website, setWebsite] = useState(''); // honeypot — hidden from real users
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 900));
-    toast.success('Message sent! We\'ll get back to you within 24 hours.');
-    setLoading(false);
+    try {
+      const payload = activeForm === 'bulk'
+        ? { type: 'bulk' as const, ...bulkForm, website }
+        : { type: 'contact' as const, ...form, website };
+      const res = await publicApi.sendEnquiry(payload);
+      toast.success(res.data?.message || 'Message sent! We\'ll get back to you soon.');
+      if (activeForm === 'bulk') {
+        setBulkForm({ name: '', company: '', email: '', phone: '', fabric: '', quantity: '', deadline: '', notes: '' });
+      } else {
+        setForm({ name: '', email: '', phone: '', subject: '', message: '' });
+      }
+    } catch (err: any) {
+      toast.error(err?.message || 'Could not send your message. Please call or WhatsApp us.');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const honeypot = (
+    <div aria-hidden="true" style={{ position: 'absolute', left: '-10000px', width: 1, height: 1, overflow: 'hidden' }}>
+      <label>Website<input tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} /></label>
+    </div>
+  );
 
   const faqs = [
     { q: 'What is the minimum order quantity?', a: 'Minimum order is 0.5 meters for most fabrics. Some specialty fabrics require 1 meter minimum.' },
@@ -74,7 +97,8 @@ export default function ContactPage() {
 
             <div className="rounded-2xl border border-gray-200 bg-white p-8 dark:border-dark-700 dark:bg-dark-800">
               {activeForm === 'contact' && (
-                <motion.form id="contact" initial={{ opacity: 0 }} animate={{ opacity: 1 }} onSubmit={handleSubmit} className="space-y-4">
+                <motion.form id="contact" initial={{ opacity: 0 }} animate={{ opacity: 1 }} onSubmit={handleSubmit} className="relative space-y-4">
+                  {honeypot}
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div><label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Your Name</label><input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Priya Sharma" required className="input-field"/></div>
                     <div><label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label><input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="you@example.com" required className="input-field"/></div>
@@ -87,7 +111,8 @@ export default function ContactPage() {
               )}
 
               {activeForm === 'bulk' && (
-                <motion.form id="bulk" initial={{ opacity: 0 }} animate={{ opacity: 1 }} onSubmit={handleSubmit} className="space-y-4">
+                <motion.form id="bulk" initial={{ opacity: 0 }} animate={{ opacity: 1 }} onSubmit={handleSubmit} className="relative space-y-4">
+                  {honeypot}
                   <p className="text-sm text-gray-600 dark:text-gray-400">Need 20+ meters? Get special wholesale pricing. Fill out the form and we'll send a custom quote within 4 hours.</p>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div><label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Contact Name</label><input value={bulkForm.name} onChange={(e) => setBulkForm({ ...bulkForm, name: e.target.value })} required className="input-field" placeholder="Your name"/></div>

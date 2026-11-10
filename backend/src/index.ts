@@ -12,6 +12,7 @@ import userRoutes from '@/routes/user.routes';
 import adminRoutes from '@/routes/admin.routes';
 import cartRoutes from '@/routes/cart.routes';
 import wishlistRoutes from '@/routes/wishlist.routes';
+import enquiryRoutes from '@/routes/enquiry.routes';
 
 import { errorHandler, notFound } from '@/middleware/errorHandler';
 import { authenticateToken } from '@/middleware/auth';
@@ -99,6 +100,7 @@ app.get('/api/settings', async (_req: Request, res: Response) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/enquiries', enquiryRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', authenticateToken, orderRoutes);
 app.use('/api/users', authenticateToken, userRoutes);
