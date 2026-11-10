@@ -32,14 +32,42 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-// Rate Limiting
+// Requests arrive via Netlify's proxy and then Render's load balancer.
+// Trust those two hops so req.ip is the visitor's real IP, not Netlify's.
+app.set('trust proxy', Number(process.env.TRUST_PROXY_HOPS || 2));
+
+// Rate Limiting — per visitor IP
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.',
+  max: Number(process.env.RATE_LIMIT_MAX || 300), // per IP per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many requests, please try again later.', statusCode: 429 },
+});
+
+// Stricter limit for login / OTP / signup to stop brute force and SMS abuse
+export const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: Number(process.env.AUTH_RATE_LIMIT_MAX || 10),
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many attempts. Please wait 15 minutes and try again.', statusCode: 429 },
 });
 
 app.use('/api/', limiter);
+app.use(
+  [
+    '/api/auth/login',
+    '/api/auth/register',
+    '/api/auth/send-otp',
+    '/api/auth/verify-otp',
+    '/api/auth/login-otp',
+    '/api/users/request-contact-otp',
+    '/api/users/verify-contact-otp',
+    '/api/users/change-password',
+  ],
+  authLimiter
+);
 app.use(driveProxyMiddleware);
 
 // Body Parser Middleware
