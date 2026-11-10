@@ -18,6 +18,7 @@ import sectionToggles from '@/config/sectionToggles.json';
 export default function HomePage() {
   return (
     <div className="overflow-hidden">
+      <h1 className="sr-only">RCS Fabrics — premium dress fabrics sold by the metre</h1>
       {/* 1. Full-screen Hero */}
       <HeroBanner />
 
@@ -44,18 +45,17 @@ export default function HomePage() {
       </div>
 {sectionToggles.whyChoose && <WhyChoose />}
 
-      {/* 3. Featured Products */}
-      <section className="py-16 lg:py-24">
-        <div className="container-main">
+      {/* 3. Featured Products (hidden when nothing is marked featured) */}
+      <FeaturedProducts
+        header={
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }} className="text-center">
             <span className="section-tag">⭐ Editor's Picks</span>
             <h2 className="section-title mt-3 font-display">Featured Fabrics</h2>
             <p className="section-subtitle">Hand-selected for exceptional quality and beauty</p>
           </motion.div>
-          <FeaturedProducts />
-        </div>
-      </section>
+        }
+      />
 
       {/* 4. New Arrivals */}
       <NewArrivals />

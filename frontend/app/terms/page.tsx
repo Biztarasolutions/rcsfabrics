@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import PolicyPage, { BUSINESS } from '@/components/common/PolicyPage';
 
 export const metadata: Metadata = {
-  title: 'Terms of Service — RCS Fabrics',
+  title: 'Terms of Service',
   description: 'Terms that apply when you browse or buy from RCS Fabrics.',
 };
 

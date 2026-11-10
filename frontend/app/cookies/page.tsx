@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import PolicyPage, { BUSINESS } from '@/components/common/PolicyPage';
 
 export const metadata: Metadata = {
-  title: 'Cookie Policy — RCS Fabrics',
+  title: 'Cookie Policy',
   description: 'How RCS Fabrics uses cookies and browser storage.',
 };
 

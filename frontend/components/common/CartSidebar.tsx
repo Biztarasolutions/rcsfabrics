@@ -3,7 +3,7 @@ import React from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCartStore } from '@/lib/store';
-import { formatPrice } from '@/lib/utils';
+import { formatPrice, productDisplayName } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 
@@ -81,7 +81,7 @@ export default function CartSidebar() {
                           {/* Thumbnail */}
                           <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-dark-700">
                             {item.product.images?.[0] && (
-                              <Image src={item.product.images[0].url} alt={item.product.name}
+                              <Image src={item.product.images[0].url} alt={productDisplayName(item.product)}
                                 fill sizes="64px" className="object-cover"/>
                             )}
                           </div>
@@ -89,7 +89,7 @@ export default function CartSidebar() {
                           <div className="flex flex-1 flex-col justify-between min-w-0">
                             <div className="flex items-start justify-between gap-1">
                               <div className="min-w-0">
-                                <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">{item.product.name}</p>
+                                <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">{productDisplayName(item.product)}</p>
                                 <p className="text-xs text-gray-500 dark:text-gray-400">{formatPrice(price)}/m</p>
                               </div>
                               <button onClick={() => { removeItem(item.id); toast('Removed from cart'); }}

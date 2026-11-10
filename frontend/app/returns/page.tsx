@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import PolicyPage, { BUSINESS } from '@/components/common/PolicyPage';
 
 export const metadata: Metadata = {
-  title: 'Returns, Cancellation & Refund Policy — RCS Fabrics',
+  title: 'Returns, Cancellation & Refund Policy',
   description: 'How to cancel an order, return uncut fabric within 30 days, and get a refund from RCS Fabrics.',
 };
 

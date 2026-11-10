@@ -70,3 +70,11 @@ export const extractDesignName = (name: string, categoryName: string, code: numb
   }
   return cleaned.trim();
 };
+
+/** Product name with its colour, e.g. "Lachka — Pink" (skips if the name already has it). */
+export function productDisplayName(product: { name?: string; color?: string | null } | null | undefined): string {
+  const name = product?.name?.trim() || '';
+  const color = product?.color?.trim();
+  if (!color || name.toLowerCase().includes(color.toLowerCase())) return name;
+  return `${name} — ${color}`;
+}

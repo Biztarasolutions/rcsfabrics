@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Product } from '@/types';
-import { formatPrice, calculateDiscount } from '@/lib/utils';
+import { formatPrice, calculateDiscount, productDisplayName } from '@/lib/utils';
 import { useCartStore, useWishlistStore } from '@/lib/store';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
@@ -26,7 +26,7 @@ const ProductCard = React.memo(function ProductCard({ product, priority = false 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     addItem({ id: product.id, productId: product.id, product, quantity: 0.5 });
-    toast.success(`${product.name} added to cart!`);
+    toast.success(`${productDisplayName(product)} added to cart!`);
   };
 
   const handleWishlist = (e: React.MouseEvent) => {
@@ -54,7 +54,7 @@ const ProductCard = React.memo(function ProductCard({ product, priority = false 
           {mainImage ? (
             <Image
               src={supabaseImg(mainImage.url, 400)}
-              alt={product.name}
+              alt={productDisplayName(product)}
               fill
               priority={priority}
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 25vw"
@@ -71,7 +71,7 @@ const ProductCard = React.memo(function ProductCard({ product, priority = false 
           {secondImage && everHovered && (
             <Image
               src={supabaseImg(secondImage.url, 400)}
-              alt={product.name}
+              alt={productDisplayName(product)}
               fill
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 25vw"
               placeholder="blur"
@@ -104,7 +104,7 @@ const ProductCard = React.memo(function ProductCard({ product, priority = false 
           <p className="text-xs font-medium uppercase tracking-wider text-primary-600 dark:text-primary-400">
             {product.category?.name} · {product.bestFor?.join(', ') || 'Fabric'}
           </p>
-          <h3 className="mt-1 line-clamp-2 font-semibold text-gray-900 dark:text-white">{product.name}</h3>
+          <h3 className="mt-1 line-clamp-2 font-semibold text-gray-900 dark:text-white">{productDisplayName(product)}</h3>
           {product.colors && product.colors.length > 0 ? (
             <div className="flex gap-1 mt-0.5">
               {product.colors.map((c, idx) => {

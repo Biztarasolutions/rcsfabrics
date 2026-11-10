@@ -9,11 +9,17 @@ import ProductCard from './ProductCard';
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.1 } } };
 const item = { hidden: { opacity: 0, y: 30 }, show: { opacity: 1, y: 0, transition: { duration: 0.5 } } };
 
-export default function FeaturedProducts() {
-  const { data: homepageData, isLoading } = useHomepageData();
+export default function FeaturedProducts({ header }: { header?: React.ReactNode }) {
+  const { data: homepageData, isLoading, isError } = useHomepageData();
   const products = homepageData?.featured || [];
 
+  // Hide the whole section when no product is marked featured (instead of an empty block)
+  if (!isLoading && (isError || products.length === 0)) return null;
+
   return (
+    <section className="py-16 lg:py-24">
+      <div className="container-main">
+        {header}
     <div className="mt-12">
       {isLoading ? (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -40,5 +46,7 @@ export default function FeaturedProducts() {
         </Link>
       </div>
     </div>
+      </div>
+    </section>
   );
 }

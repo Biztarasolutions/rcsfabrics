@@ -3,16 +3,21 @@ import type { Metadata } from 'next';
 import Providers from '@/components/common/Providers';
 import SiteChrome from '@/components/layout/SiteChrome';
 import '@/styles/main.css';
+import { SITE_URL } from '@/lib/seo';
 
 export const metadata: Metadata = {
-  title: 'RCS Fabrics — Premium Luxury Fabrics by the Meter',
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: 'RCS Fabrics — Premium Fabrics by the Metre',
+    template: '%s | RCS Fabrics',
+  },
   description: 'Shop premium quality fabrics — rayon, cotton, linen, chiffon, crepe, satin and more. Sold by the meter with free shipping on orders above ₹2,000.',
   keywords: 'fabric, rayon, cotton, linen, chiffon, crepe, satin, premium fabric, fabric by meter, RCS Fabrics, luxury fabric, Indian fabric',
   authors: [{ name: 'RCS Fabrics' }],
   openGraph: {
     title: 'RCS Fabrics — Premium Luxury Fabrics by the Meter',
     description: 'Shop premium quality fabrics — rayon, cotton, linen, chiffon and more. Sold by the meter.',
-    url: 'https://rcsfabrics.com',
+    url: SITE_URL,
     siteName: 'RCS Fabrics',
     type: 'website',
   },

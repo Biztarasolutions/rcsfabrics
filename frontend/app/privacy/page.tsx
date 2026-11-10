@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import PolicyPage, { BUSINESS } from '@/components/common/PolicyPage';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy — RCS Fabrics',
+  title: 'Privacy Policy',
   description: 'What personal data RCS Fabrics collects, why, and how we protect it.',
 };
 

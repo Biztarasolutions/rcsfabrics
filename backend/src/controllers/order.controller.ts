@@ -99,7 +99,7 @@ export const createOrder = async (
       const product = await prisma.product.findUnique({
         where: { id: productId },
         select: {
-          id: true, name: true, basePrice: true, discountPrice: true,
+          id: true, name: true, color: true, basePrice: true, discountPrice: true,
           totalStock: true, minOrderQty: true, isActive: true,
         },
       });
@@ -127,7 +127,9 @@ export const createOrder = async (
 
       orderItems.push({
         productId: product.id,
-        productName: product.name,
+        productName: product.color && !product.name.toLowerCase().includes(product.color.toLowerCase())
+          ? `${product.name} — ${product.color}`
+          : product.name,
         productImage: mainImg?.url || null,
         quantity: qty,
         pricePerMeter: price,

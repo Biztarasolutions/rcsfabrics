@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import PolicyPage, { BUSINESS } from '@/components/common/PolicyPage';
 
 export const metadata: Metadata = {
-  title: 'Shipping Policy — RCS Fabrics',
+  title: 'Shipping Policy',
   description: 'Shipping charges, delivery times and order tracking for RCS Fabrics orders across India.',
 };
 
