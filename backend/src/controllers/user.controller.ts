@@ -3,7 +3,7 @@ import { prisma } from '@/index';
 import { AuthRequest, ApiResponse } from '@/types';
 import { hashPassword } from '@/utils/auth.util';
 import { ApiError } from '@/middleware/errorHandler';
-import { generateOTP, sendOTP } from '@/services/smsService';
+import { generateOTP, sendOTP, shouldExposeOtp } from '@/services/smsService';
 import { sendEmail } from '@/utils/email';
 
 // In-memory store for pending contact-change OTPs (10-min TTL, single-server ok)
@@ -347,7 +347,7 @@ export const requestContactOTP = async (
       success: true,
       message: `OTP sent to your new ${field}`,
       statusCode: 200,
-      ...(process.env.SMS_PROVIDER === 'mock' || !process.env.SMS_PROVIDER ? { otp: code } : {}),
+      ...(shouldExposeOtp() ? { otp: code } : {}),
     } as ApiResponse);
   } catch (error) {
     if (error instanceof ApiError) {

@@ -4,7 +4,7 @@ import { AuthRequest, ApiResponse } from '@/types';
 import { generateToken, hashPassword, comparePassword } from '@/utils/auth.util';
 import { validateEmail } from '@/utils/string.util';
 import { ApiError } from '@/middleware/errorHandler';
-import { sendOTP, generateOTP, validateOTPFormat } from '@/services/smsService';
+import { sendOTP, generateOTP, validateOTPFormat, shouldExposeOtp } from '@/services/smsService';
 import { sendEmail } from '@/utils/email';
 
 /**
@@ -86,7 +86,7 @@ export const sendPhoneOTP = async (
         phone: normalizedPhone,
         expiresIn: 600, // 10 minutes in seconds
         // Return OTP code in response for mock/dev environment to make testing easy
-        ...(process.env.SMS_PROVIDER === 'mock' || !process.env.SMS_PROVIDER ? { otp } : {}),
+        ...(shouldExposeOtp() ? { otp } : {}),
       },
       statusCode: 200,
     } as ApiResponse);
@@ -527,7 +527,7 @@ export const sendLoginOTP = async (
         identifier,
         expiresIn: 600,
         // Return OTP in response for mock/dev environment
-        ...(process.env.SMS_PROVIDER === 'mock' || !process.env.SMS_PROVIDER ? { otp } : {})
+        ...(shouldExposeOtp() ? { otp } : {})
       },
       statusCode: 200,
     } as ApiResponse);

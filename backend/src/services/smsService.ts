@@ -11,6 +11,15 @@ export interface OTPData {
   code: string;
 }
 
+const isProduction = (): boolean => (process.env.NODE_ENV || config.NODE_ENV) === 'production';
+
+/**
+ * Only in local development with the mock provider may the OTP be returned
+ * in the API response (so you can test without SMS). Never in production.
+ */
+export const shouldExposeOtp = (): boolean =>
+  !isProduction() && (config.SMS_PROVIDER || 'mock') === 'mock';
+
 /**
  * Send OTP via SMS
  * Integration point for Twilio, AWS SNS, or other SMS providers
@@ -18,6 +27,12 @@ export interface OTPData {
 export const sendOTP = async (data: OTPData): Promise<SMSResponse> => {
   try {
     const provider = config.SMS_PROVIDER;
+
+    // The mock provider only logs the code — useless (and unsafe) in production.
+    if (provider === 'mock' && isProduction()) {
+      console.error('[SMS OTP] SMS_PROVIDER is "mock" in production — refusing to send OTP.');
+      return { success: false, error: 'SMS verification is temporarily unavailable. Please try again later.' };
+    }
 
     if (provider === 'twilio') {
       if (!config.TWILIO_ACCOUNT_SID || !config.TWILIO_AUTH_TOKEN || !config.TWILIO_PHONE_NUMBER) {
@@ -39,7 +54,11 @@ export const sendOTP = async (data: OTPData): Promise<SMSResponse> => {
       }
     }
 
-    // Mock implementation - logs OTP to console for development
+    if (provider !== 'mock') {
+      throw new Error(`Unsupported SMS_PROVIDER "${provider}"`);
+    }
+
+    // Mock implementation - logs OTP to console for local development only
     console.log(`[SMS OTP] Sending OTP to ${data.phone}`);
     console.log(`[SMS OTP] Code: ${data.code}`);
 
