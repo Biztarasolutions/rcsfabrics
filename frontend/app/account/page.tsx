@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore, useWishlistStore } from '@/lib/store';
+import WishlistGrid from '@/components/wishlist/WishlistGrid';
 import { formatPrice } from '@/lib/utils';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -20,7 +21,7 @@ const STATUS_COLORS: Record<string, string> = {
   CANCELLED: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
 };
 
-const TABS = ['Overview', 'My Orders', 'Profile', 'Addresses'];
+const TABS = ['Overview', 'My Orders', 'Wishlist', 'Profile', 'Addresses'];
 
 function ContactChangeField({ label, field, currentValue, change, onStart, onCancel, onChangeValue, onSendOTP, onChangeOTP, onVerify }: {
   label: string; field: 'email' | 'phone'; currentValue: string;
@@ -73,7 +74,7 @@ function ContactChangeField({ label, field, currentValue, change, onStart, onCan
 }
 
 const TAB_SLUGS: Record<string, string> = {
-  'Overview': 'overview', 'My Orders': 'my-orders', 'Profile': 'profile', 'Addresses': 'addresses',
+  'Overview': 'overview', 'My Orders': 'my-orders', 'Wishlist': 'wishlist', 'Profile': 'profile', 'Addresses': 'addresses',
 };
 const SLUG_TO_TAB: Record<string, string> = Object.fromEntries(Object.entries(TAB_SLUGS).map(([k, v]) => [v, k]));
 
@@ -83,6 +84,13 @@ function AccountPage() {
   const { user, logout } = useAuthStore();
   const { items: wishlistItems } = useWishlistStore();
   const router = useRouter();
+
+  // Follow ?tab= changes (e.g. clicking the header heart while already on My Account)
+  const tabParam = searchParams.get('tab');
+  useEffect(() => {
+    const fromUrl = SLUG_TO_TAB[tabParam ?? ''];
+    if (fromUrl) setActiveTab(fromUrl);
+  }, [tabParam]);
 
   const setTab = (tab: string) => {
     setActiveTab(tab);
@@ -347,14 +355,12 @@ function AccountPage() {
                     className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${activeTab === tab ? 'bg-primary-600 text-white shadow-sm shadow-primary-500/25' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-dark-700'}`}>
                     {tab === 'Overview' && '📊'}
                     {tab === 'My Orders' && '📦'}
+                    {tab === 'Wishlist' && '❤️'}
                     {tab === 'Profile' && '👤'}
                     {tab === 'Addresses' && '📍'}
                     {tab}
                   </button>
                 ))}
-                <Link href="/wishlist" className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-dark-700">
-                  ❤️ Wishlist
-                </Link>
               </nav>
             </div>
           </aside>
@@ -660,6 +666,16 @@ function AccountPage() {
                         ))}
                       </div>
                     )}
+                  </motion.div>
+                )}
+
+                {activeTab === 'Wishlist' && (
+                  <motion.div key="wishlist" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-dark-700 dark:bg-dark-800 shadow-sm">
+                    <div className="border-b border-gray-100 pb-4 dark:border-dark-700">
+                      <h3 className="font-display text-xl font-bold text-gray-900 dark:text-white">My Wishlist</h3>
+                      <p className="text-sm text-gray-500 mt-0.5">{wishlistItems.length} {wishlistItems.length === 1 ? 'item' : 'items'} saved</p>
+                    </div>
+                    <WishlistGrid compact />
                   </motion.div>
                 )}
 
