@@ -99,11 +99,11 @@ export const ABOUT = {
         focus: ['Website', 'Digital infrastructure', 'Technology'],
       },
       {
-        name: 'Rishika',
+        name: 'Rishika Kashliwal',
         role: 'Design & Creative Direction',
-        initials: 'R',
+        initials: 'RK',
         photo: '',
-        photoAlt: 'Rishika',
+        photoAlt: 'Rishika Kashliwal',
         paragraphs: [
           'Rishika brings a creative perspective to RCS Fabrics, focusing on fabric styling, design inspiration and the visual presentation of our collections.',
           'She helps showcase the beauty and versatility of fabrics through creative ideas and thoughtful styling.',
