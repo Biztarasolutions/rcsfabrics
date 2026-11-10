@@ -254,7 +254,7 @@ npx prisma db seed
 ```
 
 Creates:
-- Admin account (admin@rcsfabrics.com / admin123)
+- Admin account (admin@rcsfabrics.com — password from the ADMIN_PASSWORD env var)
 - 3 Categories (Silks, Cottons, Blends)
 - 4 Sample products with images
 

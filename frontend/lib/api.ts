@@ -1,5 +1,5 @@
 // Trigger Netlify Build - Proxies configured
-import { supabase } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase';
 import axios, { AxiosError } from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
@@ -166,7 +166,7 @@ export const uploadCategoryImage = async (fileUrl: string): Promise<string> => {
   // Generate a unique filename.
   const filename = `${Date.now()}-${Math.random().toString(36).substring(2)}.${blob.type.split('/')[1] || 'jpg'}`;
 
-  const { data, error } = await supabase.storage
+  const { data, error } = await getSupabase().storage
     .from('category-images')
     .upload(filename, blob, {
       contentType: blob.type || 'image/jpeg',
@@ -178,19 +178,19 @@ export const uploadCategoryImage = async (fileUrl: string): Promise<string> => {
     throw new Error(`Supabase upload failed: ${error.message}`);
   }
 
-  const { data: publicUrlData } = supabase.storage.from('category-images').getPublicUrl(data.path);
+  const { data: publicUrlData } = getSupabase().storage.from('category-images').getPublicUrl(data.path);
   const publicUrl = publicUrlData.publicUrl;
   return publicUrl;
 };
 export const uploadBannerImage = async (file: File): Promise<string> => {
   const ext = file.name.split('.').pop() || 'jpg';
   const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-  const { data, error } = await supabase.storage.from('banners').upload(filename, file, {
+  const { data, error } = await getSupabase().storage.from('banners').upload(filename, file, {
     contentType: file.type || 'image/jpeg',
     upsert: true,
   });
   if (error) throw new Error(`Upload failed: ${error.message}`);
-  const { data: pub } = supabase.storage.from('banners').getPublicUrl(data.path);
+  const { data: pub } = getSupabase().storage.from('banners').getPublicUrl(data.path);
   return pub.publicUrl;
 };
 
