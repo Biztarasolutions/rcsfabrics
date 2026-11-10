@@ -5,7 +5,10 @@ const prisma = new PrismaClient();
 
 async function main() {
   const email = 'testadmin@rcsfabrics.com';
-  const password = await bcrypt.hash('testadmin123', 10);
+  const plain = process.env.TEST_ADMIN_PASSWORD;
+  if (!plain) throw new Error('Set TEST_ADMIN_PASSWORD to create the test admin.');
+  if (process.env.NODE_ENV === 'production') throw new Error('Refusing to create a test admin in production.');
+  const password = await bcrypt.hash(plain, 10);
   
   const user = await prisma.user.upsert({
     where: { email },

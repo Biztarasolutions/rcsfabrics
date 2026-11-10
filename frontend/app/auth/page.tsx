@@ -1027,15 +1027,6 @@ export default function AuthPage() {
               .
             </p>
           )}
-
-          {/* Demo credentials */}
-          {mode === 'login' && (
-            <div className="mt-6 rounded-xl border border-primary-200 bg-primary-50 p-4 dark:border-primary-800/50 dark:bg-primary-950/30">
-              <p className="text-xs font-semibold text-primary-700 dark:text-primary-400">Demo Admin Account</p>
-              <p className="mt-1 text-xs text-primary-600 dark:text-primary-500">Email: admin@rcsfabrics.com</p>
-              <p className="text-xs text-primary-600 dark:text-primary-500">Password: admin123</p>
-            </div>
-          )}
         </motion.div>
       </div>
     </div>

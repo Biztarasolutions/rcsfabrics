@@ -5,7 +5,7 @@ async function testApi() {
     console.log('Logging in...');
     const loginRes = await axios.post('http://localhost:5000/api/auth/login', {
       email: 'testadmin@rcsfabrics.com',
-      password: 'testadmin123'
+      password: process.env.TEST_ADMIN_PASSWORD || ''
     });
     const token = loginRes.data.data.token;
     console.log('Got token:', token);

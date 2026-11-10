@@ -42,7 +42,7 @@ export const config = {
   
   // Admin
   ADMIN_EMAIL: process.env.ADMIN_EMAIL || 'admin@rcsfabrics.com',
-  ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || 'admin123',
+  ADMIN_PASSWORD: process.env.ADMIN_PASSWORD, // no default — never ship a known admin password
 };
 
 // Validate required env vars

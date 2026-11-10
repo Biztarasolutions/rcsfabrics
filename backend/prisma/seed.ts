@@ -214,7 +214,11 @@ async function main() {
   // Seed admin user
   console.log('👤 Creating admin user...');
   const bcrypt = await import('bcryptjs');
-  const hashedPassword = await bcrypt.default.hash('admin@123', 12);
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  if (!adminPassword || adminPassword.length < 12) {
+    throw new Error('Set ADMIN_PASSWORD (12+ characters) before seeding the admin user.');
+  }
+  const hashedPassword = await bcrypt.default.hash(adminPassword, 12);
   await prisma.user.upsert({
     where: { email: 'admin@rcsfabrics.com' },
     update: {},
@@ -230,6 +234,10 @@ async function main() {
   });
 
   // Seed a test customer
+  if (process.env.NODE_ENV === 'production') {
+    console.log('⏭️  Skipping demo customer in production.');
+    return;
+  }
   const customerPassword = await bcrypt.default.hash('customer@123', 12);
   await prisma.user.upsert({
     where: { email: 'customer@rcsfabrics.com' },
@@ -246,7 +254,7 @@ async function main() {
   });
 
   console.log('✅ Database seeded successfully!');
-  console.log('   Admin: admin@rcsfabrics.com / admin@123');
+  console.log('   Admin: admin@rcsfabrics.com (password from ADMIN_PASSWORD)');
   console.log('   Customer: customer@rcsfabrics.com / customer@123');
 }
 
