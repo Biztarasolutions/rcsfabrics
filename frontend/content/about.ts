@@ -54,7 +54,7 @@ export const ABOUT = {
     generations: [
       { label: 'First generation', names: 'Late Kundanmal Kashliwal' },
       { label: 'Second generation', names: 'Rajesh & Rashmi Kashliwal' },
-      { label: 'Third generation', names: 'Rishabh, Mayank & Rishika Kashliwal' },
+      { label: 'Third generation', names: 'Rishabh, Rishika & Mayank Kashliwal' },
     ],
   },
 
@@ -73,18 +73,6 @@ export const ABOUT = {
           'Their commitment to bringing more variety, imported fabrics and premium-quality collections shaped the business we are proud of today.',
         ],
         focus: ['Fabric knowledge', 'Customer relationships', 'Premium & imported collections'],
-      },
-      {
-        name: 'Mayank Kashliwal',
-        role: 'Customer Experience, Operations & Digital Expansion',
-        initials: 'MK',
-        photo: '',
-        photoAlt: 'Mayank Kashliwal',
-        paragraphs: [
-          'Mayank manages customer interactions and inventory, bringing personal attention and traditional customer service to every interaction.',
-          'He also plays a key role in bringing the family’s traditional offline fabric business into the online world, making our collections accessible to a much wider audience and taking our family legacy beyond the boundaries of our physical store.',
-        ],
-        focus: ['Customer interactions', 'Inventory', 'Taking the store online'],
       },
       {
         name: 'Rishabh Kashliwal',
@@ -109,6 +97,18 @@ export const ABOUT = {
           'She helps showcase the beauty and versatility of fabrics through creative ideas and thoughtful styling.',
         ],
         focus: ['Fabric styling', 'Design inspiration', 'Visual presentation'],
+      },
+      {
+        name: 'Mayank Kashliwal',
+        role: 'Customer Experience, Operations & Digital Expansion',
+        initials: 'MK',
+        photo: '',
+        photoAlt: 'Mayank Kashliwal',
+        paragraphs: [
+          'Mayank manages customer interactions and inventory, bringing personal attention and traditional customer service to every interaction.',
+          'He also plays a key role in bringing the family’s traditional offline fabric business into the online world, making our collections accessible to a much wider audience and taking our family legacy beyond the boundaries of our physical store.',
+        ],
+        focus: ['Customer interactions', 'Inventory', 'Taking the store online'],
       },
     ] as FamilyMember[],
   },

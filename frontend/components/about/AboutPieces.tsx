@@ -120,8 +120,9 @@ export function WorldMap() {
   const reduce = useReducedMotion();
   const [dx, dy] = DIMAPUR;
   return (
-    <svg viewBox={`0 0 ${WORLD_W} ${WORLD_H}`} className="h-auto w-full" role="img" aria-labelledby="world-map-title">
-      <title id="world-map-title">World map with Dimapur, Nagaland highlighted and lines reaching outward to the rest of the world</title>
+    // aria-label (not <title>) so screen readers get a description without a hover tooltip
+    <svg viewBox={`0 0 ${WORLD_W} ${WORLD_H}`} className="h-auto w-full" role="img"
+      aria-label="World map with Dimapur, Nagaland highlighted and lines reaching outward to the rest of the world">
       <path d={WORLD_DOTS} stroke="#e9d8b4" strokeOpacity={0.35} strokeWidth={3.2} strokeLinecap="round" fill="none" />
       {REACH.map(([x, y], i) => {
         const mx = (dx + x) / 2, my = Math.min(dy, y) - Math.abs(dx - x) * 0.22 - 18;
