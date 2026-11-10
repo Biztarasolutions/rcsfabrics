@@ -54,3 +54,20 @@ if (missingEnvVars.length > 0) {
     `Warning: Missing environment variables: ${missingEnvVars.join(', ')}`
   );
 }
+
+// Secrets that were committed to the repo or used as defaults — never valid in production.
+const LEAKED_JWT_SECRETS = [
+  'rcs_fabrics_secret_key_2024',
+  'your-secret-key-change-in-production',
+  'rcs-secret-key-change-in-production',
+];
+
+if (config.NODE_ENV === 'production') {
+  const secret = process.env.JWT_SECRET || '';
+  if (secret.length < 32 || LEAKED_JWT_SECRETS.includes(secret)) {
+    throw new Error(
+      'JWT_SECRET must be set to a random value of at least 32 characters in production ' +
+        '(the committed/default secrets are not allowed). Set it in the Render dashboard.'
+    );
+  }
+}

@@ -1,9 +1,10 @@
+import { config } from '@/config';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
 const prisma = new PrismaClient();
-const JWT_SECRET = process.env.JWT_SECRET || 'rcs-secret-key-change-in-production';
+const JWT_SECRET = config.JWT_SECRET;
 const JWT_EXPIRES = process.env.JWT_EXPIRES_IN || '7d';
 
 export class AuthService {
