@@ -3,16 +3,7 @@ import { prisma } from '@/index';
 import { AuthRequest, ApiResponse } from '@/types';
 import { hashPassword } from '@/utils/auth.util';
 import { ApiError } from '@/middleware/errorHandler';
-import { generateOTP, sendOTP, shouldExposeOtp } from '@/services/smsService';
-import { sendEmail } from '@/utils/email';
 
-// In-memory store for pending contact-change OTPs (10-min TTL, single-server ok)
-const pendingContactOTPs = new Map<string, {
-  field: 'email' | 'phone';
-  newValue: string;
-  code: string;
-  expiresAt: number;
-}>();
 
 export const updateProfile = async (
   req: AuthRequest,
@@ -23,15 +14,18 @@ export const updateProfile = async (
       throw new ApiError(401, 'Unauthorized');
     }
 
-    const { firstName, lastName, phone } = req.body;
+    // Only the name can be changed. Email and phone are fixed to the account.
+    const { firstName, lastName } = req.body || {};
+    const data: { firstName?: string; lastName?: string } = {};
+    if (typeof firstName === 'string') {
+      if (!firstName.trim()) throw new ApiError(400, 'First name is required');
+      data.firstName = firstName.trim().slice(0, 100);
+    }
+    if (typeof lastName === 'string') data.lastName = lastName.trim().slice(0, 100);
 
     const user = await prisma.user.update({
       where: { id: req.userId },
-      data: {
-        firstName,
-        lastName,
-        phone,
-      },
+      data,
       select: {
         id: true,
         email: true,
@@ -316,90 +310,3 @@ export const getUserReviews = async (
   }
 };
 
-export const requestContactOTP = async (
-  req: AuthRequest,
-  res: Response
-): Promise<void> => {
-  try {
-    if (!req.userId) throw new ApiError(401, 'Unauthorized');
-    const { field, newValue } = req.body;
-    if (!field || !newValue) throw new ApiError(400, 'field and newValue are required');
-    if (field !== 'email' && field !== 'phone') throw new ApiError(400, 'field must be email or phone');
-
-    const existing = await prisma.user.findFirst({
-      where: { [field]: newValue, NOT: { id: req.userId } },
-      select: { id: true },
-    });
-    if (existing) {
-      throw new ApiError(409, `This ${field} is already in use by another account`);
-    }
-
-    const code = generateOTP();
-    pendingContactOTPs.set(req.userId, {
-      field,
-      newValue,
-      code,
-      expiresAt: Date.now() + 10 * 60 * 1000,
-    });
-
-    if (field === 'email') {
-      await sendEmail({
-        to: [newValue],
-        subject: 'Verify your new email — RCS Fabrics',
-        html: `<p>Your OTP to update your email address is: <strong>${code}</strong></p><p>It expires in 10 minutes.</p>`,
-      });
-    } else {
-      const result = await sendOTP({ phone: newValue, code });
-      if (!result.success) throw new ApiError(500, result.error || 'Failed to send OTP');
-    }
-
-    res.json({
-      success: true,
-      message: `OTP sent to your new ${field}`,
-      statusCode: 200,
-      ...(shouldExposeOtp() ? { otp: code } : {}),
-    } as ApiResponse);
-  } catch (error) {
-    if (error instanceof ApiError) {
-      res.status(error.statusCode).json({ success: false, message: error.message, statusCode: error.statusCode } as ApiResponse);
-    } else {
-      res.status(500).json({ success: false, message: 'Internal server error', statusCode: 500 } as ApiResponse);
-    }
-  }
-};
-
-export const verifyContactOTP = async (
-  req: AuthRequest,
-  res: Response
-): Promise<void> => {
-  try {
-    if (!req.userId) throw new ApiError(401, 'Unauthorized');
-    const { field, newValue, code } = req.body;
-    if (!field || !newValue || !code) throw new ApiError(400, 'field, newValue and code are required');
-
-    const pending = pendingContactOTPs.get(req.userId);
-    if (!pending) throw new ApiError(400, 'No pending change request. Please request a new OTP.');
-    if (pending.field !== field || pending.newValue !== newValue) throw new ApiError(400, 'OTP does not match the requested change');
-    if (Date.now() > pending.expiresAt) {
-      pendingContactOTPs.delete(req.userId);
-      throw new ApiError(400, 'OTP has expired. Please request a new one.');
-    }
-    if (pending.code !== code) throw new ApiError(400, 'Incorrect OTP. Please try again.');
-
-    const updated = await prisma.user.update({
-      where: { id: req.userId },
-      data: { [field]: newValue },
-      select: { id: true, email: true, firstName: true, lastName: true, phone: true, role: true },
-    });
-
-    pendingContactOTPs.delete(req.userId);
-
-    res.json({ success: true, message: `${field === 'email' ? 'Email' : 'Phone'} updated successfully`, data: updated, statusCode: 200 } as ApiResponse);
-  } catch (error) {
-    if (error instanceof ApiError) {
-      res.status(error.statusCode).json({ success: false, message: error.message, statusCode: error.statusCode } as ApiResponse);
-    } else {
-      res.status(500).json({ success: false, message: 'Internal server error', statusCode: 500 } as ApiResponse);
-    }
-  }
-};

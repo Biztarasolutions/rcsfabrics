@@ -72,10 +72,6 @@ export const userApi = {
   updateAddress: (id: string, data: any) => api.put(`users/addresses/${id}`, data),
   deleteAddress: (id: string) => api.delete(`users/addresses/${id}`),
   getMyReviews: () => api.get('users/reviews'),
-  requestContactOTP: (field: 'email' | 'phone', newValue: string) =>
-    api.post('users/request-contact-otp', { field, newValue }),
-  verifyContactOTP: (field: 'email' | 'phone', newValue: string, code: string) =>
-    api.post('users/verify-contact-otp', { field, newValue, code }),
 };
 
 export const productApi = {

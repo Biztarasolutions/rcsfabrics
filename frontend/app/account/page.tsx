@@ -23,56 +23,6 @@ const STATUS_COLORS: Record<string, string> = {
 
 const TABS = ['Overview', 'My Orders', 'Wishlist', 'Profile', 'Addresses'];
 
-function ContactChangeField({ label, field, currentValue, change, onStart, onCancel, onChangeValue, onSendOTP, onChangeOTP, onVerify }: {
-  label: string; field: 'email' | 'phone'; currentValue: string;
-  change: { step: 'input' | 'otp'; newValue: string; otp: string; sending: boolean; verifying: boolean } | null;
-  onStart: () => void; onCancel: () => void;
-  onChangeValue: (v: string) => void; onSendOTP: () => void;
-  onChangeOTP: (v: string) => void; onVerify: () => void;
-}) {
-  return (
-    <div className="mt-4">
-      <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{label}</label>
-      {!change ? (
-        <div className="flex items-center gap-2">
-          <input value={currentValue || ''} readOnly className="input-field flex-1 bg-gray-50 dark:bg-dark-700 cursor-default select-all"/>
-          <button type="button" onClick={onStart}
-            className="shrink-0 rounded-xl border border-primary-200 px-4 py-2.5 text-sm font-semibold text-primary-600 hover:bg-primary-50 dark:border-primary-800 dark:text-primary-400 dark:hover:bg-primary-950/20 transition-colors">
-            Change
-          </button>
-        </div>
-      ) : change.step === 'input' ? (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <input value={change.newValue} onChange={(e) => onChangeValue(e.target.value)}
-              type={field === 'email' ? 'email' : 'tel'}
-              placeholder={field === 'email' ? 'Enter new email' : 'Enter new phone'}
-              className="input-field flex-1" autoFocus/>
-            <button type="button" onClick={onSendOTP} disabled={!change.newValue.trim() || change.sending}
-              className="shrink-0 button-primary px-4 py-2.5 text-sm disabled:opacity-50">
-              {change.sending ? 'Sending…' : 'Send OTP'}
-            </button>
-            <button type="button" onClick={onCancel} className="shrink-0 text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">✕</button>
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          <p className="text-xs text-gray-500 dark:text-gray-400">OTP sent to <strong>{change.newValue}</strong>. Enter it below.</p>
-          <div className="flex items-center gap-2">
-            <input value={change.otp} onChange={(e) => onChangeOTP(e.target.value)}
-              placeholder="6-digit OTP" maxLength={6} className="input-field flex-1 font-mono tracking-widest" autoFocus/>
-            <button type="button" onClick={onVerify} disabled={change.otp.length < 6 || change.verifying}
-              className="shrink-0 button-primary px-4 py-2.5 text-sm disabled:opacity-50">
-              {change.verifying ? 'Verifying…' : 'Verify'}
-            </button>
-            <button type="button" onClick={onCancel} className="shrink-0 text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">✕</button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 const TAB_SLUGS: Record<string, string> = {
   'Overview': 'overview', 'My Orders': 'my-orders', 'Wishlist': 'wishlist', 'Profile': 'profile', 'Addresses': 'addresses',
 };
@@ -144,46 +94,6 @@ function AccountPage() {
   const [profileForm, setProfileForm] = useState({ firstName: '', lastName: '', email: '', phone: '' });
   const [savingProfile, setSavingProfile] = useState(false);
 
-  // Contact change (email / phone) OTP flow
-  type ContactField = 'email' | 'phone';
-  const [contactChange, setContactChange] = useState<{
-    field: ContactField; step: 'input' | 'otp'; newValue: string; otp: string; sending: boolean; verifying: boolean;
-  } | null>(null);
-
-  const startContactChange = (field: ContactField) =>
-    setContactChange({ field, step: 'input', newValue: '', otp: '', sending: false, verifying: false });
-
-  const cancelContactChange = () => setContactChange(null);
-
-  const sendContactOTP = async () => {
-    if (!contactChange) return;
-    setContactChange((c) => c && { ...c, sending: true });
-    try {
-      await userApi.requestContactOTP(contactChange.field, contactChange.newValue.trim());
-      toast.success(`OTP sent to your new ${contactChange.field}`);
-      setContactChange((c) => c && { ...c, step: 'otp', sending: false });
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || err.message || 'Failed to send OTP');
-      setContactChange((c) => c && { ...c, sending: false });
-    }
-  };
-
-  const verifyContactOTP = async () => {
-    if (!contactChange) return;
-    setContactChange((c) => c && { ...c, verifying: true });
-    try {
-      const res = await userApi.verifyContactOTP(contactChange.field, contactChange.newValue.trim(), contactChange.otp.trim());
-      const updatedUser = res.data.data;
-      useAuthStore.getState().setUser(updatedUser);
-      setProfileForm((f) => ({ ...f, [contactChange.field]: contactChange.newValue.trim() }));
-      toast.success(`${contactChange.field === 'email' ? 'Email' : 'Phone'} updated successfully!`);
-      refetchProfile();
-      setContactChange(null);
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || err.message || 'Verification failed');
-      setContactChange((c) => c && { ...c, verifying: false });
-    }
-  };
 
   useEffect(() => {
     if (profileRes) {
@@ -250,7 +160,6 @@ function AccountPage() {
       const res = await authApi.updateProfile({
         firstName: profileForm.firstName,
         lastName: profileForm.lastName,
-        phone: profileForm.phone,
       });
       const updatedUser = res.data.data;
       useAuthStore.getState().setUser(updatedUser);
@@ -682,7 +591,7 @@ function AccountPage() {
                 {activeTab === 'Profile' && (
                   <motion.div key="profile" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-dark-700 dark:bg-dark-800 shadow-sm">
                     <h3 className="font-display text-xl font-bold text-gray-900 dark:text-white">Edit Profile</h3>
-                    <p className="text-sm text-gray-500 mb-5">Update your personal information and contact details</p>
+                    <p className="text-sm text-gray-500 mb-5">Update your name. Email and phone are linked to your account.</p>
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div>
                         <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">First Name</label>
@@ -694,31 +603,20 @@ function AccountPage() {
                       </div>
                     </div>
 
-                    {/* Email — OTP-gated change */}
-                    <ContactChangeField
-                      label="Email Address" field="email"
-                      currentValue={profileForm.email}
-                      change={contactChange?.field === 'email' ? contactChange : null}
-                      onStart={() => startContactChange('email')}
-                      onCancel={cancelContactChange}
-                      onChangeValue={(v) => setContactChange((c) => c && { ...c, newValue: v })}
-                      onSendOTP={sendContactOTP}
-                      onChangeOTP={(v) => setContactChange((c) => c && { ...c, otp: v })}
-                      onVerify={verifyContactOTP}
-                    />
-
-                    {/* Phone — OTP-gated change */}
-                    <ContactChangeField
-                      label="Phone Number" field="phone"
-                      currentValue={profileForm.phone}
-                      change={contactChange?.field === 'phone' ? contactChange : null}
-                      onStart={() => startContactChange('phone')}
-                      onCancel={cancelContactChange}
-                      onChangeValue={(v) => setContactChange((c) => c && { ...c, newValue: v })}
-                      onSendOTP={sendContactOTP}
-                      onChangeOTP={(v) => setContactChange((c) => c && { ...c, otp: v })}
-                      onVerify={verifyContactOTP}
-                    />
+                    {/* Email and phone are fixed to the account and cannot be changed here */}
+                    <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Email Address</label>
+                        <input value={profileForm.email || '—'} readOnly disabled aria-readonly="true" className="input-field cursor-not-allowed bg-gray-50 text-gray-500 dark:bg-dark-900 dark:text-gray-400"/>
+                      </div>
+                      <div>
+                        <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Phone Number</label>
+                        <input value={profileForm.phone || '—'} readOnly disabled aria-readonly="true" className="input-field cursor-not-allowed bg-gray-50 text-gray-500 dark:bg-dark-900 dark:text-gray-400"/>
+                      </div>
+                    </div>
+                    <p className="mt-2 mb-4 text-xs text-gray-500 dark:text-gray-400">
+                      Email and phone number can&apos;t be changed. Need to update them? Contact us on WhatsApp at +91 98630 26598.
+                    </p>
 
                     <button onClick={handleSaveProfile} disabled={savingProfile} className="button-primary mt-2 px-8 py-3 font-semibold shadow-sm transition-all flex items-center gap-2">
                       {savingProfile ? 'Saving Changes...' : 'Save Changes'}
