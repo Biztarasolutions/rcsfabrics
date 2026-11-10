@@ -24,6 +24,39 @@ const getRazorpay = (): InstanceType<typeof Razorpay> => {
   return razorpayClient;
 };
 
+// ── Order pricing rules (server is the source of truth) ─────────────────
+const FREE_SHIPPING_THRESHOLD = 2000; // ₹
+const FLAT_SHIPPING = 150; // ₹
+const MIN_QTY = 0.5; // metres
+const MAX_QTY_PER_LINE = 1000; // metres
+
+const roundMoney = (n: number): number => Math.round(n * 100) / 100;
+const isHalfMetreStep = (q: number): boolean => Math.abs(q * 2 - Math.round(q * 2)) < 1e-9;
+export const calculateShipping = (subtotal: number): number =>
+  subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : FLAT_SHIPPING;
+
+/** Load a coupon and check it is usable for this subtotal; returns the discount in ₹. */
+const getValidCoupon = async (code: string, subtotal: number) => {
+  const coupon = await prisma.coupon.findUnique({ where: { code: code.trim().toUpperCase() } });
+  const now = new Date();
+  if (!coupon || !coupon.isActive || coupon.startsAt > now || coupon.expiresAt < now) {
+    throw new ApiError(400, 'Invalid or expired coupon code');
+  }
+  if (coupon.maxUses != null && coupon.usedCount >= coupon.maxUses) {
+    throw new ApiError(400, 'This coupon has reached its usage limit');
+  }
+  const minOrder = coupon.minOrderAmount ?? 0;
+  if (subtotal < minOrder) {
+    throw new ApiError(400, `Minimum order of ₹${minOrder} required for this coupon`);
+  }
+  const raw = coupon.discountType === 'PERCENTAGE'
+    ? (subtotal * coupon.discountValue) / 100
+    : coupon.discountValue;
+  const capped = coupon.maxDiscount ? Math.min(raw, coupon.maxDiscount) : raw;
+  const discount = roundMoney(Math.max(0, Math.min(capped, subtotal)));
+  return { coupon, discount };
+};
+
 export const createOrder = async (
   req: AuthRequest,
   res: Response
@@ -33,30 +66,57 @@ export const createOrder = async (
       throw new ApiError(401, 'Unauthorized');
     }
 
-    const { items, shippingAddress, shippingCost, tax, couponCode, paymentMethod, utrReference } = req.body;
+    // shippingCost / tax from the client are deliberately ignored — the server prices the order.
+    const { items, shippingAddress, couponCode, paymentMethod, utrReference } = req.body;
 
-    if (!items || items.length === 0) {
+    if (!Array.isArray(items) || items.length === 0) {
       throw new ApiError(400, 'Order must contain at least one item');
     }
+    if (items.length > 50) {
+      throw new ApiError(400, 'Too many items in one order');
+    }
+    if (!shippingAddress || typeof shippingAddress !== 'object') {
+      throw new ApiError(400, 'Shipping address is required');
+    }
 
-    // Build order items from the request body (frontend Zustand cart)
+    // Merge duplicate lines and validate quantities (metres, 0.5 m steps)
+    const qtyByProduct = new Map<string, number>();
+    for (const item of items) {
+      const productId = String(item?.productId || '');
+      const qty = Number(item?.quantity);
+      if (!productId) throw new ApiError(400, 'Each item needs a productId');
+      if (!Number.isFinite(qty) || qty <= 0 || qty > MAX_QTY_PER_LINE || !isHalfMetreStep(qty)) {
+        throw new ApiError(400, 'Quantity must be in 0.5 m steps (e.g. 0.5, 1, 1.5)');
+      }
+      qtyByProduct.set(productId, (qtyByProduct.get(productId) || 0) + qty);
+    }
+
+    // Build order items from DB prices (never trust client prices)
     let subtotal = 0;
     const orderItems: any[] = [];
 
-    for (const item of items) {
+    for (const [productId, qty] of qtyByProduct) {
       const product = await prisma.product.findUnique({
-        where: { id: item.productId },
-        select: { id: true, name: true, basePrice: true, discountPrice: true, totalStock: true },
+        where: { id: productId },
+        select: {
+          id: true, name: true, basePrice: true, discountPrice: true,
+          totalStock: true, minOrderQty: true, isActive: true,
+        },
       });
-      if (!product) throw new ApiError(400, `Product ${item.productId} not found`);
+      if (!product || !product.isActive) throw new ApiError(400, 'A product in your cart is no longer available');
 
-      // Use price from DB (ignore client-sent price to prevent tampering)
+      const minQty = product.minOrderQty || MIN_QTY;
+      if (qty < minQty) {
+        throw new ApiError(400, `Minimum order for ${product.name} is ${minQty} m`);
+      }
+      if (qty > product.totalStock) {
+        throw new ApiError(409, `Only ${product.totalStock} m of ${product.name} left in stock`);
+      }
+
       const price = product.discountPrice || product.basePrice;
-      const qty = parseFloat(item.quantity);
-      const itemTotal = price * qty;
-      subtotal += itemTotal;
+      const itemTotal = roundMoney(price * qty);
+      subtotal = roundMoney(subtotal + itemTotal);
 
-      // Fetch main product image
       const mainImg = await prisma.productImage.findFirst({
         where: { productId: product.id, isMain: true },
         select: { url: true },
@@ -75,74 +135,64 @@ export const createOrder = async (
       });
     }
 
-    // Apply coupon if provided
+    // Coupon: re-validated here (active, dates, usage limit, minimum order)
     let discountAmount = 0;
-    let appliedCouponId: string | null = null;
+    let appliedCoupon: { id: string; code: string } | null = null;
     if (couponCode) {
-      const coupon = await prisma.coupon.findUnique({
-        where: { code: couponCode },
-      });
-
-      if (coupon && coupon.isActive) {
-        const discount = coupon.discountType === 'PERCENTAGE'
-          ? (subtotal * coupon.discountValue) / 100
-          : coupon.discountValue;
-        discountAmount = Math.min(discount, coupon.maxDiscount || discount);
-        appliedCouponId = coupon.id;
-      }
+      const result = await getValidCoupon(String(couponCode), subtotal);
+      discountAmount = result.discount;
+      appliedCoupon = { id: result.coupon.id, code: result.coupon.code };
     }
 
-    const total = calculateOrderTotal(
-      subtotal,
-      shippingCost || 0,
-      tax || 0,
-      discountAmount
-    );
+    // Server-side shipping and tax
+    const shippingCost = calculateShipping(subtotal);
+    const tax = 0; // prices are GST-inclusive
+    const total = roundMoney(calculateOrderTotal(subtotal, shippingCost, tax, discountAmount));
 
-    // Create order
-    const order = await prisma.order.create({
-      data: {
-        orderNumber: await generateOrderNumber(prisma),
-        userId: req.userId,
-        shippingAddress: JSON.stringify(shippingAddress),
-        items: {
-          createMany: {
-            data: orderItems,
-          },
-        },
-        subtotal,
-        shippingCost: shippingCost || 0,
-        tax: tax || 0,
-        discountAmount,
-        couponCode,
-        total,
-        paymentMethod: paymentMethod || undefined,
-        utrReference: utrReference || undefined,
-      },
-      include: {
-        items: {
-          include: { product: true },
-        },
-      },
-    });
+    const orderNumber = await generateOrderNumber(prisma);
 
-    // Deduct inventory for each ordered item
-    await Promise.all(
-      orderItems.map((item) =>
-        prisma.product.update({
-          where: { id: item.productId },
+    // Create the order, deduct stock and count the coupon atomically.
+    // Stock is decremented only if enough is left, so concurrent orders can't oversell.
+    const order = await prisma.$transaction(async (tx) => {
+      for (const item of orderItems) {
+        const updated = await tx.product.updateMany({
+          where: { id: item.productId, totalStock: { gte: item.quantity } },
           data: { totalStock: { decrement: item.quantity } },
-        })
-      )
-    );
+        });
+        if (updated.count === 0) {
+          throw new ApiError(409, `${item.productName} just sold out — please update your cart`);
+        }
+      }
 
-    // Increment coupon usage count
-    if (appliedCouponId) {
-      await prisma.coupon.update({
-        where: { id: appliedCouponId },
-        data: { usedCount: { increment: 1 } },
+      if (appliedCoupon) {
+        const c = await tx.coupon.findUnique({ where: { id: appliedCoupon.id } });
+        if (c?.maxUses != null && c.usedCount >= c.maxUses) {
+          throw new ApiError(400, 'This coupon has reached its usage limit');
+        }
+        await tx.coupon.update({
+          where: { id: appliedCoupon.id },
+          data: { usedCount: { increment: 1 } },
+        });
+      }
+
+      return tx.order.create({
+        data: {
+          orderNumber,
+          userId: req.userId!,
+          shippingAddress: JSON.stringify(shippingAddress),
+          items: { createMany: { data: orderItems } },
+          subtotal,
+          shippingCost,
+          tax,
+          discountAmount,
+          couponCode: appliedCoupon?.code,
+          total,
+          paymentMethod: paymentMethod || undefined,
+          utrReference: utrReference || undefined,
+        },
+        include: { items: { include: { product: true } } },
       });
-    }
+    });
 
     // Create Razorpay order for online payments (RAZORPAY or UPI)
     let razorpayOrderId: string | undefined;
@@ -383,16 +433,9 @@ export const validateCoupon = async (
     const { code, amount } = req.body;
     if (!code) throw new ApiError(400, 'Coupon code is required');
 
-    const coupon = await prisma.coupon.findUnique({ where: { code: String(code).toUpperCase() } });
-    if (!coupon || !coupon.isActive) throw new ApiError(404, 'Invalid or expired coupon code');
-
-    const minOrder = (coupon as any).minOrderAmount ?? 0;
-    if (amount < minOrder) throw new ApiError(400, `Minimum order of ${minOrder} required for this coupon`);
-
-    const discount = coupon.discountType === 'PERCENTAGE'
-      ? Math.round((Number(amount) * coupon.discountValue) / 100)
-      : coupon.discountValue;
-    const finalDiscount = coupon.maxDiscount ? Math.min(discount, coupon.maxDiscount) : discount;
+    const subtotal = Number(amount);
+    if (!Number.isFinite(subtotal) || subtotal < 0) throw new ApiError(400, 'Invalid order amount');
+    const { coupon, discount: finalDiscount } = await getValidCoupon(String(code), subtotal);
 
     res.json({
       success: true,
