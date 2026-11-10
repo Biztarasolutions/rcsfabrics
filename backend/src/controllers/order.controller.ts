@@ -305,21 +305,44 @@ export const verifyPayment = async (
     const { id } = req.params;
     const { razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
 
-    const expectedSig = crypto
-      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET || '')
-      .update(`${razorpayOrderId}|${razorpayPaymentId}`)
-      .digest('hex');
-
-    if (expectedSig !== razorpaySignature) {
-      throw new ApiError(400, 'Payment signature verification failed');
+    const secret = process.env.RAZORPAY_KEY_SECRET;
+    if (!secret) {
+      throw new ApiError(503, 'Online payments are not configured');
+    }
+    if (
+      typeof razorpayOrderId !== 'string' || !razorpayOrderId ||
+      typeof razorpayPaymentId !== 'string' || !razorpayPaymentId ||
+      typeof razorpaySignature !== 'string' || !razorpaySignature
+    ) {
+      throw new ApiError(400, 'Missing payment details');
     }
 
     const order = await prisma.order.findUnique({ where: { id } });
     if (!order) throw new ApiError(404, 'Order not found');
     if (order.userId !== req.userId) throw new ApiError(403, 'Forbidden');
+    if (order.paymentStatus === 'PAID') throw new ApiError(409, 'Order is already paid');
+    if (order.status === 'CANCELLED') throw new ApiError(409, 'Order was cancelled');
 
-    const updated = await prisma.order.update({
-      where: { id },
+    // The payment must belong to the Razorpay order we created for THIS order,
+    // otherwise a valid signature from a cheaper order could be replayed here.
+    if (!order.razorpayOrderId || order.razorpayOrderId !== razorpayOrderId) {
+      throw new ApiError(400, 'Payment does not match this order');
+    }
+
+    const expectedSig = crypto
+      .createHmac('sha256', secret)
+      .update(`${order.razorpayOrderId}|${razorpayPaymentId}`)
+      .digest('hex');
+
+    const expectedBuf = Buffer.from(expectedSig, 'utf8');
+    const givenBuf = Buffer.from(razorpaySignature, 'utf8');
+    if (expectedBuf.length !== givenBuf.length || !crypto.timingSafeEqual(expectedBuf, givenBuf)) {
+      throw new ApiError(400, 'Payment signature verification failed');
+    }
+
+    // Conditional update so two concurrent verify calls can't both succeed
+    const result = await prisma.order.updateMany({
+      where: { id, paymentStatus: { not: 'PAID' } },
       data: {
         paymentStatus: 'PAID',
         status: 'PROCESSING',
@@ -327,6 +350,8 @@ export const verifyPayment = async (
         paidAt: new Date(),
       },
     });
+    if (result.count === 0) throw new ApiError(409, 'Order is already paid');
+    const updated = await prisma.order.findUnique({ where: { id } });
 
     res.json({ success: true, message: 'Payment verified', data: updated, statusCode: 200 } as ApiResponse);
   } catch (error) {
