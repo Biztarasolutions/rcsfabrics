@@ -44,8 +44,6 @@ export default function PolicyPage({
           <h2>Contact us</h2>
           <p>
             {BUSINESS.tradeName} ({BUSINESS.brand}), {BUSINESS.city}<br />
-            Proprietor: {B.legalName}<br />
-            GSTIN: {BUSINESS.gstin}<br />
             Phone / WhatsApp: <a href={`tel:${BUSINESS.phone.replace(/\s/g, '')}`}>{BUSINESS.phone}</a> (Mon–Sat, 9am–6pm)<br />
             Email: <a href={`mailto:${BUSINESS.email}`}>{BUSINESS.email}</a>
           </p>

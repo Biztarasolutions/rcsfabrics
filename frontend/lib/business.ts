@@ -1,4 +1,5 @@
-// Official business details — single source for footer, policies and (later) invoices.
+// Official business details. GSTIN and proprietor name are for invoices/bills only —
+// do not show them on website pages.
 export const BUSINESS = {
   brand: 'RCS Fabrics',
   tradeName: 'M/S Rajasthan Cloth Store',
