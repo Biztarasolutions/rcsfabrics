@@ -66,14 +66,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <div className={`flex h-16 items-center border-b border-gray-200 dark:border-dark-800 ${showLabels ? 'justify-between px-4' : 'justify-center px-2'}`}>
         {showLabels ? (
           <Link href="/admin" className="flex min-w-0 items-center gap-2">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary-600 to-primary-800">
-              <span className="text-sm font-black text-white">R</span>
-            </div>
+            <img src="/brand/icon-192.png" alt="RCS Fabrics" width={32} height={32} className="h-8 w-8 shrink-0 rounded-lg" />
             <span className="truncate font-display text-lg font-bold text-gradient">Admin</span>
           </Link>
         ) : (
-          <Link href="/admin" title="Admin home" className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary-600 to-primary-800">
-            <span className="text-sm font-black text-white">R</span>
+          <Link href="/admin" title="Admin home" className="flex h-8 w-8 items-center justify-center">
+            <img src="/brand/icon-192.png" alt="RCS Fabrics" width={32} height={32} className="h-8 w-8 rounded-lg" />
           </Link>
         )}
         {showLabels && (

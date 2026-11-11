@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
+import BrandLogo from '@/components/common/BrandLogo';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -85,14 +86,8 @@ export default function Header() {
         <div className="container-main">
           <div className="flex h-16 items-center justify-between gap-4">
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-2.5 shrink-0" onClick={closeMobileMenu}>
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary-600 to-primary-800 shadow-md">
-                <span className="text-lg font-black text-white">R</span>
-              </div>
-              <div className="leading-none">
-                <span className="font-display text-xl font-bold text-gradient">RCS</span>
-                <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-gray-400">Fabrics</p>
-              </div>
+            <Link href="/" className="flex shrink-0 items-center" onClick={closeMobileMenu} aria-label="RCS Fabrics — home">
+              <BrandLogo height={46} priority />
             </Link>
 
             {/* Desktop Nav */}

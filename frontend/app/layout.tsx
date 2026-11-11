@@ -15,13 +15,16 @@ export const metadata: Metadata = {
   keywords: 'fabric, rayon, cotton, linen, chiffon, crepe, satin, premium fabric, fabric by meter, RCS Fabrics, luxury fabric, Indian fabric',
   authors: [{ name: 'RCS Fabrics' }],
   openGraph: {
-    title: 'RCS Fabrics — Premium Luxury Fabrics by the Meter',
+    title: 'RCS Fabrics — Premium Fabrics by the Metre',
     description: 'Shop premium quality fabrics — rayon, cotton, linen, chiffon and more. Sold by the meter.',
     url: SITE_URL,
     siteName: 'RCS Fabrics',
     type: 'website',
   },
+  twitter: { card: 'summary_large_image' },
 };
+
+export const viewport = { themeColor: '#6b1219' };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const supabaseOrigin = process.env.NEXT_PUBLIC_SUPABASE_URL || '';

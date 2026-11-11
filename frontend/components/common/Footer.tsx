@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import BrandLogo from '@/components/common/BrandLogo';
 import Link from 'next/link';
 
 const FOOTER_SECTIONS = [
@@ -47,14 +48,8 @@ export default function Footer() {
         <div className="grid gap-12 lg:grid-cols-4">
           {/* Brand */}
           <div className="lg:col-span-1">
-            <Link href="/" className="flex items-center gap-2.5">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 shadow-luxury">
-                <span className="text-xl font-black text-white">R</span>
-              </div>
-              <div className="leading-none">
-                <span className="font-display text-2xl font-bold text-gradient">RCS</span>
-                <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-gray-500">Fabrics</p>
-              </div>
+            <Link href="/" className="inline-flex items-center" aria-label="RCS Fabrics — home">
+              <BrandLogo height={64} variant="dark" />
             </Link>
             <p className="mt-5 text-sm leading-relaxed text-gray-400">
               A family fabric business from Dimapur, Nagaland, since 1970 — now online. Quality fabrics sold by the metre.

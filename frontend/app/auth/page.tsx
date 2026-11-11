@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import BrandLogo from '@/components/common/BrandLogo';
 import { motion } from 'framer-motion';
 import { useAuthStore } from '@/lib/store';
 import { useRouter } from 'next/navigation';
@@ -377,9 +378,7 @@ export default function AuthPage() {
         />
         <div className="absolute inset-0 bg-gradient-to-br from-primary-900/80 to-dark-900/60" />
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-12">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm">
-            <span className="text-3xl font-black text-white">R</span>
-          </div>
+          <BrandLogo height={84} variant="dark" />
           <h2 className="mt-6 font-display text-4xl font-bold text-white">
             Premium Fabrics,
             <br />
