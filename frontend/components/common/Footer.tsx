@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { BUSINESS } from '@/lib/business';
 import BrandLogo from '@/components/common/BrandLogo';
 import Link from 'next/link';
 
@@ -125,7 +126,11 @@ export default function Footer() {
       {/* Bottom bar */}
       <div className="border-t border-dark-800">
         <div className="container-main flex flex-col items-center justify-between gap-2 py-6 sm:flex-row">
-          <p className="text-xs text-gray-500">© {new Date().getFullYear()} RCS Fabrics. All rights reserved.</p>
+          <p className="text-xs leading-relaxed text-gray-500">
+            © {new Date().getFullYear()} RCS Fabrics · {BUSINESS.tradeName}, {BUSINESS.city}
+            <br className="sm:hidden" />
+            <span className="hidden sm:inline"> · </span>GSTIN {BUSINESS.gstin}
+          </p>
           <div className="flex items-center gap-4">
             {['Privacy', 'Terms', 'Cookies'].map((item) => (
               <Link key={item} href={`/${item.toLowerCase()}`}
