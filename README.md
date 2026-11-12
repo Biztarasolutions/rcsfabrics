@@ -314,7 +314,7 @@ Contributions are welcome! Please follow the code style and create pull requests
 
 ## 📧 Support
 
-For issues and questions, please open a GitHub issue or contact support@rcsfabrics.com
+For issues and questions, please open a GitHub issue or contact biztarasolutions@gmail.com
 
 ---
 

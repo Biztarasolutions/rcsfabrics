@@ -78,7 +78,7 @@ export async function notifyOrder(orderId: string, event: 'placed' | 'paid'): Pr
           <p>${event === 'paid' ? 'Your payment was successful and your order is being prepared.' : 'Your order has been received. We will let you know when it ships.'}</p>
           <p><strong>Order:</strong> ${esc(order.orderNumber)}</p>${summary}
           ${addressHtml ? `<p style="font-size:14px"><strong>Delivering to:</strong><br/>${addressHtml}</p>` : ''}
-          <p style="font-size:13px;color:#666">Questions? WhatsApp or call +91 98630 26598.</p></div>`,
+          <p style="font-size:13px;color:#666">Questions? WhatsApp or call +91 98630 26598, or email biztarasolutions@gmail.com.</p></div>`,
       }));
     }
     jobs.push(sendEmail({

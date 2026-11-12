@@ -69,7 +69,7 @@ export default function ContactPage() {
             </div>
             {[
               { icon: '📞', title: 'Call Us', info: '+91 98630 26598', sub: 'Mayank Jain · Mon–Sat, 9am–6pm' },
-              { icon: '✉️', title: 'Email Us', info: 'info@rcsfabrics.com', sub: 'Reply within 24 hours' },
+              { icon: '✉️', title: 'Email Us', info: 'biztarasolutions@gmail.com', sub: 'Reply within 24 hours' },
               { icon: '💬', title: 'WhatsApp', info: '+91 98630 26598', sub: 'Quick responses — chat with Mayank' },
             ].map((c) => (
               <div key={c.title} className="flex items-start gap-4">

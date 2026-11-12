@@ -7,7 +7,7 @@ export const BUSINESS = {
   gstin: '13ACAPJ9647E1ZS', // Nagaland
   city: 'Dimapur, Nagaland',
   phone: '+91 98630 26598',
-  email: 'info@rcsfabrics.com',
+  email: 'biztarasolutions@gmail.com',
   whatsapp: 'https://wa.me/919863026598',
   lastUpdated: '12 November 2026', // shown on policy pages — update when you change a policy
 };
