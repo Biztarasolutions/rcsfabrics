@@ -3,17 +3,14 @@
 import React from 'react';
 import BrandLogo from '@/components/common/BrandLogo';
 import Link from 'next/link';
+import { useHomepageData } from '@/hooks/useHomepageData';
 
 const FOOTER_SECTIONS = [
   {
     title: 'Shop',
     links: [
       { label: 'All Fabrics', href: '/products' },
-      { label: 'Rayon', href: '/products?category=rayon' },
-      { label: 'Cotton', href: '/products?category=cotton' },
-      { label: 'Linen', href: '/products?category=linen' },
       { label: 'New Arrivals', href: '/products?sort=newest' },
-      { label: 'Best Sellers', href: '/products?sort=bestsellers' },
     ],
   },
   {
@@ -41,6 +38,15 @@ const FOOTER_SECTIONS = [
 ];
 
 export default function Footer() {
+  // Shop links follow the categories that actually have stock
+  const { data: homepageData } = useHomepageData();
+  const categoryLinks = (homepageData?.categories || [])
+    .filter((c: any) => c.productCount !== 0)
+    .slice(0, 5)
+    .map((c: any) => ({ label: c.name, href: `/products?category=${c.slug}` }));
+  const sections = FOOTER_SECTIONS.map((sec, i) =>
+    i === 0 ? { ...sec, links: [sec.links[0], ...categoryLinks, ...sec.links.slice(1)] } : sec
+  );
   return (
     <footer className="bg-dark-950 text-gray-300">
       {/* Main footer */}
@@ -86,7 +92,7 @@ export default function Footer() {
           </div>
 
           {/* Links */}
-          {FOOTER_SECTIONS.map((section) => (
+          {sections.map((section) => (
             <div key={section.title}>
               <h3 className="text-sm font-bold uppercase tracking-wider text-white">{section.title}</h3>
               <ul className="mt-4 space-y-2">

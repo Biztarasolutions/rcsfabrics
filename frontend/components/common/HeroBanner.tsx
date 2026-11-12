@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
-import { BLUR_PLACEHOLDER } from '@/lib/image';
+import { BLUR_PLACEHOLDER, supabaseImg } from '@/lib/image';
 import { useHomepageData } from '@/hooks/useHomepageData';
 
 const ACCENTS = [
@@ -13,38 +13,53 @@ const ACCENTS = [
   'from-dark-900/80 to-dark-800/40',
 ];
 
-const DEFAULT_SLIDES = [
-  {
-    id: 1,
-    tag: 'New Collection 2025',
-    headline: 'Discover Luxury\nFabrics',
-    sub: 'Premium quality fabrics imported from the finest mills. Sold by the meter, crafted for perfection.',
-    cta: { label: 'Shop Collection', href: '/products' },
-    ctaSecondary: { label: 'View Lookbook', href: '/collections/summer-2025' },
-    image: 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=1200&q=80',
+type Slide = {
+  id: string | number;
+  tag: string;
+  headline: string;
+  sub: string;
+  cta: { label: string; href: string };
+  ctaSecondary: { label: string; href: string };
+  image: string;
+  accent: string;
+};
+
+// Used until the shop uploads its own banners (Admin → Banners). Built from the
+// store's real categories and product photos so every link leads to stock.
+function buildDefaultSlides(data: any): Slide[] {
+  const products: any[] = [...(data?.featured || []), ...(data?.newArrivals || [])];
+  const photo = (p: any) => p?.images?.[0]?.url || '';
+  const firstPhoto = products.map(photo).find(Boolean) || '';
+  const cats: any[] = (data?.categories || []).filter((c: any) => c.productCount !== 0);
+
+  const slides: Slide[] = [{
+    id: 'heritage',
+    tag: 'Since 1970 · Dimapur, Nagaland',
+    headline: 'Fabrics chosen\nby a family',
+    sub: 'Three generations of the Kashliwal family picking fabrics by hand. Buy by the metre, delivered across India.',
+    cta: { label: 'Shop all fabrics', href: '/products' },
+    ctaSecondary: { label: 'Our story', href: '/about' },
+    image: firstPhoto,
     accent: ACCENTS[0],
-  },
-  {
-    id: 2,
-    tag: 'Bestselling Fabric',
-    headline: 'Flowy Rayon\nDrape & Style',
-    sub: 'Soft, lightweight rayon in a wide range of prints and solids. Perfect for kurtis, dresses, gowns, and coord sets.',
-    cta: { label: 'Shop Rayon', href: '/products?category=rayon' },
-    ctaSecondary: { label: 'All Fabrics', href: '/products' },
-    image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&q=80',
-    accent: ACCENTS[1],
-  },
-  {
-    id: 3,
-    tag: 'Summer Essentials',
-    headline: 'Light Cotton\nBreathing Easy',
-    sub: 'Lightweight, breathable cottons for the warm season. Comfort meets style in every weave.',
-    cta: { label: 'Shop Cottons', href: '/products?category=cotton' },
-    ctaSecondary: { label: 'Request Swatch', href: '/contact#swatch' },
-    image: 'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=1200&q=80',
-    accent: ACCENTS[2],
-  },
-];
+  }];
+
+  cats.slice(0, 3).forEach((c, i) => {
+    const img = c.coverImage || c.imageUrl || c.image || photo(products.find((p) => p.categoryId === c.id));
+    if (!img) return;
+    slides.push({
+      id: c.id,
+      tag: `${c.name} collection`,
+      headline: `${c.name}\nby the metre`,
+      sub: c.productCount ? `${c.productCount} ${c.productCount === 1 ? 'design' : 'designs'} in stock now. Cut to the length you need.` : 'Cut to the length you need.',
+      cta: { label: `Shop ${c.name}`, href: `/products?category=${c.slug}` },
+      ctaSecondary: { label: 'Ask on WhatsApp', href: '/contact' },
+      image: img,
+      accent: ACCENTS[(i + 1) % ACCENTS.length],
+    });
+  });
+
+  return slides.filter((sl) => sl.image);
+}
 
 export default function HeroBanner() {
   const { data: homepageData } = useHomepageData();
@@ -69,8 +84,8 @@ export default function HeroBanner() {
           ctaSecondary: { label: 'View All', href: '/products' },
           image: b.image,
           accent: ACCENTS[i % ACCENTS.length],
-        }))
-      : DEFAULT_SLIDES;
+        })) as Slide[]
+      : buildDefaultSlides(homepageData);
 
   // Reset to slide 0 when slides become available or count changes
   useEffect(() => { if (slides) setCurrent(0); }, [slides?.length]);
@@ -82,7 +97,7 @@ export default function HeroBanner() {
   }, [slides?.length]);
 
   // While API is still loading, show a gradient placeholder — no flash of old default slides
-  if (!slides) {
+  if (!slides || slides.length === 0) {
     return (
       <section className="relative h-[90vh] min-h-[600px] max-h-[900px] overflow-hidden bg-gradient-to-r from-primary-900 via-primary-800 to-primary-700 flex items-end">
         <div className="absolute inset-0 opacity-5"
@@ -116,7 +131,7 @@ export default function HeroBanner() {
         return (
           <div key={s.id}
             className={`absolute inset-0 transition-opacity duration-1000 ${isActive ? 'opacity-100' : 'opacity-0'}`}>
-            <Image src={s.image} alt={s.tag || s.headline} fill priority={i === 0} sizes="100vw"
+            <Image src={supabaseImg(s.image, 1600, 80, 'cover')} alt={s.tag || s.headline} fill priority={i === 0} sizes="100vw"
               placeholder="blur" blurDataURL={BLUR_PLACEHOLDER}
               onLoad={() => markLoaded(i)}
               className="object-cover scale-105 animate-float" style={{ animationDuration: '8s' }}/>
@@ -181,9 +196,9 @@ export default function HeroBanner() {
                 transition={{ duration: 0.6, delay: 0.5 }}
                 className="mt-12 flex gap-8">
                 {[
-                  { value: '500+', label: 'Fabric Types' },
-                  { value: '10K+', label: 'Happy Customers' },
-                  { value: '15+', label: 'Years Experience' },
+                  { value: '1970', label: 'Family business since' },
+                  { value: '3', label: 'Generations' },
+                  { value: '0.5 m', label: 'Minimum cut' },
                 ].map((stat) => (
                   <div key={stat.label}>
                     <p className="text-2xl font-bold text-white font-display">{stat.value}</p>

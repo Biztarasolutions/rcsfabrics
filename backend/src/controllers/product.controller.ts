@@ -366,14 +366,23 @@ export const getHomepageData = async (
         orderBy: { orderItems: { _count: 'desc' } },
       }),
       // Active categories
+      // Only categories that actually have products on sale — empty ones are hidden
       prisma.category.findMany({
-        where: { isActive: true },
+        where: { isActive: true, products: { some: { isActive: true } } },
         select: {
           id: true,
           name: true,
           slug: true,
           image: true,
           imageUrl: true,
+          _count: { select: { products: { where: { isActive: true } } } },
+          // Newest product's main photo — used as the cover when the category has no image
+          products: {
+            where: { isActive: true },
+            take: 1,
+            orderBy: { createdAt: 'desc' },
+            select: { images: { where: { isMain: true }, take: 1, select: { url: true } } },
+          },
         },
         orderBy: { order: 'asc' },
       }),
@@ -391,7 +400,11 @@ export const getHomepageData = async (
         featured,
         newArrivals,
         bestSellers,
-        categories,
+        categories: categories.map(({ products, _count, ...c }) => ({
+          ...c,
+          productCount: _count.products,
+          coverImage: products[0]?.images[0]?.url || null,
+        })),
         banners,
       },
       statusCode: 200,

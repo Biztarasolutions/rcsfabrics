@@ -9,14 +9,15 @@ import { BLUR_PLACEHOLDER, supabaseImg } from '@/lib/image';
 
 export default function CategoryShowcase() {
   const { data: homepageData, isLoading } = useHomepageData();
-  const categories = homepageData?.categories || [];
+  // Hide categories with nothing on sale (backend also filters; this covers older API responses)
+  const categories = (homepageData?.categories || []).filter((c: any) => c.productCount !== 0);
   return (
     <section className="py-16 lg:py-24 bg-gray-50 dark:bg-dark-900/50">
       <div className="container-main">
         <div className="text-center">
-          <span className="section-tag">🧵 Browse by Type</span>
+          <span className="section-tag">Browse by Type</span>
           <h2 className="section-title mt-3 font-display">Shop by Category</h2>
-          <p className="section-subtitle">From breathable linens to flowy rayons — find your perfect fabric</p>
+          <p className="section-subtitle">Pick a fabric type — every piece is cut to your length</p>
         </div>
 
         <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -30,16 +31,16 @@ export default function CategoryShowcase() {
             <>
               {categories.map((cat: any, i: number) => (
                 <motion.div key={cat.id}
-                  initial={{ opacity: 0, scale: 0.96 }} whileInView={{ opacity: 1, scale: 1 }}
-                  viewport={{ once: true }} transition={{ delay: i * 0.07 }}>
+                  initial={{ opacity: 0, y: 8 }} whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }} transition={{ duration: 0.25, delay: i * 0.04 }}>
                   <Link href={`/products?category=${cat.slug}`}
                     className="group relative block overflow-hidden rounded-2xl">
                     {/* Image */}
-                    <div className="relative h-52 overflow-hidden bg-white dark:bg-dark-800">
-                      <Image src={supabaseImg(cat.imageUrl || cat.image, 800)} alt={cat.name}
+                    <div className="relative h-64 overflow-hidden bg-[#efe7da] dark:bg-dark-800">
+                      {(cat.imageUrl || cat.image || cat.coverImage) && <Image src={supabaseImg(cat.imageUrl || cat.image || cat.coverImage, 800, 75, 'cover')} alt={cat.name}
                         fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                         placeholder="blur" blurDataURL={BLUR_PLACEHOLDER}
-                        className="object-contain transition-transform duration-500 group-hover:scale-105"/>
+                        className="object-cover transition-transform duration-500 group-hover:scale-105"/>}
                       <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/80 via-black/30 to-transparent"/>
                     </div>
                     {/* Content */}
@@ -47,6 +48,9 @@ export default function CategoryShowcase() {
                       <div className="flex items-end justify-between">
                         <div>
                           <h3 className="font-display text-2xl font-bold text-white">{cat.name}</h3>
+                          {cat.productCount > 0 && (
+                            <p className="mt-0.5 text-sm text-white/80">{cat.productCount} {cat.productCount === 1 ? 'design' : 'designs'}</p>
+                          )}
                         </div>
                         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-sm transition-all group-hover:bg-primary-500 group-hover:scale-110">
                           <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
