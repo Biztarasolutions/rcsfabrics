@@ -64,12 +64,18 @@ function buildDefaultSlides(data: any): Slide[] {
 export default function HeroBanner() {
   const { data: homepageData } = useHomepageData();
   const [current, setCurrent] = useState(0);
-  // Track which slide images have finished loading — text is hidden until then
-  const [loadedSlides, setLoadedSlides] = useState<Set<number>>(new Set());
-  const markLoaded = (i: number) => setLoadedSlides(prev => new Set([...prev, i]));
 
   // null = still fetching; [] = fetched but empty; [...] = fetched with banners
-  const apiBanners: any[] | null = homepageData ? (homepageData.banners || []) : null;
+  // Ignore the sample banners from the initial seed (stock photos) and any banner
+  // pointing at a category with no stock — the shop's own slides are used instead.
+  const stocked = new Set((homepageData?.categories || []).map((c: any) => c.slug));
+  const apiBanners: any[] | null = homepageData
+    ? (homepageData.banners || []).filter((b: any) => {
+        if (!b?.image || String(b.image).includes('images.unsplash.com')) return false;
+        const m = String(b.link || '').match(/[?&]category=([^&]+)/);
+        return !m || stocked.has(decodeURIComponent(m[1]));
+      })
+    : null;
 
   // Only fall back to DEFAULT_SLIDES after the API has confirmed no banners exist
   const slides = apiBanners === null
@@ -133,7 +139,6 @@ export default function HeroBanner() {
             className={`absolute inset-0 transition-opacity duration-1000 ${isActive ? 'opacity-100' : 'opacity-0'}`}>
             <Image src={supabaseImg(s.image, 1600, 80, 'cover')} alt={s.tag || s.headline} fill priority={i === 0} sizes="100vw"
               placeholder="blur" blurDataURL={BLUR_PLACEHOLDER}
-              onLoad={() => markLoaded(i)}
               className="object-cover scale-105 animate-float" style={{ animationDuration: '8s' }}/>
             <div className={`absolute inset-0 bg-gradient-to-r ${s.accent}`}/>
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"/>
@@ -145,8 +150,8 @@ export default function HeroBanner() {
       <div className="absolute inset-0 opacity-5"
         style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23fff' fill-opacity='1'%3E%3Cpath d='M0 0h1v1H0V0zm2 0h1v1H2V0zm2 0h1v1H4V0zm2 0h1v1H6V0zm2 0h1v1H8V0zm2 0h1v1h-1V0zm2 0h1v1h-1V0zm2 0h1v1h-1V0zm2 0h1v1h-1V0zm2 0h1v1h-1V0z'/%3E%3C/g%3E%3C/svg%3E\")" }}/>
 
-      {/* Content — hidden until the current slide's image has loaded */}
-      <div className={`relative z-10 flex h-full items-center transition-opacity duration-700 ${loadedSlides.has(current) ? 'opacity-100' : 'opacity-0'}`}>
+      {/* Content */}
+      <div className="relative z-10 flex h-full items-center">
         <div className="container-main">
           <div className="max-w-2xl">
             {slide.tag && (
