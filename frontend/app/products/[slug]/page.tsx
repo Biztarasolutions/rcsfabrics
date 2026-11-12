@@ -235,7 +235,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
         <div className="grid gap-12 lg:grid-cols-2">
           {/* Image Gallery */}
           <div className="space-y-4">
-            <div className="relative aspect-square cursor-zoom-in overflow-hidden rounded-2xl bg-[#f4efe7] dark:bg-dark-800"
+            <div className="relative cursor-zoom-in overflow-hidden rounded-2xl bg-[#f4efe7] dark:bg-dark-800" style={{ aspectRatio: '1 / 1' }}
               onMouseEnter={() => setZoomed(true)} onMouseLeave={() => setZoomed(false)}
               onClick={() => images?.[activeImg]?.url && setLightbox(true)}>
               <Image src={supabaseImg(images?.[activeImg]?.url || '', 1000) || BLUR_PLACEHOLDER} alt={PRODUCT.name}
@@ -272,7 +272,8 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
             <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
               {images?.map((img: any, i: number) => (
                 <button key={img.id} onClick={() => setActiveImg(i)}
-                  className={`relative aspect-square w-20 shrink-0 overflow-hidden rounded-xl border-2 transition-all ${i === activeImg ? 'border-primary-500 shadow-md' : 'border-gray-200 dark:border-dark-700 hover:border-primary-300'}`}>
+                  style={{ aspectRatio: '1 / 1' }}
+                  className={`relative w-20 shrink-0 overflow-hidden rounded-xl border-2 transition-all ${i === activeImg ? 'border-primary-500 shadow-md' : 'border-gray-200 dark:border-dark-700 hover:border-primary-300'}`}>
                   <Image src={supabaseImg(img.url, 160)} alt={`View ${i + 1}`} fill sizes="80px"
                     placeholder="blur" blurDataURL={BLUR_PLACEHOLDER} className="object-cover object-center"/>
                 </button>
