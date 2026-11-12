@@ -25,7 +25,10 @@ export default function WishlistSync() {
         const serverIds = new Set(server.map((w) => w.productId));
 
         // Guest items not yet on the server → upload them
-        const local = useWishlistStore.getState().items;
+        // Only items a guest added recently in this browser are moved into the account
+        const st = useWishlistStore.getState();
+        const GUEST_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
+        const local = st.owner === 'guest' && Date.now() - (st.guestAt || 0) < GUEST_MAX_AGE ? st.items : [];
         const missing = local.filter((i) => !serverIds.has(i.productId));
         await Promise.allSettled(missing.map((i) => wishlistApi.add(i.productId)));
 
@@ -33,7 +36,7 @@ export default function WishlistSync() {
           ...server.map((w) => ({ id: w.id, productId: w.productId, product: w.product, createdAt: w.createdAt })),
           ...missing,
         ];
-        useWishlistStore.getState().setItems(merged);
+        useWishlistStore.setState({ items: merged, owner: userId, guestAt: 0 });
       } catch (err: any) {
         syncedFor.current = null; // retry on next change
         console.error('[Wishlist] sync failed:', err?.message || err);

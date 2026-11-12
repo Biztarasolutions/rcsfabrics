@@ -79,19 +79,34 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
     if (initialProduct && !selectedVariant) setSelectedVariant(initialProduct);
   }, [initialProduct]);
 
+  // Preload the full details (images, specs) of every colour so switching is instant
   useEffect(() => {
-    if (selectedVariant && (!selectedVariant.images || selectedVariant.images.length === 0) && selectedVariant.slug) {
-      productApi.getBySlug(selectedVariant.slug).then(res => setSelectedVariant(res.data.data))
-        .catch(err => console.error('Failed to fetch variant data:', err));
+    for (const v of groupProducts as any[]) {
+      if (v?.slug && v.slug !== params.slug) {
+        queryClient.prefetchQuery({
+          queryKey: ['product', v.slug],
+          queryFn: () => productApi.getBySlug(v.slug).then((res) => res.data.data),
+          staleTime: 5 * 60 * 1000,
+        });
+      }
     }
-  }, [selectedVariant?.slug]);
+  }, [groupProducts, params.slug, queryClient]);
 
-  useEffect(() => {
-    if (selectedVariant && selectedVariant.slug !== params.slug) {
-      router.replace(`/products/${selectedVariant.slug}`);
-    }
+  // Switch colour in place: no page navigation, no spinner, no server round trip
+  const selectVariant = (v: any) => {
+    if (!v?.slug || v.id === selectedVariant?.id) return;
+    const cached = queryClient.getQueryData<any>(['product', v.slug]);
+    setSelectedVariant(cached || v);
     setActiveImg(0);
-  }, [selectedVariant, params.slug, router]);
+    // Update the address bar (shareable link) without reloading the page
+    if (typeof window !== 'undefined') window.history.replaceState(window.history.state, '', `/products/${v.slug}`);
+    if (!cached || !cached.images?.length) {
+      queryClient
+        .fetchQuery({ queryKey: ['product', v.slug], queryFn: () => productApi.getBySlug(v.slug).then((res) => res.data.data) })
+        .then((full) => setSelectedVariant((cur: any) => (cur?.id === full?.id ? full : cur)))
+        .catch((err) => console.error('Failed to fetch variant data:', err));
+    }
+  };
 
   // Save to recently viewed
   useEffect(() => {
@@ -121,7 +136,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
       setReviewRating(0);
       setReviewTitle('');
       setReviewComment('');
-      queryClient.invalidateQueries({ queryKey: ['product', params.slug] });
+      queryClient.invalidateQueries({ queryKey: ['product', selectedVariant?.slug || params.slug] });
     },
     onError: (err: any) => toast.error(err.message || 'Failed to submit review'),
   });
@@ -280,7 +295,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
                   {availableVariants.map((v: any) => {
                     const hexCode = v.colors?.[0]?.hexCode || '#CCC';
                     return (
-                      <button key={v.id} onClick={() => setSelectedVariant(v)} title={v.color}
+                      <button key={v.id} type="button" onClick={() => selectVariant(v)} title={v.color} aria-label={`Colour: ${v.color}`} aria-pressed={PRODUCT.id === v.id}
                         className={`h-10 w-10 rounded-full border-2 transition-all flex items-center justify-center overflow-hidden ${PRODUCT.id === v.id ? 'border-primary-600 scale-110 shadow-md' : 'border-gray-200 hover:border-gray-400'}`}>
                         <div className="h-full w-full" style={{ backgroundColor: hexCode }}/>
                       </button>

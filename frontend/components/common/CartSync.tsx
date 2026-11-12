@@ -24,8 +24,12 @@ export default function CartSync() {
         const server: any[] = res.data?.data?.items ?? [];
         const byProduct = new Map(server.map((c) => [c.productId, c]));
 
+        // Only items a guest added recently in this browser are moved into the account.
+        // Old/unknown browser data (e.g. another person's cart) is discarded.
+        const st = useCartStore.getState();
+        const GUEST_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
+        const local = st.owner === 'guest' && Date.now() - (st.guestAt || 0) < GUEST_MAX_AGE ? st.items : [];
         // Guest items → account (keep the larger quantity if both have it)
-        const local = useCartStore.getState().items;
         const uploads = local
           .filter((i) => !byProduct.has(i.productId) || byProduct.get(i.productId).quantity < i.quantity)
           .map((i) => cartApi.setQuantity(i.productId, i.quantity));
@@ -37,7 +41,7 @@ export default function CartSync() {
           const cur = merged.get(i.productId);
           if (!cur || cur.quantity < i.quantity) merged.set(i.productId, { ...i, id: i.productId });
         }
-        useCartStore.getState().setItems([...merged.values()]);
+        useCartStore.setState({ items: [...merged.values()], owner: userId, guestAt: 0 });
       } catch (err: any) {
         syncedFor.current = null; // retry on next change
         console.error('[Cart] sync failed:', err?.message || err);

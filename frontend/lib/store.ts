@@ -24,8 +24,8 @@ export const useAuthStore = create<AuthStore>()(
         if (typeof window !== 'undefined') localStorage.removeItem('authToken');
         set({ user: null, token: null, isAuthenticated: false });
         // The account's cart and wishlist live on the server; don't leave them on a shared device
-        useWishlistStore.getState().setItems([]);
-        useCartStore.setState({ items: [], isOpen: false });
+        useWishlistStore.setState({ items: [], owner: null, guestAt: 0 });
+        useCartStore.setState({ items: [], isOpen: false, owner: null, guestAt: 0 });
       },
     }),
     { name: 'rcs-auth' }
@@ -33,9 +33,14 @@ export const useAuthStore = create<AuthStore>()(
 );
 
 // ─── Cart Store ───────────────────────────────────────────────────────────────
+/** 'guest' = added while logged out (eligible to merge on login), a user id = that account's copy, null = unknown/old data (never merged) */
+export type ListOwner = string | null;
+
 interface CartStore {
   items: CartItem[];
   isOpen: boolean;
+  owner: ListOwner;
+  guestAt: number;
   setItems: (items: CartItem[]) => void;
   addItem: (item: CartItem) => void;
   removeItem: (id: string) => void;
@@ -51,8 +56,12 @@ interface CartStore {
 // Logged-in carts are saved per account in the database; guests keep theirs in
 // the browser and it is merged into their account on login (see CartSync).
 const cartTimers: Record<string, ReturnType<typeof setTimeout>> = {};
+const loggedIn = (): boolean => typeof window !== 'undefined' && !!localStorage.getItem('authToken');
+/** owner fields to set after a change: guests' changes are marked as guest items */
+const guestMark = (): { owner?: ListOwner; guestAt?: number } => (loggedIn() ? {} : { owner: 'guest', guestAt: Date.now() });
+
 const syncCartQty = (productId: string, quantity: number) => {
-  if (typeof window === 'undefined' || !localStorage.getItem('authToken')) return;
+  if (!loggedIn()) return;
   clearTimeout(cartTimers[productId]);
   // debounce rapid +/- clicks into one request per product
   cartTimers[productId] = setTimeout(() => {
@@ -74,6 +83,8 @@ export const useCartStore = create<CartStore>()(
     (set, get) => ({
       items: [],
       isOpen: false,
+      owner: null,
+      guestAt: 0,
       setItems: (items) => set({ items }),
       addItem: (item) => {
         // one line per product, whatever id the caller used
@@ -81,17 +92,17 @@ export const useCartStore = create<CartStore>()(
         const items = exists
           ? get().items.map((i) => (i.productId === item.productId ? { ...i, quantity: i.quantity + item.quantity } : i))
           : [...get().items, { ...item, id: item.productId }];
-        set({ items });
+        set({ items, ...guestMark() });
         const line = items.find((i) => i.productId === item.productId);
         if (line) syncCartQty(line.productId, line.quantity);
       },
       removeItem: (id) => {
         const line = get().items.find((i) => i.id === id);
-        set((s) => ({ items: s.items.filter((i) => i.id !== id) }));
+        set((s) => ({ items: s.items.filter((i) => i.id !== id), ...guestMark() }));
         if (line) syncCartQty(line.productId, 0);
       },
       updateQty: (id, qty) => {
-        set((s) => ({ items: s.items.map((i) => (i.id === id ? { ...i, quantity: qty } : i)) }));
+        set((s) => ({ items: s.items.map((i) => (i.id === id ? { ...i, quantity: qty } : i)), ...guestMark() }));
         const line = get().items.find((i) => i.id === id);
         if (line) syncCartQty(line.productId, qty);
       },
@@ -109,13 +120,15 @@ export const useCartStore = create<CartStore>()(
           0
         ),
     }),
-    { name: 'rcs-cart', partialize: (s) => ({ items: s.items }) }
+    { name: 'rcs-cart', partialize: (s) => ({ items: s.items, owner: s.owner, guestAt: s.guestAt }) }
   )
 );
 
 // ─── Wishlist Store ───────────────────────────────────────────────────────────
 interface WishlistStore {
   items: WishlistItem[];
+  owner: ListOwner;
+  guestAt: number;
   setItems: (items: WishlistItem[]) => void;
   addItem: (item: WishlistItem) => void;
   removeItem: (productId: string) => void;
@@ -138,14 +151,16 @@ export const useWishlistStore = create<WishlistStore>()(
   persist(
     (set, get) => ({
       items: [],
+      owner: null,
+      guestAt: 0,
       setItems: (items) => set({ items }),
       addItem: (item) => {
         if (get().items.some((i) => i.productId === item.productId)) return;
-        set((s) => ({ items: [...s.items, item] }));
+        set((s) => ({ items: [...s.items, item], ...guestMark() }));
         syncWishlist('add', item.productId);
       },
       removeItem: (productId) => {
-        set((s) => ({ items: s.items.filter((i) => i.productId !== productId) }));
+        set((s) => ({ items: s.items.filter((i) => i.productId !== productId), ...guestMark() }));
         syncWishlist('remove', productId);
       },
       hasItem: (productId) => get().items.some((i) => i.productId === productId),
