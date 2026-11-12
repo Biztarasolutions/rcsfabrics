@@ -1,6 +1,8 @@
 // Frontend types
 export interface User {
   id: string;
+  /** Readable customer ID, e.g. RCS000042 */
+  customerId?: string | null;
   email: string;
   firstName?: string;
   lastName?: string;

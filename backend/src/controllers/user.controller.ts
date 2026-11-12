@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import { customerCode, normalizePhone, phoneUsedByOther, recordPhone } from '@/utils/customer';
 import { prisma } from '@/index';
 import { AuthRequest, ApiResponse } from '@/types';
 import { hashPassword } from '@/utils/auth.util';
@@ -14,20 +15,36 @@ export const updateProfile = async (
       throw new ApiError(401, 'Unauthorized');
     }
 
-    // Only the name can be changed. Email and phone are fixed to the account.
+    // Name and phone can be changed. The email is fixed (it identifies the customer).
     const { firstName, lastName } = req.body || {};
-    const data: { firstName?: string; lastName?: string } = {};
+    const data: { firstName?: string; lastName?: string; phone?: string; phoneVerified?: boolean } = {};
     if (typeof firstName === 'string') {
       if (!firstName.trim()) throw new ApiError(400, 'First name is required');
       data.firstName = firstName.trim().slice(0, 100);
     }
     if (typeof lastName === 'string') data.lastName = lastName.trim().slice(0, 100);
 
+    let newPhone: string | null = null;
+    if (req.body?.phone !== undefined) {
+      const phone = normalizePhone(req.body.phone);
+      if (!/^\+?[1-9]\d{6,14}$/.test(phone)) throw new ApiError(400, 'Please enter a valid phone number');
+      const me = await prisma.user.findUnique({ where: { id: req.userId }, select: { phone: true } });
+      if (phone !== me?.phone) {
+        if (await phoneUsedByOther(phone, req.userId)) {
+          throw new ApiError(400, 'This phone number is already used by another account');
+        }
+        data.phone = phone;
+        data.phoneVerified = false;
+        newPhone = phone;
+      }
+    }
+
     const user = await prisma.user.update({
       where: { id: req.userId },
       data,
       select: {
         id: true,
+        customerNumber: true,
         email: true,
         firstName: true,
         lastName: true,
@@ -35,11 +52,13 @@ export const updateProfile = async (
         role: true,
       },
     });
+    if (newPhone) await recordPhone(user.id, newPhone);
 
+    const { customerNumber, ...rest } = user;
     res.json({
       success: true,
       message: 'Profile updated successfully',
-      data: user,
+      data: { ...rest, customerId: customerCode(customerNumber) },
       statusCode: 200,
     } as ApiResponse);
   } catch (error) {

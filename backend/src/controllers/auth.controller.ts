@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { customerCode, phoneUsedByOther, recordPhone } from '@/utils/customer';
 import { Response } from 'express';
 import { prisma } from '@/index';
 import { AuthRequest, ApiResponse } from '@/types';
@@ -245,11 +246,7 @@ export const sendSignupOTP = async (req: AuthRequest, res: Response): Promise<vo
 
     const exists = await prisma.user.findFirst({ where: { email: { equals: email, mode: 'insensitive' } }, select: { id: true } });
     if (exists) throw new ApiError(400, 'An account with this email already exists. Please sign in.');
-    const phoneDigits = phone.replace(/\D/g, '').slice(-10);
-    const phoneTaken = await prisma.user.findFirst({
-      where: { OR: [{ phone }, { phone: { endsWith: phoneDigits } }] },
-      select: { id: true },
-    });
+    const phoneTaken = await phoneUsedByOther(phone);
     if (phoneTaken) throw new ApiError(400, 'An account with this phone number already exists. Please sign in.');
 
     const key = signupKey(email);
@@ -347,9 +344,7 @@ export const register = async (
     }
 
     // Check if phone already exists
-    const existingUserByPhone = await prisma.user.findFirst({
-      where: { OR: [{ phone: normalizedPhone }, { phone: { endsWith: normalizedPhone.replace(/\D/g, '').slice(-10) } }] },
-    });
+    const existingUserByPhone = (await phoneUsedByOther(normalizedPhone)) ? true : null;
 
     if (existingUserByPhone) {
       throw new ApiError(400, 'User with this phone number already exists');
@@ -382,6 +377,8 @@ export const register = async (
       },
     });
 
+    await recordPhone(user.id, normalizedPhone);
+
     // Update OTP record with actual userId
     await prisma.oTP.update({
       where: { id: otpRecord.id },
@@ -396,6 +393,7 @@ export const register = async (
       data: {
         user: {
           id: user.id,
+          customerId: customerCode(user.customerNumber),
           email: user.email,
           firstName: user.firstName,
           lastName: user.lastName,
@@ -510,6 +508,7 @@ export const login = async (
       data: {
         user: {
           id: user.id,
+          customerId: customerCode(user.customerNumber),
           email: user.email,
           firstName: user.firstName,
           lastName: user.lastName,
@@ -671,6 +670,7 @@ export const me = async (
       where: { id: req.userId },
       select: {
         id: true,
+        customerNumber: true,
         email: true,
         firstName: true,
         lastName: true,
@@ -684,10 +684,11 @@ export const me = async (
       throw new ApiError(404, 'User not found');
     }
 
+    const { customerNumber, ...profile } = user;
     res.json({
       success: true,
       message: 'User profile retrieved',
-      data: user,
+      data: { ...profile, customerId: customerCode(customerNumber) },
       statusCode: 200,
     } as ApiResponse);
   } catch (error) {

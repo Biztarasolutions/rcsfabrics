@@ -145,6 +145,10 @@ export const createOrder = async (
 
     const orderNumber = await generateOrderNumber(prisma);
 
+    // Phone for this order: the delivery address phone, else the account's current phone
+    const account = await prisma.user.findUnique({ where: { id: req.userId! }, select: { phone: true } });
+    const orderPhone = String(shippingAddress?.phone || account?.phone || '').replace(/\s+/g, '').slice(0, 20);
+
     // Create the order, deduct stock and count the coupon atomically.
     // Stock is decremented only if enough is left, so concurrent orders can't oversell.
     const order = await prisma.$transaction(async (tx) => {
@@ -174,6 +178,7 @@ export const createOrder = async (
           orderNumber,
           userId: req.userId!,
           shippingAddress: JSON.stringify(shippingAddress),
+          customerPhone: orderPhone || undefined,
           items: { createMany: { data: orderItems } },
           subtotal,
           shippingCost,

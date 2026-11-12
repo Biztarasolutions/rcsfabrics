@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import { customerCode } from '@/utils/customer';
 import { prisma } from '@/index';
 import { AuthRequest, ApiResponse } from '@/types';
 import {
@@ -1735,10 +1736,12 @@ export const getCustomerDetail = async (
       where: { id },
       select: {
         id: true,
+        customerNumber: true,
         firstName: true,
         lastName: true,
         email: true,
         phone: true,
+        phones: { orderBy: { createdAt: 'desc' }, select: { phone: true, createdAt: true } },
         createdAt: true,
         isActive: true,
         orders: {
@@ -1757,6 +1760,7 @@ export const getCustomerDetail = async (
             discountAmount: true,
             couponCode: true,
             shippingAddress: true,
+            customerPhone: true,
             utrReference: true,
             razorpayPaymentId: true,
             createdAt: true,
@@ -1779,7 +1783,7 @@ export const getCustomerDetail = async (
 
     if (!customer) throw new ApiError(404, 'Customer not found');
 
-    res.json({ success: true, data: customer, statusCode: 200 } as ApiResponse);
+    res.json({ success: true, data: { ...customer, customerId: customerCode(customer.customerNumber) }, statusCode: 200 } as ApiResponse);
   } catch (error) {
     if (error instanceof ApiError) {
       res.status(error.statusCode).json({ success: false, message: error.message, statusCode: error.statusCode } as ApiResponse);
@@ -1798,6 +1802,7 @@ export const getCustomers = async (
       where: { role: 'CUSTOMER' },
       select: {
         id: true,
+        customerNumber: true,
         firstName: true,
         lastName: true,
         email: true,
@@ -1818,6 +1823,7 @@ export const getCustomers = async (
 
     const formattedCustomers = customers.map((c) => ({
       id: c.id,
+      customerId: customerCode(c.customerNumber),
       name: `${c.firstName || ''} ${c.lastName || ''}`.trim() || 'Guest User',
       email: c.email,
       phone: c.phone || 'N/A',

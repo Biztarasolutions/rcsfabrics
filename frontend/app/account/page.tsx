@@ -160,9 +160,10 @@ function AccountPage() {
       const res = await authApi.updateProfile({
         firstName: profileForm.firstName,
         lastName: profileForm.lastName,
+        phone: profileForm.phone.trim(),
       });
       const updatedUser = res.data.data;
-      useAuthStore.getState().setUser(updatedUser);
+      useAuthStore.getState().setUser({ ...useAuthStore.getState().user, ...updatedUser });
       toast.success('Profile updated successfully!');
       refetchProfile();
     } catch (err: any) {
@@ -235,6 +236,11 @@ function AccountPage() {
             <h1 className="font-display text-3xl font-bold text-gray-900 dark:text-white">My Account</h1>
             <p className="mt-1 text-gray-500 dark:text-gray-400">
               Welcome back, {profileRes?.firstName || user.firstName}!
+              {(profileRes?.customerId || (user as any).customerId) && (
+                <span className="ml-2 inline-flex items-center rounded-full border border-primary-200 bg-primary-50 px-2.5 py-0.5 text-xs font-semibold tracking-wide text-primary-700 dark:border-primary-800 dark:bg-primary-950/40 dark:text-primary-300">
+                  Customer ID: {profileRes?.customerId || (user as any).customerId}
+                </span>
+              )}
             </p>
           </div>
           <button onClick={handleLogout} className="button-secondary flex items-center gap-2 px-4 py-2 text-sm text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-900">
@@ -591,7 +597,7 @@ function AccountPage() {
                 {activeTab === 'Profile' && (
                   <motion.div key="profile" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-dark-700 dark:bg-dark-800 shadow-sm">
                     <h3 className="font-display text-xl font-bold text-gray-900 dark:text-white">Edit Profile</h3>
-                    <p className="text-sm text-gray-500 mb-5">Update your name. Email and phone are linked to your account.</p>
+                    <p className="text-sm text-gray-500 mb-5">Update your name and phone number. Your email and Customer ID stay the same.</p>
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div>
                         <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">First Name</label>
@@ -603,20 +609,27 @@ function AccountPage() {
                       </div>
                     </div>
 
-                    {/* Email and phone are fixed to the account and cannot be changed here */}
+                    {/* Email is fixed (it identifies the customer); phone can be changed */}
+                    {profileRes?.customerId && (
+                      <div className="mt-4">
+                        <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Customer ID</label>
+                        <input value={profileRes.customerId} readOnly disabled className="input-field cursor-not-allowed bg-gray-50 font-semibold tracking-wide text-gray-600 dark:bg-dark-900 dark:text-gray-300 sm:max-w-xs"/>
+                      </div>
+                    )}
                     <div className="mt-4 grid gap-4 sm:grid-cols-2">
                       <div>
                         <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Email Address</label>
                         <input value={profileForm.email || '—'} readOnly disabled aria-readonly="true" className="input-field cursor-not-allowed bg-gray-50 text-gray-500 dark:bg-dark-900 dark:text-gray-400"/>
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Email can&apos;t be changed.</p>
                       </div>
                       <div>
                         <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Phone Number</label>
-                        <input value={profileForm.phone || '—'} readOnly disabled aria-readonly="true" className="input-field cursor-not-allowed bg-gray-50 text-gray-500 dark:bg-dark-900 dark:text-gray-400"/>
+                        <input type="tel" inputMode="tel" value={profileForm.phone} onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+                          placeholder="+91 98765 43210" className="input-field"/>
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Used for delivery updates on new orders.</p>
                       </div>
                     </div>
-                    <p className="mt-2 mb-4 text-xs text-gray-500 dark:text-gray-400">
-                      Email and phone number can&apos;t be changed. Need to update them? Contact us on WhatsApp at +91 98630 26598.
-                    </p>
+                    <div className="mb-4"/>
 
                     <button onClick={handleSaveProfile} disabled={savingProfile} className="button-primary mt-2 px-8 py-3 font-semibold shadow-sm transition-all flex items-center gap-2">
                       {savingProfile ? 'Saving Changes...' : 'Save Changes'}

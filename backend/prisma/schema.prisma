@@ -10,6 +10,8 @@ datasource db {
 
 model User {
   id            String     @id @default(cuid())
+  /// Readable customer ID (shown as RCS000123), one per account / email
+  customerNumber Int       @unique @default(autoincrement())
   email         String     @unique @db.VarChar(255)
   password      String     @db.VarChar(255)
   firstName     String?    @db.VarChar(100)
@@ -31,11 +33,25 @@ model User {
   reviews       Review[]
   wishlist      Wishlist[]
   otp           OTP?
+  phones        UserPhone[]
 
   @@index([email])
   @@index([phone])
   @@index([role])
   @@map("users")
+}
+
+/// Every phone number a customer has used (current one is users.phone)
+model UserPhone {
+  id        String   @id @default(cuid())
+  userId    String
+  phone     String   @db.VarChar(20)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([phone])
+  @@map("user_phones")
 }
 
 model Address {
@@ -191,6 +207,8 @@ model Order {
   userId            String
   shippingAddressId String?
   shippingAddress   String?
+  /// Customer's phone at the time of this order
+  customerPhone     String?        @db.VarChar(20)
   subtotal          Float
   shippingCost      Float          @default(0)
   tax               Float          @default(0)
