@@ -23,8 +23,9 @@ export const useAuthStore = create<AuthStore>()(
       logout: () => {
         if (typeof window !== 'undefined') localStorage.removeItem('authToken');
         set({ user: null, token: null, isAuthenticated: false });
-        // The account's wishlist lives on the server; don't leave it on a shared device
+        // The account's cart and wishlist live on the server; don't leave them on a shared device
         useWishlistStore.getState().setItems([]);
+        useCartStore.setState({ items: [], isOpen: false });
       },
     }),
     { name: 'rcs-auth' }
@@ -47,30 +48,57 @@ interface CartStore {
   totalPrice: () => number;
 }
 
+// Logged-in carts are saved per account in the database; guests keep theirs in
+// the browser and it is merged into their account on login (see CartSync).
+const cartTimers: Record<string, ReturnType<typeof setTimeout>> = {};
+const syncCartQty = (productId: string, quantity: number) => {
+  if (typeof window === 'undefined' || !localStorage.getItem('authToken')) return;
+  clearTimeout(cartTimers[productId]);
+  // debounce rapid +/- clicks into one request per product
+  cartTimers[productId] = setTimeout(() => {
+    import('@/lib/api')
+      .then(({ cartApi }) => cartApi.setQuantity(productId, Math.max(0, quantity)))
+      .catch((err) => console.error('[Cart] sync failed:', err?.message || err));
+  }, 400);
+};
+const syncCartClear = () => {
+  if (typeof window === 'undefined' || !localStorage.getItem('authToken')) return;
+  Object.values(cartTimers).forEach(clearTimeout);
+  import('@/lib/api')
+    .then(({ cartApi }) => cartApi.clear())
+    .catch((err) => console.error('[Cart] clear failed:', err?.message || err));
+};
+
 export const useCartStore = create<CartStore>()(
   persist(
     (set, get) => ({
       items: [],
       isOpen: false,
       setItems: (items) => set({ items }),
-      addItem: (item) =>
-        set((s) => {
-          const exists = s.items.find((i) => i.id === item.id);
-          if (exists) {
-            return {
-              items: s.items.map((i) =>
-                i.id === item.id ? { ...i, quantity: i.quantity + item.quantity } : i
-              ),
-            };
-          }
-          return { items: [...s.items, item] };
-        }),
-      removeItem: (id) => set((s) => ({ items: s.items.filter((i) => i.id !== id) })),
-      updateQty: (id, qty) =>
-        set((s) => ({
-          items: s.items.map((i) => (i.id === id ? { ...i, quantity: qty } : i)),
-        })),
-      clearCart: () => set({ items: [] }),
+      addItem: (item) => {
+        // one line per product, whatever id the caller used
+        const exists = get().items.find((i) => i.productId === item.productId);
+        const items = exists
+          ? get().items.map((i) => (i.productId === item.productId ? { ...i, quantity: i.quantity + item.quantity } : i))
+          : [...get().items, { ...item, id: item.productId }];
+        set({ items });
+        const line = items.find((i) => i.productId === item.productId);
+        if (line) syncCartQty(line.productId, line.quantity);
+      },
+      removeItem: (id) => {
+        const line = get().items.find((i) => i.id === id);
+        set((s) => ({ items: s.items.filter((i) => i.id !== id) }));
+        if (line) syncCartQty(line.productId, 0);
+      },
+      updateQty: (id, qty) => {
+        set((s) => ({ items: s.items.map((i) => (i.id === id ? { ...i, quantity: qty } : i)) }));
+        const line = get().items.find((i) => i.id === id);
+        if (line) syncCartQty(line.productId, qty);
+      },
+      clearCart: () => {
+        set({ items: [] });
+        syncCartClear();
+      },
       openCart: () => set({ isOpen: true }),
       closeCart: () => set({ isOpen: false }),
       toggleCart: () => set((s) => ({ isOpen: !s.isOpen })),

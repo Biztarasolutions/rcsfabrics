@@ -13,7 +13,7 @@ export default function WishlistGrid({ compact = false }: { compact?: boolean })
   const { addItem } = useCartStore();
 
   const handleMoveToCart = (item: typeof items[0]) => {
-    addItem({ id: `${item.productId}-${Date.now()}`, productId: item.productId, product: item.product, quantity: 1 });
+    addItem({ id: item.productId, productId: item.productId, product: item.product, quantity: 1 });
     removeItem(item.productId);
     toast.success(`${productDisplayName(item.product)} moved to cart!`);
   };

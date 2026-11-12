@@ -5,6 +5,7 @@ import { Toaster } from 'react-hot-toast';
 import { useThemeStore } from '@/lib/store';
 import CartSidebar from '@/components/common/CartSidebar';
 import WishlistSync from '@/components/common/WishlistSync';
+import CartSync from '@/components/common/CartSync';
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -31,6 +32,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <ThemeApplier />
       <WishlistSync />
+      <CartSync />
       {children}
       <CartSidebar />
       <Toaster
