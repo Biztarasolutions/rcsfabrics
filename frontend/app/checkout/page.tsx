@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { useCartStore, useAuthStore } from '@/lib/store';
+import { useStoresHydrated, useCartStore, useAuthStore } from '@/lib/store';
 import { orderApi, publicApi, userApi } from '@/lib/api';
 import { formatPrice, productDisplayName } from '@/lib/utils';
 import toast from 'react-hot-toast';
@@ -224,6 +224,7 @@ export default function CheckoutPage() {
 
   const { items, clearCart, totalPrice } = useCartStore();
   const { user } = useAuthStore();
+  const hydrated = useStoresHydrated();
   const router = useRouter();
 
   const { data: settings } = useQuery({
@@ -395,12 +396,39 @@ export default function CheckoutPage() {
 
   if (placedOrder) return <ThankYouScreen order={placedOrder} />;
 
+  // Wait until the saved login is loaded, so signed-in shoppers never see the prompt
+  if (!hydrated) {
+    return <div className="flex min-h-screen items-center justify-center"><div className="h-10 w-10 animate-spin rounded-full border-4 border-primary-600 border-t-transparent"/></div>;
+  }
+
   if (items.length === 0 && !placing) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center py-24">
         <p className="text-6xl">🛒</p>
         <h2 className="mt-4 font-display text-2xl font-bold text-gray-900 dark:text-white">Your cart is empty</h2>
         <Link href="/products" className="button-primary mt-6 px-8 py-3">Start Shopping</Link>
+      </div>
+    );
+  }
+
+  // Orders belong to an account: ask guests to sign in, then bring them back here
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-16 dark:bg-dark-950">
+        <div className="container-main">
+          <div className="mx-auto max-w-md rounded-3xl border border-gray-200 bg-white p-8 text-center shadow-sm dark:border-dark-700 dark:bg-dark-800">
+            <p className="text-4xl">🧵</p>
+            <h1 className="mt-4 font-display text-2xl font-bold text-gray-900 dark:text-white">Sign in to place your order</h1>
+            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+              Your cart ({items.length} {items.length === 1 ? 'item' : 'items'}, {formatPrice(totalPrice())}) is saved. Sign in or create an account and we&apos;ll bring you straight back to checkout.
+            </p>
+            <div className="mt-6 grid gap-3">
+              <Link href="/auth?next=/checkout" className="button-primary w-full py-3.5">Sign in</Link>
+              <Link href="/auth?mode=register&next=/checkout" className="button-secondary w-full py-3.5">Create an account</Link>
+            </div>
+            <Link href="/cart" className="mt-4 inline-block text-sm text-gray-500 hover:text-primary-700 dark:text-gray-400">← Back to cart</Link>
+          </div>
+        </div>
       </div>
     );
   }

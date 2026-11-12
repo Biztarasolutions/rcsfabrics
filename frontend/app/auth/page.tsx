@@ -12,6 +12,14 @@ import ForgotPasswordModal from '@/components/auth/ForgotPasswordModal';
 
 type RegistrationStep = 'details' | 'otp' | 'verified';
 
+/** Where to go after signing in: ?next=/checkout (same-site paths only) */
+const nextPath = (): string => {
+  if (typeof window === 'undefined') return '/';
+  const q = new URLSearchParams(window.location.search);
+  const n = q.get('next') || q.get('redirect') || '';
+  return n.startsWith('/') && !n.startsWith('//') ? n : '/';
+};
+
 interface RegisterFormData {
   firstName: string;
   lastName: string;
@@ -33,6 +41,10 @@ interface ValidationState {
 export default function AuthPage() {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [forgotOpen, setForgotOpen] = useState(false);
+  // ?mode=register opens the sign-up form directly (e.g. from checkout)
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('mode') === 'register') setMode('register');
+  }, []);
   const [registrationStep, setRegistrationStep] = useState<RegistrationStep>('details');
   const [loginMethod, setLoginMethod] = useState<'password' | 'otp'>('password');
   const [loginOtp, setLoginOtp] = useState('');
@@ -177,7 +189,7 @@ export default function AuthPage() {
       if (typeof window !== 'undefined') localStorage.setItem('authToken', token);
 
       toast.success('Welcome back!');
-      router.push('/');
+      router.push(nextPath());
     } catch (error: any) {
       toast.error(error.message || 'Login failed');
     } finally {
@@ -329,7 +341,7 @@ export default function AuthPage() {
       if (typeof window !== 'undefined') localStorage.setItem('authToken', token);
 
       toast.success('Account created successfully!');
-      router.push('/');
+      router.push(nextPath());
     } catch (error: any) {
       toast.error(error.message || 'Account creation failed');
     } finally {

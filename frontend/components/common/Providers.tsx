@@ -2,7 +2,7 @@
 import React, { useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
-import { useThemeStore } from '@/lib/store';
+import { useThemeStore, rehydrateStores } from '@/lib/store';
 import CartSidebar from '@/components/common/CartSidebar';
 import WishlistSync from '@/components/common/WishlistSync';
 import CartSync from '@/components/common/CartSync';
@@ -27,9 +27,15 @@ function ThemeApplier() {
   return null;
 }
 
+function StoreHydrator() {
+  useEffect(() => { rehydrateStores(); }, []);
+  return null;
+}
+
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
+      <StoreHydrator />
       <ThemeApplier />
       <WishlistSync />
       <CartSync />

@@ -28,7 +28,7 @@ export const useAuthStore = create<AuthStore>()(
         useCartStore.setState({ items: [], isOpen: false, owner: null, guestAt: 0 });
       },
     }),
-    { name: 'rcs-auth' }
+    { name: 'rcs-auth', skipHydration: true }
   )
 );
 
@@ -120,7 +120,7 @@ export const useCartStore = create<CartStore>()(
           0
         ),
     }),
-    { name: 'rcs-cart', partialize: (s) => ({ items: s.items, owner: s.owner, guestAt: s.guestAt }) }
+    { name: 'rcs-cart', partialize: (s) => ({ items: s.items, owner: s.owner, guestAt: s.guestAt }), skipHydration: true }
   )
 );
 
@@ -165,7 +165,7 @@ export const useWishlistStore = create<WishlistStore>()(
       },
       hasItem: (productId) => get().items.some((i) => i.productId === productId),
     }),
-    { name: 'rcs-wishlist' }
+    { name: 'rcs-wishlist', skipHydration: true }
   )
 );
 
@@ -190,7 +190,7 @@ export const useThemeStore = create<ThemeStore>()(
           return { isDark: next };
         }),
     }),
-    { name: 'rcs-theme' }
+    { name: 'rcs-theme', skipHydration: true }
   )
 );
 
@@ -212,3 +212,25 @@ export const useUIStore = create<UIStore>()((set) => ({
   toggleMobileMenu: () => set((s) => ({ isMobileMenuOpen: !s.isMobileMenuOpen })),
   closeMobileMenu: () => set({ isMobileMenuOpen: false }),
 }));
+
+// ─── Hydration ────────────────────────────────────────────────────────────────
+// Saved stores (login, cart, wishlist, theme) are loaded from the browser right
+// AFTER the first render, so the first render matches the server HTML (no React
+// hydration errors). Components that must wait can use useStoresHydrated().
+export const useHydrationStore = create<{ hydrated: boolean }>(() => ({ hydrated: false }));
+export const useStoresHydrated = (): boolean => useHydrationStore((s) => s.hydrated);
+
+let hydrating: Promise<void> | null = null;
+export function rehydrateStores(): Promise<void> {
+  if (!hydrating) {
+    hydrating = Promise.all([
+      useAuthStore.persist.rehydrate(),
+      useCartStore.persist.rehydrate(),
+      useWishlistStore.persist.rehydrate(),
+      useThemeStore.persist.rehydrate(),
+    ]).then(() => {
+      useHydrationStore.setState({ hydrated: true });
+    });
+  }
+  return hydrating;
+}

@@ -2,16 +2,19 @@
 import React from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useCartStore } from '@/lib/store';
+import { useCartStore, useStoresHydrated } from '@/lib/store';
 import { formatPrice, productDisplayName } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 
 export default function CartPage() {
   const { items, removeItem, updateQty, clearCart, totalPrice } = useCartStore();
+  const hydrated = useStoresHydrated();
   const subtotal = totalPrice();
   const shipping = subtotal >= 2000 ? 0 : 150;
   const total = subtotal + shipping;
+
+  if (!hydrated) return <div className="flex min-h-[50vh] items-center justify-center"><div className="h-10 w-10 animate-spin rounded-full border-4 border-primary-600 border-t-transparent"/></div>;
 
   if (items.length === 0) {
     return (

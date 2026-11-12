@@ -2,7 +2,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { useWishlistStore, useCartStore } from '@/lib/store';
+import { useWishlistStore, useCartStore, useStoresHydrated } from '@/lib/store';
 import { formatPrice, productDisplayName } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
@@ -11,12 +11,15 @@ import Image from 'next/image';
 export default function WishlistGrid({ compact = false }: { compact?: boolean }) {
   const { items, removeItem } = useWishlistStore();
   const { addItem } = useCartStore();
+  const hydrated = useStoresHydrated();
 
   const handleMoveToCart = (item: typeof items[0]) => {
     addItem({ id: item.productId, productId: item.productId, product: item.product, quantity: 1 });
     removeItem(item.productId);
     toast.success(`${productDisplayName(item.product)} moved to cart!`);
   };
+
+  if (!hydrated) return <div className="flex min-h-[30vh] items-center justify-center"><div className="h-10 w-10 animate-spin rounded-full border-4 border-primary-600 border-t-transparent"/></div>;
 
   return (
     <>
