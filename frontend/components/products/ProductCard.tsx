@@ -7,11 +7,13 @@ import { useCartStore, useWishlistStore } from '@/lib/store';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useQueryClient } from '@tanstack/react-query';
 import { BLUR_PLACEHOLDER, supabaseImg } from '@/lib/image';
 
 interface ProductCardProps { product: Product; priority?: boolean; }
 
 const ProductCard = React.memo(function ProductCard({ product, priority = false }: ProductCardProps) {
+  const queryClient = useQueryClient();
   const [hovered, setHovered] = useState(false);
   const [everHovered, setEverHovered] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
@@ -41,7 +43,12 @@ const ProductCard = React.memo(function ProductCard({ product, priority = false 
   };
 
   return (
-    <Link href={`/products/${product.slug}`}>
+    <Link
+      href={`/products/${product.slug}`}
+      prefetch
+      onClick={() => queryClient.setQueryData(['product-preview', product.slug], product)}
+      className="block cursor-pointer rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+    >
       <div
         onMouseEnter={() => { setHovered(true); setEverHovered(true); }}
         onMouseLeave={() => setHovered(false)}

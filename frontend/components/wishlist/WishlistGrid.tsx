@@ -35,18 +35,24 @@ export default function WishlistGrid({ compact = false }: { compact?: boolean })
                 className="group relative overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm dark:border-dark-700 dark:bg-dark-800">
                 {/* Image */}
                 <div className="relative overflow-hidden" style={{ aspectRatio: '4/5' }}>
-                  <Image src={item.product.images?.[0]?.url || '/placeholder.png'} alt={productDisplayName(item.product)}
-                    fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" className="object-cover transition-transform duration-300 group-hover:scale-105"/>
+                  <Link href={`/products/${item.product.slug}`} aria-label={`View ${productDisplayName(item.product)}`} className="absolute inset-0 block cursor-pointer">
+                    <Image src={item.product.images?.[0]?.url || '/placeholder.png'} alt={productDisplayName(item.product)}
+                      fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" className="object-cover transition-transform duration-300 group-hover:scale-105"/>
+                  </Link>
                   {/* Remove */}
-                  <button onClick={() => { removeItem(item.productId); toast('Removed from wishlist'); }}
-                    className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-red-500 shadow-sm backdrop-blur-sm transition-colors hover:bg-red-500 hover:text-white dark:bg-dark-800/90 dark:text-red-400">
+                  <button onClick={() => { removeItem(item.productId); toast('Removed from wishlist'); }} aria-label="Remove from wishlist"
+                    className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-red-500 shadow-sm backdrop-blur-sm transition-colors hover:bg-red-500 hover:text-white dark:bg-dark-800/90 dark:text-red-400">
                     <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
                   </button>
                 </div>
                 {/* Content */}
                 <div className="p-4">
                   <p className="text-xs font-medium uppercase tracking-wider text-primary-600 dark:text-primary-400">{item.product.bestFor?.join(', ') || item.product.category?.name}</p>
-                  <h3 className="mt-1 font-semibold text-gray-900 dark:text-white">{productDisplayName(item.product)}</h3>
+                  <h3 className="mt-1 font-semibold text-gray-900 dark:text-white">
+                    <Link href={`/products/${item.product.slug}`} className="hover:text-primary-700 hover:underline dark:hover:text-primary-400">
+                      {productDisplayName(item.product)}
+                    </Link>
+                  </h3>
                   <div className="mt-2 flex items-center justify-between">
                     <span className="font-bold text-primary-700 dark:text-primary-400">
                       {formatPrice(item.product.discountPrice || item.product.basePrice)}<span className="text-xs font-normal text-gray-400">/m</span>

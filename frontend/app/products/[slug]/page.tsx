@@ -66,6 +66,8 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
   const { data: initialProduct, isLoading: isProductLoading, isError: isProductError } = useQuery({
     queryKey: ['product', params.slug],
     queryFn: () => productApi.getBySlug(params.slug).then(res => res.data.data),
+    // Use what the product card already had, so the page appears instantly
+    placeholderData: () => queryClient.getQueryData<any>(['product-preview', params.slug]),
   });
 
   const styleCode = initialProduct?.styleCode;
@@ -76,7 +78,9 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
   });
 
   useEffect(() => {
-    if (initialProduct && !selectedVariant) setSelectedVariant(initialProduct);
+    // First show (possibly the card's preview), then swap in the full details
+    // when they arrive — unless the shopper has already picked another colour.
+    if (initialProduct && (!selectedVariant || selectedVariant.id === initialProduct.id)) setSelectedVariant(initialProduct);
   }, [initialProduct]);
 
   // Preload the full details (images, specs) of every colour so switching is instant

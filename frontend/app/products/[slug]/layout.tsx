@@ -3,7 +3,8 @@ import { fetchApi, SITE_URL } from '@/lib/seo';
 import { productDisplayName } from '@/lib/utils';
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const res = await fetchApi<{ data?: any }>(`products/slug/${encodeURIComponent(params.slug)}`);
+  // Short timeout: page titles must never hold up opening a product
+  const res = await fetchApi<{ data?: any }>(`products/slug/${encodeURIComponent(params.slug)}`, 1200);
   const p = res?.data;
   if (!p) {
     return { title: 'Fabric', alternates: { canonical: `/products/${params.slug}` } };
