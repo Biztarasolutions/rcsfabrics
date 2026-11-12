@@ -54,6 +54,13 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
   const [activeImg, setActiveImg] = useState(0);
   const [qty, setQty] = useState(1);
   const [zoomed, setZoomed] = useState(false);
+  const [lightbox, setLightbox] = useState(false);
+  useEffect(() => {
+    if (!lightbox) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setLightbox(false);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [lightbox]);
   const [activeTab, setActiveTab] = useState<'specs' | 'care' | 'reviews'>('specs');
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
   const [recentlyViewed, setRecentlyViewed] = useState<ReturnType<typeof getRecentlyViewed>>([]);
@@ -228,8 +235,9 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
         <div className="grid gap-12 lg:grid-cols-2">
           {/* Image Gallery */}
           <div className="space-y-4">
-            <div className="relative overflow-hidden rounded-2xl bg-gray-50 dark:bg-dark-800" style={{ aspectRatio: '4/5' }}
-              onMouseEnter={() => setZoomed(true)} onMouseLeave={() => setZoomed(false)}>
+            <div className="relative aspect-square cursor-zoom-in overflow-hidden rounded-2xl bg-[#f4efe7] dark:bg-dark-800"
+              onMouseEnter={() => setZoomed(true)} onMouseLeave={() => setZoomed(false)}
+              onClick={() => images?.[activeImg]?.url && setLightbox(true)}>
               <Image src={supabaseImg(images?.[activeImg]?.url || '', 1000) || BLUR_PLACEHOLDER} alt={PRODUCT.name}
                 fill priority sizes="(max-width: 1024px) 100vw, 50vw"
                 placeholder="blur" blurDataURL={BLUR_PLACEHOLDER}
@@ -237,11 +245,12 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
               {PRODUCT.discountPrice && discountBadge && (
                 <div className="absolute left-4 top-4 rounded-full bg-red-500 px-3 py-1 text-sm font-bold text-white">{discountBadge}</div>
               )}
-              <div className={`absolute bottom-4 right-4 rounded-full border border-white/40 bg-black/30 px-3 py-1 text-xs text-white backdrop-blur-sm transition-opacity ${zoomed ? 'opacity-0' : 'opacity-100'}`}>
-                Hover to zoom
+              <div className={`pointer-events-none absolute bottom-4 right-4 rounded-full border border-white/40 bg-black/40 px-3 py-1 text-xs text-white backdrop-blur-sm transition-opacity ${zoomed ? 'opacity-0' : 'opacity-100'}`}>
+                <span className="[@media(hover:hover)]:hidden">Tap to view full size</span>
+                <span className="hidden [@media(hover:hover)]:inline">Click to view full size</span>
               </div>
               {/* Share button */}
-              <button onClick={handleShare}
+              <button onClick={(e) => { e.stopPropagation(); handleShare(); }}
                 className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-white/80 backdrop-blur-sm shadow-md text-gray-700 hover:bg-white transition-colors"
                 aria-label="Share product">
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -249,12 +258,21 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
                 </svg>
               </button>
             </div>
-            {/* Thumbnails — same 4:5 ratio as card grid for visual consistency */}
+            {lightbox && (
+              <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/90 p-2" role="dialog" aria-modal="true" aria-label="Full size photo"
+                onClick={() => setLightbox(false)}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={supabaseImg(images?.[activeImg]?.url || '', 2000, 85)} alt={PRODUCT.name}
+                  className="max-h-full max-w-full object-contain" />
+                <button type="button" onClick={() => setLightbox(false)} aria-label="Close"
+                  className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-2xl text-white hover:bg-white/25">×</button>
+              </div>
+            )}
+            {/* Thumbnails */}
             <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
               {images?.map((img: any, i: number) => (
                 <button key={img.id} onClick={() => setActiveImg(i)}
-                  className={`relative w-20 shrink-0 overflow-hidden rounded-xl border-2 transition-all ${i === activeImg ? 'border-primary-500 shadow-md' : 'border-gray-200 dark:border-dark-700 hover:border-primary-300'}`}
-                  style={{ aspectRatio: '4/5' }}>
+                  className={`relative aspect-square w-20 shrink-0 overflow-hidden rounded-xl border-2 transition-all ${i === activeImg ? 'border-primary-500 shadow-md' : 'border-gray-200 dark:border-dark-700 hover:border-primary-300'}`}>
                   <Image src={supabaseImg(img.url, 160)} alt={`View ${i + 1}`} fill sizes="80px"
                     placeholder="blur" blurDataURL={BLUR_PLACEHOLDER} className="object-cover object-center"/>
                 </button>
@@ -267,12 +285,14 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
             <div>
               <p className="text-sm font-medium uppercase tracking-wider text-primary-600 dark:text-primary-400">{PRODUCT.category?.name}</p>
               <h1 className="mt-2 font-display text-4xl font-bold text-gray-900 dark:text-white">{PRODUCT.name}</h1>
+{(PRODUCT.ratingCount || 0) > 0 && (
               <div className="mt-3 flex items-center gap-3">
                 <div className="flex">{[...Array(5)].map((_, i) => (<svg key={i} className={`h-5 w-5 ${i < Math.round(PRODUCT.rating || 0) ? 'stars-filled' : 'stars-empty'}`} fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>))}</div>
                 <button onClick={() => { setActiveTab('reviews'); setTimeout(() => tabsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }} className="text-sm text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400 transition-colors">
                   {PRODUCT.ratingCount || 0} reviews
                 </button>
               </div>
+              )}
             </div>
 
             {/* Price */}
