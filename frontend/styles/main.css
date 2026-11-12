@@ -6,8 +6,8 @@
 
 /* ── Root variables ─────────────────────────────────────────────────── */
 :root {
-  --gold: #d4af37;
-  --gold-light: #e8cc6a;
+  --gold: #c9a24e;
+  --gold-light: #dcbf7c;
   --rose: #c9a884;
   --dark: #1a1a1a;
   --radius: 0.75rem;
@@ -35,14 +35,14 @@ body {
 .font-display { font-family: 'Playfair Display', Georgia, serif; }
 
 .text-gradient {
-  background: linear-gradient(135deg, #d4af37 0%, #c9a884 50%, #b8926b 100%);
+  background: linear-gradient(135deg, #c9a24e 0%, #c9a884 50%, #a07c3b 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 .text-gradient-dark {
-  background: linear-gradient(135deg, #e8cc6a 0%, #d4af37 100%);
+  background: linear-gradient(135deg, #dcbf7c 0%, #c9a24e 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -74,11 +74,11 @@ body {
 
 .button-luxury {
   @apply button-base text-white relative overflow-hidden;
-  background: linear-gradient(135deg, #d4af37 0%, #b8926b 100%);
-  box-shadow: 0 4px 20px rgba(212, 175, 55, 0.3);
+  background: linear-gradient(135deg, #c9a24e 0%, #a07c3b 100%);
+  box-shadow: 0 4px 20px rgba(201, 162, 78, 0.3);
 }
 .button-luxury:hover {
-  box-shadow: 0 8px 30px rgba(212, 175, 55, 0.5);
+  box-shadow: 0 8px 30px rgba(201, 162, 78, 0.5);
   transform: translateY(-1px);
 }
 .button-luxury:active { transform: translateY(0); }
@@ -111,7 +111,7 @@ body {
 
 /* ── Shadows ─────────────────────────────────────────────────────────── */
 .shadow-luxury {
-  box-shadow: 0 20px 60px -10px rgba(212, 175, 55, 0.2);
+  box-shadow: 0 20px 60px -10px rgba(201, 162, 78, 0.2);
 }
 
 .shadow-product {
@@ -120,9 +120,8 @@ body {
 
 /* ── Section headings ────────────────────────────────────────────────── */
 .section-tag {
-  @apply inline-flex items-center gap-2 rounded-full border border-primary-200
-         bg-primary-50 px-4 py-1.5 text-sm font-semibold text-primary-700
-         dark:border-primary-800 dark:bg-primary-950/50 dark:text-primary-400;
+  @apply inline-block text-xs font-semibold uppercase tracking-[0.22em] text-[#a07c3b]
+         dark:text-[#d9b96a];
 }
 
 .section-title {
@@ -189,10 +188,10 @@ input[type=number] {
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: #d4af37;
+  background: #c9a24e;
   border-radius: 999px;
 }
-::-webkit-scrollbar-thumb:hover { background: #b8926b; }
+::-webkit-scrollbar-thumb:hover { background: #a07c3b; }
 
 /* ── Animations ──────────────────────────────────────────────────────── */
 @keyframes shimmer {
@@ -237,8 +236,8 @@ input[type=number] {
 
 /* ── Selection ───────────────────────────────────────────────────────── */
 ::selection {
-  background: rgba(212, 175, 55, 0.3);
-  color: #6a543d;
+  background: rgba(201, 162, 78, 0.3);
+  color: #6b1219;
 }
 
 /* ── Fabric texture overlay ──────────────────────────────────────────── */
@@ -263,6 +262,6 @@ input[type=number] {
 }
 
 /* ── Star rating ─────────────────────────────────────────────────────── */
-.stars-filled { color: #d4af37; }
+.stars-filled { color: #c9a24e; }
 .stars-empty  { color: #d1d5db; }
 .dark .stars-empty { color: #4b5563; }

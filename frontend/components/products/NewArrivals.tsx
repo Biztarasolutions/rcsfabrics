@@ -23,7 +23,7 @@ export default function NewArrivals() {
         {/* Header */}
         <div className="flex items-end justify-between">
           <div>
-            <span className="section-tag">✨ Just Arrived</span>
+            <span className="section-tag">Just arrived</span>
             <h2 className="section-title mt-3 font-display">New Arrivals</h2>
             <p className="section-subtitle">Fresh fabrics added this week</p>
           </div>
@@ -50,8 +50,8 @@ export default function NewArrivals() {
           ) : (
             products.map((product: any, i: number) => (
               <motion.div key={product.id}
-                initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }} transition={{ delay: i * 0.08 }}
+                initial={{ opacity: 0, y: 8 }} whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }} transition={{ duration: 0.25, delay: Math.min(i, 6) * 0.04 }}
                 className="shrink-0 w-64" style={{ scrollSnapAlign: 'start' }}>
                 <ProductCard product={product} />
               </motion.div>

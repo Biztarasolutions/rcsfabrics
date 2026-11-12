@@ -53,7 +53,7 @@ export default function ContactPage() {
       {/* Hero */}
       <div className="bg-gradient-to-r from-primary-50 to-secondary-50 dark:from-primary-950/30 dark:to-dark-900 py-16">
         <div className="container-main text-center">
-          <span className="section-tag">📞 Get in Touch</span>
+          <span className="section-tag">Get in touch</span>
           <h1 className="section-title mt-3 font-display">Contact Us</h1>
           <p className="section-subtitle">We're here to help. Reach out for orders, swatches, or anything else.</p>
         </div>
@@ -139,7 +139,7 @@ export default function ContactPage() {
           <div className="mt-10 grid gap-4 sm:grid-cols-2">
             {faqs.map((faq, i) => (
               <motion.div key={i} initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }} transition={{ delay: i * 0.07 }}
+                viewport={{ once: true }} transition={{ duration: 0.25, delay: i * 0.04 }}
                 className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-dark-700 dark:bg-dark-800">
                 <p className="font-semibold text-gray-900 dark:text-white">{faq.q}</p>
                 <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">{faq.a}</p>

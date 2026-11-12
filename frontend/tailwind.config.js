@@ -8,18 +8,19 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        // Brand maroon from the RCS logo (700 = logo colour); light end stays warm ivory
         primary: {
-          50: '#faf9f7',
-          100: '#f5f1ed',
-          200: '#ede4db',
-          300: '#e2d4c8',
-          400: '#d4baa0',
-          500: '#c9a884',
-          600: '#b8926b',
-          700: '#9a7a56',
-          800: '#7d6447',
-          900: '#6a543d',
-          950: '#3d2f23',
+          50: '#fbf6f1',
+          100: '#f6ece4',
+          200: '#ecd5cc',
+          300: '#dcb0a6',
+          400: '#c98880',
+          500: '#a8454a',
+          600: '#8c2a31',
+          700: '#6b1219',
+          800: '#561016',
+          900: '#430d12',
+          950: '#2a070a',
         },
         secondary: {
           50: '#f8f7f6',
@@ -35,7 +36,7 @@ module.exports = {
           950: '#3a2d22',
         },
         luxury: {
-          gold: '#d4af37',
+          gold: '#c9a24e',
           silver: '#c0c0c0',
           rose: '#f64a8a',
           emerald: '#50c878',

@@ -6,8 +6,8 @@ import { motion } from 'framer-motion';
 import { useHomepageData } from '@/hooks/useHomepageData';
 import ProductCard from './ProductCard';
 
-const container = { hidden: {}, show: { transition: { staggerChildren: 0.1 } } };
-const item = { hidden: { opacity: 0, y: 30 }, show: { opacity: 1, y: 0, transition: { duration: 0.5 } } };
+const container = { hidden: {}, show: { transition: { staggerChildren: 0.04 } } };
+const item = { hidden: { opacity: 0, y: 8 }, show: { opacity: 1, y: 0, transition: { duration: 0.25 } } };
 
 export default function FeaturedProducts({ header }: { header?: React.ReactNode }) {
   const { data: homepageData, isLoading, isError } = useHomepageData();

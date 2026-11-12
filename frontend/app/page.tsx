@@ -32,13 +32,13 @@ export default function HomePage() {
         <div className="container-main py-4">
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             {[
-              { icon: '🚚', label: 'Free Shipping', sub: 'Orders above ₹2,000' },
-              { icon: '🔄', label: 'Easy Returns', sub: '30-day return policy' },
-              { icon: '⚡', label: 'Fast Delivery', sub: '2–5 business days' },
-              { icon: '✅', label: 'Quality Checked', sub: 'Inspected before dispatch' },
+              { label: 'Free Shipping', sub: 'Orders above ₹2,000' },
+              { label: 'Easy Returns', sub: '30-day return policy' },
+              { label: 'Fast Delivery', sub: '2–5 business days' },
+              { label: 'Quality Checked', sub: 'Inspected before dispatch' },
             ].map((b) => (
               <div key={b.label} className="flex items-center gap-3 py-2">
-                <span className="text-xl">{b.icon}</span>
+                <span className="h-8 w-px bg-[#c9a24e]" aria-hidden="true" />
                 <div>
                   <p className="text-sm font-semibold text-gray-900 dark:text-white">{b.label}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">{b.sub}</p>

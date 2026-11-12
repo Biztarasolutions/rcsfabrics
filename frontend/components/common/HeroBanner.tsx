@@ -8,9 +8,9 @@ import { BLUR_PLACEHOLDER, supabaseImg } from '@/lib/image';
 import { useHomepageData } from '@/hooks/useHomepageData';
 
 const ACCENTS = [
-  'from-primary-900/80 to-primary-800/40',
-  'from-secondary-900/80 to-secondary-800/40',
-  'from-dark-900/80 to-dark-800/40',
+  'from-[#1d150e]/85 via-[#1d150e]/45 to-transparent',
+  'from-[#2a070a]/80 via-[#2a070a]/40 to-transparent',
+  'from-[#1a1a1a]/85 via-[#1a1a1a]/40 to-transparent',
 ];
 
 type Slide = {
@@ -99,7 +99,7 @@ export default function HeroBanner() {
   // While API is still loading, show a gradient placeholder — no flash of old default slides
   if (!slides || slides.length === 0) {
     return (
-      <section className="relative h-[90vh] min-h-[600px] max-h-[900px] overflow-hidden bg-gradient-to-r from-primary-900 via-primary-800 to-primary-700 flex items-end">
+      <section className="relative h-[90vh] min-h-[600px] max-h-[900px] overflow-hidden bg-gradient-to-r from-[#1d150e] via-[#2b2118] to-[#3d2f23] flex items-end">
         <div className="absolute inset-0 opacity-5"
           style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23fff' fill-opacity='1'%3E%3Cpath d='M0 0h1v1H0V0zm2 0h1v1H2V0zm2 0h1v1H4V0zm2 0h1v1H6V0zm2 0h1v1H8V0zm2 0h1v1h-1V0zm2 0h1v1h-1V0zm2 0h1v1h-1V0zm2 0h1v1h-1V0zm2 0h1v1h-1V0z'/%3E%3C/g%3E%3C/svg%3E\")" }}/>
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"/>
@@ -153,7 +153,7 @@ export default function HeroBanner() {
               <motion.div key={`tag-${current}`} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}>
                 <span className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/15 px-4 py-1.5 text-sm font-semibold text-white backdrop-blur-sm">
-                  <span className="h-1.5 w-1.5 rounded-full bg-primary-400"/>
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#c9a24e]"/>
                   {slide.tag}
                 </span>
               </motion.div>

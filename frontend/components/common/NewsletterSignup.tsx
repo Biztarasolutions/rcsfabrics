@@ -34,7 +34,7 @@ export default function NewsletterSignup() {
         <div className="mx-auto max-w-2xl text-center">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }} transition={{ duration: 0.6 }}>
-            <span className="section-tag">💌 Join the Club</span>
+            <span className="section-tag">Stay in touch</span>
             <h2 className="section-title mt-3 font-display">Join the RCS Fabrics Club</h2>
             <p className="section-subtitle">
               Get new fabric arrivals, member offers and styling ideas in your inbox.
