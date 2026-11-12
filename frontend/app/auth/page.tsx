@@ -245,7 +245,7 @@ export default function AuthPage() {
 
     setOtpLoading(true);
     try {
-      const res = await authApi.sendOTP({ phone: registerForm.phone });
+      const res = await authApi.sendOTP({ email: registerForm.email.trim(), firstName: registerForm.firstName });
       setRegistrationStep('otp');
       setOtpTimer(30); // 30 second countdown for resend
       if (res.data.data && res.data.data.otp) {
@@ -277,7 +277,7 @@ export default function AuthPage() {
     setOtpLoading(true);
     try {
       const res = await authApi.verifyOTP({
-        phone: registerForm.phone,
+        email: registerForm.email.trim(),
         code: otp,
       });
 
@@ -291,7 +291,7 @@ export default function AuthPage() {
       const remaining = 3 - newAttempts;
       
       if (remaining > 0) {
-        toast.error(`Invalid OTP. ${remaining} attempt${remaining > 1 ? 's' : ''} remaining`);
+        toast.error(`Invalid code. ${remaining} attempt${remaining > 1 ? 's' : ''} remaining`);
       } else {
         toast.error('Maximum OTP attempts exceeded. Please request a new one.');
       }
@@ -304,7 +304,7 @@ export default function AuthPage() {
     e.preventDefault();
 
     if (!phoneVerified) {
-      toast.error('Please verify your phone number first');
+      toast.error('Please verify your email first');
       return;
     }
 
@@ -425,7 +425,7 @@ export default function AuthPage() {
                 : registrationStep === 'details'
                   ? 'Create account'
                   : registrationStep === 'otp'
-                    ? 'Verify Phone'
+                    ? 'Verify Email'
                     : 'Confirm Details'}
             </h1>
             <p className="mt-2 text-gray-500 dark:text-gray-400">
@@ -698,7 +698,7 @@ export default function AuthPage() {
                   }`}
                 />
                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  We'll send an OTP to this number for verification
+                  For delivery updates. We'll send the verification code to your email.
                 </p>
               </div>
 
@@ -789,10 +789,10 @@ export default function AuthPage() {
                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
                       />
                     </svg>
-                    Sending OTP...
+                    Sending code...
                   </span>
                 ) : (
-                  'Request OTP'
+                  'Email me a code'
                 )}
               </button>
             </form>
@@ -810,10 +810,10 @@ export default function AuthPage() {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
-                      We've sent a 6-digit OTP to <span className="font-semibold">{registerForm.phone}</span>
+                      We've emailed a 6-digit code to <span className="font-semibold">{registerForm.email}</span>
                     </p>
                     <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                      Valid for 10 minutes
+                      Valid for 10 minutes. Check your spam folder if you don&apos;t see it.
                     </p>
                   </div>
                 </div>
@@ -893,7 +893,7 @@ export default function AuthPage() {
                     disabled={otpLoading}
                     className="text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 disabled:opacity-50 font-medium"
                   >
-                    Didn't receive OTP? Resend
+                    Didn&apos;t get the email? Resend code
                   </button>
                 )}
               </div>
@@ -929,8 +929,8 @@ export default function AuthPage() {
                     </svg>
                   </div>
                   <div>
-                    <p className="font-semibold text-green-800 dark:text-green-200">Phone number verified!</p>
-                    <p className="text-sm text-green-700 dark:text-green-300 mt-1">{registerForm.phone}</p>
+                    <p className="font-semibold text-green-800 dark:text-green-200">Email verified!</p>
+                    <p className="text-sm text-green-700 dark:text-green-300 mt-1">{registerForm.email}</p>
                   </div>
                 </div>
               </div>
@@ -950,16 +950,16 @@ export default function AuthPage() {
                   </div>
                   <div className="flex justify-between items-center pb-2 border-b border-primary-200 dark:border-primary-800">
                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Email:</span>
-                    <span className="text-sm text-gray-600 dark:text-gray-400">{registerForm.email}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Phone:</span>
                     <span className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
-                      {registerForm.phone}
+                      {registerForm.email}
                       <svg className="h-4 w-4 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                       </svg>
                     </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Phone:</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">{registerForm.phone}</span>
                   </div>
                 </div>
               </div>

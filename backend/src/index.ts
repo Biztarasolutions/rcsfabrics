@@ -63,6 +63,8 @@ app.use(
     '/api/auth/register',
     '/api/auth/send-otp',
     '/api/auth/verify-otp',
+    '/api/auth/send-phone-otp',
+    '/api/auth/verify-phone-otp',
     '/api/auth/login-otp',
     '/api/auth/forgot-password',
     '/api/auth/reset-password',

@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { Response } from 'express';
 import { prisma } from '@/index';
 import { AuthRequest, ApiResponse } from '@/types';
@@ -196,6 +197,108 @@ export const verifyPhoneOTP = async (
   }
 };
 
+// ── Sign-up verification by EMAIL ─────────────────────────────────────────
+// Pending sign-up codes reuse the otps table. Its `phone` column (20 chars)
+// holds a fixed-length key derived from the email, so no migration is needed.
+const signupKey = (email: string): string =>
+  'e:' + crypto.createHash('sha256').update(email.trim().toLowerCase()).digest('hex').slice(0, 18);
+
+const SIGNUP_OTP_TTL_MS = 10 * 60 * 1000;
+const SIGNUP_VERIFIED_WINDOW_MS = 30 * 60 * 1000; // finish the form within 30 min of verifying
+
+const sendSignupEmail = async (email: string, code: string, name?: string) => {
+  const safeName = String(name || '').replace(/[<>&"']/g, '');
+  await sendEmail({
+    to: [email],
+    subject: `${code} is your RCS Fabrics verification code`,
+    html: `
+      <div style="font-family:sans-serif;padding:20px;max-width:600px;margin:0 auto;border:1px solid #e8dfcf;border-radius:8px">
+        <h2 style="color:#6b1219;text-align:center;margin-top:0">Verify your email</h2>
+        <p>Hello${safeName ? ' ' + safeName : ''},</p>
+        <p>Use this code to finish creating your RCS Fabrics account:</p>
+        <div style="font-size:32px;font-weight:bold;text-align:center;letter-spacing:6px;margin:28px 0;color:#2b2118">${code}</div>
+        <p style="color:#666;font-size:14px">This code is valid for 10 minutes. If you didn't try to sign up, you can ignore this email.</p>
+      </div>`,
+  });
+};
+
+const handleAuthError = (res: Response, error: unknown, label: string) => {
+  if (error instanceof ApiError) {
+    res.status(error.statusCode).json({ success: false, message: error.message, statusCode: error.statusCode } as ApiResponse);
+  } else {
+    console.error(`${label}:`, error);
+    res.status(500).json({ success: false, message: 'Internal server error', statusCode: 500 } as ApiResponse);
+  }
+};
+
+/** POST /api/auth/send-otp { email } — step 1 of sign-up: email a 6-digit code */
+export const sendSignupOTP = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    if (!email) throw new ApiError(400, 'Email is required');
+    if (!validateEmail(email)) throw new ApiError(400, 'Invalid email format');
+
+    const exists = await prisma.user.findFirst({ where: { email: { equals: email, mode: 'insensitive' } }, select: { id: true } });
+    if (exists) throw new ApiError(400, 'An account with this email already exists. Please sign in.');
+
+    const key = signupKey(email);
+    const code = generateOTP();
+    const expiresAt = new Date(Date.now() + SIGNUP_OTP_TTL_MS);
+    const existing = await prisma.oTP.findFirst({ where: { phone: key, userId: null } });
+    if (existing) {
+      await prisma.oTP.update({ where: { id: existing.id }, data: { code, attempts: 0, isUsed: false, expiresAt } });
+    } else {
+      await prisma.oTP.create({ data: { phone: key, code, attempts: 0, isUsed: false, expiresAt } });
+    }
+
+    try {
+      await sendSignupEmail(email, code, req.body?.firstName);
+    } catch (err) {
+      console.error('[Signup OTP] email failed:', err);
+      throw new ApiError(502, 'We could not send the verification email. Please check the address and try again.');
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `We've emailed a 6-digit code to ${email}`,
+      data: { email, expiresIn: SIGNUP_OTP_TTL_MS / 1000, ...(shouldExposeOtp() ? { otp: code } : {}) },
+      statusCode: 200,
+    } as ApiResponse);
+  } catch (error) {
+    handleAuthError(res, error, 'Send signup OTP error');
+  }
+};
+
+/** POST /api/auth/verify-otp { email, code } — step 2 of sign-up */
+export const verifySignupOTP = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    const code = String(req.body?.code || '');
+    if (!email || !code) throw new ApiError(400, 'Email and code are required');
+    if (!validateOTPFormat(code)) throw new ApiError(400, 'Invalid code format');
+
+    const record = await prisma.oTP.findFirst({ where: { phone: signupKey(email), userId: null }, orderBy: { createdAt: 'desc' } });
+    if (!record) throw new ApiError(404, 'Code not found. Please request a new one.');
+    if (record.isUsed) throw new ApiError(400, 'This code has already been used');
+    if (new Date() > record.expiresAt) throw new ApiError(400, 'Code has expired. Please request a new one.');
+    if (record.attempts >= 3) throw new ApiError(400, 'Too many wrong codes. Please request a new one.');
+    if (record.code !== code) {
+      await prisma.oTP.update({ where: { id: record.id }, data: { attempts: { increment: 1 } } });
+      throw new ApiError(400, 'Invalid code');
+    }
+
+    // Mark verified and give the user time to finish the form
+    await prisma.oTP.update({
+      where: { id: record.id },
+      data: { isUsed: true, expiresAt: new Date(Date.now() + SIGNUP_VERIFIED_WINDOW_MS) },
+    });
+
+    res.status(200).json({ success: true, message: 'Email verified', data: { email, verified: true }, statusCode: 200 } as ApiResponse);
+  } catch (error) {
+    handleAuthError(res, error, 'Verify signup OTP error');
+  }
+};
+
 /**
  * Register user (after OTP verification)
  * Step 3 of registration flow
@@ -205,7 +308,8 @@ export const register = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { email, password, firstName, lastName, phone } = req.body;
+    const { password, firstName, lastName, phone } = req.body;
+    const email = String(req.body?.email || '').trim().toLowerCase();
 
     // Validation
     if (!email || !password || !phone) {
@@ -223,8 +327,8 @@ export const register = async (
     const normalizedPhone = phone.replace(/\s+/g, '');
 
     // Check if email already exists
-    const existingUserByEmail = await prisma.user.findUnique({
-      where: { email },
+    const existingUserByEmail = await prisma.user.findFirst({
+      where: { email: { equals: email, mode: 'insensitive' } },
     });
 
     if (existingUserByEmail) {
@@ -240,23 +344,16 @@ export const register = async (
       throw new ApiError(400, 'User with this phone number already exists');
     }
 
-    // Verify that OTP was verified for this phone
+    // The email must have been verified with a code (step 2)
     const otpRecord = await prisma.oTP.findFirst({
-      where: {
-        phone: normalizedPhone,
-        isUsed: true,
-      },
+      where: { phone: signupKey(email), userId: null, isUsed: true },
       orderBy: { createdAt: 'desc' },
     });
-
     if (!otpRecord) {
-      throw new ApiError(400, 'Phone number not verified. Please verify OTP first.');
+      throw new ApiError(400, 'Email not verified. Please verify the code we emailed you first.');
     }
-
-    // Check if OTP verification is recent (within last 10 minutes)
-    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
-    if (otpRecord.createdAt < tenMinutesAgo) {
-      throw new ApiError(400, 'OTP verification expired. Please verify OTP again.');
+    if (new Date() > otpRecord.expiresAt) {
+      throw new ApiError(400, 'Verification expired. Please verify your email again.');
     }
 
     // Hash password
@@ -270,7 +367,7 @@ export const register = async (
         firstName,
         lastName,
         phone: normalizedPhone,
-        phoneVerified: true,
+        phoneVerified: false, // sign-up verifies the email; phone is contact info only
       },
     });
 
