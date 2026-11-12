@@ -142,6 +142,8 @@ export default function HeroBanner() {
               className="object-cover scale-105 animate-float" style={{ animationDuration: '8s' }}/>
             <div className={`absolute inset-0 bg-gradient-to-r ${s.accent}`}/>
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"/>
+            {/* Extra shade on small screens, where text runs across light fabric photos */}
+            <div className="absolute inset-0 bg-black/40 lg:bg-transparent"/>
           </div>
         );
       })}
