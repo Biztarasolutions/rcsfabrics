@@ -241,7 +241,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
               <Image src={supabaseImg(images?.[activeImg]?.url || '', 1000) || BLUR_PLACEHOLDER} alt={PRODUCT.name}
                 fill priority sizes="(max-width: 1024px) 100vw, 50vw"
                 placeholder="blur" blurDataURL={BLUR_PLACEHOLDER}
-                className={`object-contain transition-transform duration-500 ${zoomed ? 'scale-110' : 'scale-100'}`}/>
+                className={`object-cover object-center transition-transform duration-500 ${zoomed ? 'scale-110' : 'scale-100'}`}/>
               {PRODUCT.discountPrice && discountBadge && (
                 <div className="absolute left-4 top-4 rounded-full bg-red-500 px-3 py-1 text-sm font-bold text-white">{discountBadge}</div>
               )}
