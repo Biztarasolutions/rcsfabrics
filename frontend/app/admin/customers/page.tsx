@@ -60,8 +60,16 @@ function CustomerDrawer({ customer, onClose }: { customer: any; onClose: () => v
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-lg font-bold text-gray-900 dark:text-white">{customer.name}</p>
+                  {(customer.customerId || detail?.customerId) && (
+                    <p className="text-xs font-semibold tracking-wide text-primary-700 dark:text-primary-400">{customer.customerId || detail?.customerId}</p>
+                  )}
                   <p className="text-sm text-gray-500">{customer.email}</p>
                   {customer.phone && customer.phone !== 'N/A' && <p className="text-sm text-gray-500">📞 {customer.phone}</p>}
+                  {Array.isArray(detail?.phones) && detail.phones.length > 1 && (
+                    <p className="text-xs text-gray-400">
+                      Earlier numbers: {detail.phones.filter((p: any) => p.phone !== customer.phone).map((p: any) => p.phone).join(', ')}
+                    </p>
+                  )}
                   <p className="mt-1 text-xs text-gray-400">
                     Joined {new Date(customer.joined).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
                   </p>
@@ -203,7 +211,9 @@ export default function AdminCustomersPage() {
 
   let filtered = customers.filter((c: any) =>
     c.name.toLowerCase().includes(search.toLowerCase()) ||
-    c.email.toLowerCase().includes(search.toLowerCase())
+    c.email.toLowerCase().includes(search.toLowerCase()) ||
+    String(c.customerId || '').toLowerCase().includes(search.toLowerCase()) ||
+    String(c.phone || '').includes(search)
   );
   if (sort === 'spent') filtered = [...filtered].sort((a: any, b: any) => b.spent - a.spent);
   if (sort === 'orders') filtered = [...filtered].sort((a: any, b: any) => b.orders - a.orders);
@@ -241,7 +251,7 @@ export default function AdminCustomersPage() {
       <div className="flex gap-3">
         <div className="relative flex-1">
           <svg className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search customers..."
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name, email, phone or Customer ID..."
             className="input-field pl-9 py-2.5"/>
         </div>
         <select value={sort} onChange={(e) => setSort(e.target.value)} className="input-field w-44 py-2.5">
@@ -280,6 +290,7 @@ export default function AdminCustomersPage() {
                       </div>
                       <div>
                         <p className="font-semibold text-gray-900 dark:text-white">{customer.name}</p>
+                        {customer.customerId && <p className="text-[11px] font-semibold tracking-wide text-primary-700 dark:text-primary-400">{customer.customerId}</p>}
                         <p className="text-xs text-gray-500">{customer.email}</p>
                       </div>
                     </div>
