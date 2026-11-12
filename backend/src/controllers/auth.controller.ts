@@ -238,8 +238,19 @@ export const sendSignupOTP = async (req: AuthRequest, res: Response): Promise<vo
     if (!email) throw new ApiError(400, 'Email is required');
     if (!validateEmail(email)) throw new ApiError(400, 'Invalid email format');
 
+    // Both the email and the phone number must be new
+    const phone = String(req.body?.phone || '').replace(/\s+/g, '');
+    if (!phone) throw new ApiError(400, 'Phone number is required');
+    if (!/^\+?[1-9]\d{6,14}$/.test(phone)) throw new ApiError(400, 'Invalid phone number format');
+
     const exists = await prisma.user.findFirst({ where: { email: { equals: email, mode: 'insensitive' } }, select: { id: true } });
     if (exists) throw new ApiError(400, 'An account with this email already exists. Please sign in.');
+    const phoneDigits = phone.replace(/\D/g, '').slice(-10);
+    const phoneTaken = await prisma.user.findFirst({
+      where: { OR: [{ phone }, { phone: { endsWith: phoneDigits } }] },
+      select: { id: true },
+    });
+    if (phoneTaken) throw new ApiError(400, 'An account with this phone number already exists. Please sign in.');
 
     const key = signupKey(email);
     const code = generateOTP();
@@ -320,8 +331,8 @@ export const register = async (
       throw new ApiError(400, 'Invalid email format');
     }
 
-    if (password.length < 6) {
-      throw new ApiError(400, 'Password must be at least 6 characters');
+    if (typeof password !== 'string' || password.length < 8) {
+      throw new ApiError(400, 'Password must be at least 8 characters');
     }
 
     const normalizedPhone = phone.replace(/\s+/g, '');
@@ -336,8 +347,8 @@ export const register = async (
     }
 
     // Check if phone already exists
-    const existingUserByPhone = await prisma.user.findUnique({
-      where: { phone: normalizedPhone },
+    const existingUserByPhone = await prisma.user.findFirst({
+      where: { OR: [{ phone: normalizedPhone }, { phone: { endsWith: normalizedPhone.replace(/\D/g, '').slice(-10) } }] },
     });
 
     if (existingUserByPhone) {

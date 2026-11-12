@@ -114,7 +114,7 @@ export default function AuthPage() {
         updateValidationState('phone', validatePhone(value));
         break;
       case 'password':
-        updateValidationState('password', value.length >= 6);
+        updateValidationState('password', value.length >= 8);
         if (registerForm.confirm) {
           updateValidationState('confirm', value === registerForm.confirm);
         }
@@ -239,13 +239,13 @@ export default function AuthPage() {
       return;
     }
 
-    if (!validatePasswordMatch()) {
-      return;
-    }
-
     setOtpLoading(true);
     try {
-      const res = await authApi.sendOTP({ email: registerForm.email.trim(), firstName: registerForm.firstName });
+      const res = await authApi.sendOTP({
+        email: registerForm.email.trim(),
+        phone: registerForm.phone.replace(/\s+/g, ''),
+        firstName: registerForm.firstName,
+      });
       setRegistrationStep('otp');
       setOtpTimer(30); // 30 second countdown for resend
       if (res.data.data && res.data.data.otp) {
@@ -426,7 +426,7 @@ export default function AuthPage() {
                   ? 'Create account'
                   : registrationStep === 'otp'
                     ? 'Verify Email'
-                    : 'Confirm Details'}
+                    : 'Set Your Password'}
             </h1>
             <p className="mt-2 text-gray-500 dark:text-gray-400">
               {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
@@ -702,62 +702,6 @@ export default function AuthPage() {
                 </p>
               </div>
 
-              {/* Password */}
-              <div>
-                <div className="flex items-center justify-between">
-                  <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Password
-                  </label>
-                </div>
-                <input
-                  name="password"
-                  type="password"
-                  value={registerForm.password}
-                  onChange={handleRegisterChange}
-                  required
-                  placeholder="••••••••"
-                  className={`input-field transition-all ${
-                    registerForm.password
-                      ? validationState.password
-                        ? 'border-green-500 dark:border-green-400'
-                        : 'border-red-500 dark:border-red-400'
-                      : ''
-                  }`}
-                />
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Min 6 characters
-                </p>
-              </div>
-
-              {/* Confirm Password */}
-              <div>
-                <div className="flex items-center justify-between">
-                  <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Confirm Password
-                  </label>
-                  {registerForm.confirm && (
-                    <span className={validationState.confirm ? 'text-xs text-green-600 dark:text-green-400' : 'text-xs text-red-600 dark:text-red-400'}>
-                      {validationState.confirm ? '✓ Match' : '✗ Mismatch'}
-                    </span>
-                  )}
-                </div>
-                <input
-                  name="confirm"
-                  type="password"
-                  value={registerForm.confirm}
-                  onChange={handleRegisterChange}
-                  required
-                  placeholder="••••••••"
-                  className={`input-field transition-all ${
-                    registerForm.confirm
-                      ? validationState.confirm
-                        ? 'border-green-500 dark:border-green-400'
-                        : 'border-red-500 dark:border-red-400'
-                      : ''
-                  }`}
-                />
-              </div>
-
               {/* Submit Button */}
               <button
                 type="submit"
@@ -766,9 +710,7 @@ export default function AuthPage() {
                   !validationState.firstName ||
                   !validationState.lastName ||
                   !validationState.email ||
-                  !validationState.phone ||
-                  !validationState.password ||
-                  !validationState.confirm
+                  !validationState.phone
                 }
                 className="button-primary mt-4 w-full py-3.5 text-base disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
@@ -964,10 +906,67 @@ export default function AuthPage() {
                 </div>
               </div>
 
+              {/* Set password (after the email is verified) */}
+              {/* Password */}
+              <div>
+                <div className="flex items-center justify-between">
+                  <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Password
+                  </label>
+                </div>
+                <input
+                  name="password"
+                  type="password"
+                  value={registerForm.password}
+                  onChange={handleRegisterChange}
+                  required
+                  placeholder="••••••••"
+                  className={`input-field transition-all ${
+                    registerForm.password
+                      ? validationState.password
+                        ? 'border-green-500 dark:border-green-400'
+                        : 'border-red-500 dark:border-red-400'
+                      : ''
+                  }`}
+                />
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  At least 8 characters
+                </p>
+              </div>
+
+              {/* Confirm Password */}
+              <div>
+                <div className="flex items-center justify-between">
+                  <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Confirm Password
+                  </label>
+                  {registerForm.confirm && (
+                    <span className={validationState.confirm ? 'text-xs text-green-600 dark:text-green-400' : 'text-xs text-red-600 dark:text-red-400'}>
+                      {validationState.confirm ? '✓ Match' : '✗ Mismatch'}
+                    </span>
+                  )}
+                </div>
+                <input
+                  name="confirm"
+                  type="password"
+                  value={registerForm.confirm}
+                  onChange={handleRegisterChange}
+                  required
+                  placeholder="••••••••"
+                  className={`input-field transition-all ${
+                    registerForm.confirm
+                      ? validationState.confirm
+                        ? 'border-green-500 dark:border-green-400'
+                        : 'border-red-500 dark:border-red-400'
+                      : ''
+                  }`}
+                />
+              </div>
+
               {/* Create Account Button */}
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || !validationState.password || !validationState.confirm}
                 className="button-primary mt-6 w-full py-3.5 text-base disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
               >
                 {loading ? (
