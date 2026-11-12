@@ -196,7 +196,7 @@ export default function HeroBanner() {
                 transition={{ duration: 0.6, delay: 0.5 }}
                 className="mt-12 flex gap-8">
                 {[
-                  { value: '1970', label: 'Family business since' },
+                  { value: '1970', label: 'Founded' },
                   { value: '3', label: 'Generations' },
                   { value: '0.5 m', label: 'Minimum cut' },
                 ].map((stat) => (

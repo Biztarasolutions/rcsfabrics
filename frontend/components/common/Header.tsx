@@ -76,7 +76,7 @@ export default function Header() {
     <>
       {/* Announcement bar */}
       <div className="bg-gradient-to-r from-primary-700 via-primary-600 to-primary-700 py-2 text-center text-xs font-medium text-white tracking-wider">
-        Free shipping on orders above ₹2,000 &nbsp;·&nbsp; Fabrics by the metre, family-run since 1970
+        Free shipping on orders above ₹2,000<span className="hidden sm:inline"> &nbsp;·&nbsp; Fabrics by the metre, family-run since 1970</span>
       </div>
 
       {/* Main header */}
