@@ -6,6 +6,7 @@ import { useWishlistStore, useCartStore, useStoresHydrated } from '@/lib/store';
 import { formatPrice, productDisplayName } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
+import { supabaseImg, BLUR_PLACEHOLDER } from '@/lib/image';
 
 /** Wishlist items grid — used on /wishlist and inside My Account. */
 export default function WishlistGrid({ compact = false }: { compact?: boolean }) {
@@ -39,7 +40,7 @@ export default function WishlistGrid({ compact = false }: { compact?: boolean })
                 {/* Image */}
                 <div className="relative overflow-hidden" style={{ aspectRatio: '4/5' }}>
                   <Link href={`/products/${item.product.slug}`} aria-label={`View ${productDisplayName(item.product)}`} className="absolute inset-0 block cursor-pointer">
-                    <Image src={item.product.images?.[0]?.url || '/placeholder.png'} alt={productDisplayName(item.product)}
+                    <Image src={supabaseImg(item.product.images?.[0]?.url || '', 500, 70, 'cover') || BLUR_PLACEHOLDER} alt={productDisplayName(item.product)}
                       fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" className="object-cover transition-transform duration-300 group-hover:scale-105"/>
                   </Link>
                   {/* Remove */}

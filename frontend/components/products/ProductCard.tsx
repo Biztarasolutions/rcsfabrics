@@ -109,22 +109,28 @@ const ProductCard = React.memo(function ProductCard({ product, priority = false 
         {/* Content */}
         <div className="flex flex-1 flex-col p-4">
           <p className="text-xs font-medium uppercase tracking-wider text-primary-600 dark:text-primary-400">
-            {product.category?.name} · {product.bestFor?.join(', ') || 'Fabric'}
+            {product.category?.name || 'Fabric'}
           </p>
           <h3 className="mt-1 line-clamp-2 font-semibold text-gray-900 dark:text-white">{productDisplayName(product)}</h3>
-          {product.colors && product.colors.length > 0 ? (
-            <div className="flex gap-1 mt-0.5">
-              {product.colors.map((c, idx) => {
-                const bgColor = c.hexCode ? (c.hexCode.startsWith('#') ? c.hexCode : `#${c.hexCode}`) : c.name || '#CCC';
-                return (
-                  <div key={idx} className="h-4 w-4 rounded-full border border-gray-300" style={{ backgroundColor: bgColor }} title={c.name} />
-                );
-              })}
-            </div>
-          ) : product.color ? (
-            <div className="h-4 w-4 rounded-full border border-gray-300" style={{ backgroundColor: product.color.startsWith('#') ? product.color : `#${product.color}` }} title={product.color} />
-          ) : null}
+          {(() => {
+            // Show a swatch only for real hex codes; otherwise the colour's name
+            const list = product.colors?.length ? product.colors : product.color ? [{ name: product.color, hexCode: product.color }] : [];
+            const hex = (v?: string) => {
+              const h = (v || '').replace('#', '').trim();
+              return /^([0-9a-f]{3}|[0-9a-f]{6})$/i.test(h) ? `#${h}` : null;
+            };
+            const swatches = list.map((c: any) => ({ name: c.name, hex: hex(c.hexCode) }));
+            if (!swatches.length) return null;
+            return (
+              <div className="mt-1 flex items-center gap-1.5">
+                {swatches.slice(0, 5).map((c: any, idx: number) => c.hex
+                  ? <span key={idx} className="h-3.5 w-3.5 rounded-full border border-black/10" style={{ backgroundColor: c.hex }} title={c.name} />
+                  : <span key={idx} className="text-xs capitalize text-gray-500 dark:text-gray-400">{c.name}{idx < Math.min(swatches.length, 5) - 1 ? ',' : ''}</span>)}
+              </div>
+            );
+          })()}
           <div className="mt-auto pt-3">
+{product.ratingCount > 0 && (
             <div className="flex items-center gap-1.5">
               <div className="flex">{[...Array(5)].map((_, i) => (
                 <svg key={i} className={`h-3.5 w-3.5 ${i < Math.round(product.rating) ? 'stars-filled' : 'stars-empty'}`} fill="currentColor" viewBox="0 0 20 20">
@@ -133,6 +139,7 @@ const ProductCard = React.memo(function ProductCard({ product, priority = false 
               ))}</div>
               <span className="text-xs text-gray-500 dark:text-gray-400">({product.ratingCount})</span>
             </div>
+            )}
             <div className="mt-2 flex items-baseline gap-2">
               <span className="text-lg font-bold text-primary-700 dark:text-primary-400 whitespace-nowrap">
                 {formatPrice(price)}

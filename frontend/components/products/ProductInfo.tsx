@@ -79,7 +79,7 @@ export default function ProductInfo({
 
       {/* Quantity Selector */}
       <div className="space-y-2">
-        <label className="text-sm font-semibold">Quantity (in meters)</label>
+        <label className="text-sm font-semibold">Quantity (in metres)</label>
         <div className="flex items-center gap-4">
           <input
             type="number"
@@ -95,7 +95,7 @@ export default function ProductInfo({
           </span>
         </div>
         <p className="text-xs text-gray-500">
-          Minimum order: {product.minOrderQty} meter(s)
+          Minimum order: {product.minOrderQty} metre(s)
         </p>
       </div>
 
@@ -120,8 +120,8 @@ export default function ProductInfo({
         <p className="text-sm">
           <span className="font-semibold">Stock Available:</span>{' '}
           {(product.totalStock ?? 0) > 10
-            ? `${product.totalStock ?? 0} meters`
-            : `Only ${product.totalStock ?? 0} meters left!`}
+            ? `${product.totalStock ?? 0} metres`
+            : `Only ${product.totalStock ?? 0} metres left!`}
         </p>
       </div>
 

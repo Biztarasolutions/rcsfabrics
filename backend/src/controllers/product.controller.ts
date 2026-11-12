@@ -357,7 +357,7 @@ export const getHomepageData = async (
       }),
       // Best sellers (products with most sales)
       prisma.product.findMany({
-        where: { isActive: true },
+        where: { isActive: true, orderItems: { some: {} } }, // only products that have actually sold
         take: limit,
         include: {
           images: { where: { isMain: true }, take: 1 },

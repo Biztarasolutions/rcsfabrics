@@ -30,7 +30,7 @@ export default function ProductFilters({ selectedCategory, onCategoryChange, onP
         ))}
       </div>
       <div className="border-t border-gray-100 pt-6 dark:border-dark-700">
-        <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-gray-900 dark:text-white">Price / Meter</h3>
+        <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-gray-900 dark:text-white">Price / Metre</h3>
         <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-2"><span>₹0</span><span>₹{maxPrice}</span></div>
         <input type="range" min={0} max={5000} step={100} value={maxPrice}
           onChange={(e) => { setMaxPrice(Number(e.target.value)); onPriceChange(0, Number(e.target.value)); }}

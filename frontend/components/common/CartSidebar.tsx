@@ -6,6 +6,7 @@ import { useCartStore } from '@/lib/store';
 import { formatPrice, productDisplayName } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
+import { supabaseImg } from '@/lib/image';
 
 export default function CartSidebar() {
   const { items, isOpen, closeCart, removeItem, updateQty, totalPrice } = useCartStore();
@@ -81,7 +82,7 @@ export default function CartSidebar() {
                           {/* Thumbnail */}
                           <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-dark-700">
                             {item.product.images?.[0] && (
-                              <Image src={item.product.images[0].url} alt={productDisplayName(item.product)}
+                              <Image src={supabaseImg(item.product.images[0].url, 200, 70, 'cover')} alt={productDisplayName(item.product)}
                                 fill sizes="64px" className="object-cover"/>
                             )}
                           </div>

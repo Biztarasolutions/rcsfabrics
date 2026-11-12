@@ -14,8 +14,13 @@ import NewsletterSignup from '@/components/common/NewsletterSignup';
 import Image from 'next/image';
 import WhyChoose from '@/components/home/WhyChoose';
 import sectionToggles from '@/config/sectionToggles.json';
+import { useHomepageData } from '@/hooks/useHomepageData';
+import { supabaseImg } from '@/lib/image';
 
 export default function HomePage() {
+  const { data: homepageData } = useHomepageData();
+  const bulkImage: string = [...(homepageData?.featured || []), ...(homepageData?.newArrivals || [])]
+    .map((p: any) => p?.images?.[0]?.url).filter(Boolean)[1] || '';
   return (
     <div className="overflow-hidden">
       <h1 className="sr-only">RCS Fabrics — premium dress fabrics sold by the metre</h1>
@@ -50,7 +55,7 @@ export default function HomePage() {
         header={
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }} className="text-center">
-            <span className="section-tag">⭐ Editor's Picks</span>
+            <span className="section-tag">Editor's Picks</span>
             <h2 className="section-title mt-3 font-display">Featured Fabrics</h2>
             <p className="section-subtitle">Hand-selected for exceptional quality and beauty</p>
           </motion.div>
@@ -63,20 +68,21 @@ export default function HomePage() {
       {/* 5. Promo Banner */}
       <section className="py-12 lg:py-16">
         <div className="container-main">
-          <motion.div initial={{ opacity: 0, scale: 0.98 }} whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            className="relative overflow-hidden rounded-3xl h-64 lg:h-80">
-            <Image src="https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=1600&q=80"
-              alt="Bulk Order Banner" fill sizes="100vw" className="object-cover object-top"/>
+          <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}
+            viewport={{ once: true }} transition={{ duration: 0.3 }}
+            className="relative overflow-hidden rounded-3xl h-64 lg:h-80 bg-[#2b2118]">
+            {bulkImage && (
+              <Image src={supabaseImg(bulkImage, 1600, 75, 'cover')} alt="" fill sizes="100vw" className="object-cover"/>
+            )}
             <div className="absolute inset-0 bg-gradient-to-r from-dark-900/90 to-dark-900/40"/>
             <div className="absolute inset-0 flex items-center">
               <div className="container-main">
                 <p className="text-sm font-semibold uppercase tracking-widest text-primary-400">Wholesale & Bulk</p>
                 <h3 className="mt-2 font-display text-3xl font-bold text-white lg:text-4xl">
-                  Need 50+ Meters?
+                  Buying 20+ metres?
                 </h3>
                 <p className="mt-2 max-w-md text-white/70">
-                  Get special pricing for bulk orders. Trusted by garment manufacturers across India.
+                  Special pricing for boutiques, tailors and resellers. Tell us what you need and we’ll send a quote.
                 </p>
                 <Link href="/contact#bulk"
                   className="mt-6 inline-flex items-center gap-2 rounded-xl bg-primary-500 px-6 py-3 text-sm font-semibold text-white hover:bg-primary-400 transition-colors">

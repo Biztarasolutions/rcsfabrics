@@ -41,7 +41,7 @@ export default function ContactPage() {
   );
 
   const faqs = [
-    { q: 'What is the minimum order quantity?', a: 'Minimum order is 0.5 meters for most fabrics. Some specialty fabrics require 1 meter minimum.' },
+    { q: 'What is the minimum order quantity?', a: 'Minimum order is 0.5 metres for most fabrics. Some specialty fabrics require 1 metre minimum.' },
     { q: 'Do you offer samples/swatches?', a: 'Yes! Request physical swatches before committing to a full order. Swatch requests are processed within 2-3 days.' },
     { q: 'How long does delivery take?', a: 'Usually dispatched in 1–2 business days and delivered in 2–5 business days. Free shipping on orders of ₹2,000 or more; ₹150 below that.' },
     { q: 'Can I return fabric?', a: 'We accept returns within 30 days for unused, uncut fabric in original condition. Cut fabric cannot be returned.' },
@@ -113,7 +113,7 @@ export default function ContactPage() {
               {activeForm === 'bulk' && (
                 <motion.form id="bulk" initial={{ opacity: 0 }} animate={{ opacity: 1 }} onSubmit={handleSubmit} className="relative space-y-4">
                   {honeypot}
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Need 20+ meters? Get special wholesale pricing. Fill out the form and we'll send a custom quote within 4 hours.</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Need 20+ metres? Get special wholesale pricing. Fill out the form and we'll send you a custom quote.</p>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div><label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Contact Name</label><input value={bulkForm.name} onChange={(e) => setBulkForm({ ...bulkForm, name: e.target.value })} required className="input-field" placeholder="Your name"/></div>
                     <div><label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Company</label><input value={bulkForm.company} onChange={(e) => setBulkForm({ ...bulkForm, company: e.target.value })} className="input-field" placeholder="Company name (optional)"/></div>
@@ -122,7 +122,7 @@ export default function ContactPage() {
                   </div>
                   <div><label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Fabric Required</label><input value={bulkForm.fabric} onChange={(e) => setBulkForm({ ...bulkForm, fabric: e.target.value })} required className="input-field" placeholder="Fabric name or description..."/></div>
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <div><label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Quantity (meters)</label><input type="number" min={20} value={bulkForm.quantity} onChange={(e) => setBulkForm({ ...bulkForm, quantity: e.target.value })} required className="input-field" placeholder="e.g. 100"/></div>
+                    <div><label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Quantity (metres)</label><input type="number" min={20} value={bulkForm.quantity} onChange={(e) => setBulkForm({ ...bulkForm, quantity: e.target.value })} required className="input-field" placeholder="e.g. 100"/></div>
                     <div><label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Required By</label><input type="date" value={bulkForm.deadline} onChange={(e) => setBulkForm({ ...bulkForm, deadline: e.target.value })} className="input-field"/></div>
                   </div>
                   <div><label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Additional Notes</label><textarea value={bulkForm.notes} onChange={(e) => setBulkForm({ ...bulkForm, notes: e.target.value })} rows={3} className="input-field resize-none" placeholder="Color preferences, special requirements..."/></div>

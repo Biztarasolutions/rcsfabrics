@@ -183,8 +183,8 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
     { label: 'Pattern', value: PRODUCT.pattern || 'N/A' },
     { label: 'Color', value: PRODUCT.color || 'N/A' },
     { label: 'Stretchability', value: PRODUCT.stretchability || 'N/A' },
-    { label: 'Min Order', value: `${minQty} meter` },
-    { label: 'Stock', value: `${stock} meters` },
+    { label: 'Min Order', value: `${minQty} metre` },
+    { label: 'Stock', value: `${stock} metres` },
   ];
 
   const handleAddToCart = () => {
@@ -298,7 +298,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
             {/* Price */}
             <div className="flex items-end gap-4">
               <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Price per meter</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Price per metre</p>
                 <p className="font-display text-4xl font-bold text-primary-700 dark:text-primary-400">{formatPrice(price)}</p>
               </div>
               {PRODUCT.discountPrice && (
@@ -343,7 +343,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
                       <span>⚠️</span> Only {stock}m left — order soon!
                     </p>
                   )}
-                  <label className="text-sm font-semibold text-gray-900 dark:text-white">Select Quantity (in meters)</label>
+                  <label className="text-sm font-semibold text-gray-900 dark:text-white">Select Quantity (in metres)</label>
                   <div className="mt-3 flex items-center gap-4">
                     <div className="flex items-center overflow-hidden rounded-xl border border-gray-200 dark:border-dark-700">
                       <button onClick={() => setQty(q => Math.max(minQty, parseFloat((q - 0.5).toFixed(1))))}

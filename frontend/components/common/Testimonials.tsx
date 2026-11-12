@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 
 const TESTIMONIALS = [
   { id: 1, name: 'Priya Sharma', role: 'Fashion Designer, Mumbai', avatar: 'PS', rating: 5, text: 'RCS Fabrics has been my go-to source for over 3 years. The Kanjivaram silks are absolutely authentic — my clients always notice the quality difference. Fast shipping and excellent customer service too!', product: 'Pure Kanjivaram Silk' },
-  { id: 2, name: 'Rahul Mehta', role: 'Boutique Owner, Delhi', avatar: 'RM', rating: 5, text: 'I order in bulk for my boutique every month. The quality is consistently premium and the variety is unmatched. The meter-wise selling is perfect for our customized garment needs.', product: 'Banarasi Brocade' },
+  { id: 2, name: 'Rahul Mehta', role: 'Boutique Owner, Delhi', avatar: 'RM', rating: 5, text: 'I order in bulk for my boutique every month. The quality is consistently premium and the variety is unmatched. The metre-wise selling is perfect for our customized garment needs.', product: 'Banarasi Brocade' },
   { id: 3, name: 'Ananya Iyer', role: 'Home Décor Enthusiast, Bangalore', avatar: 'AI', rating: 5, text: 'Ordered velvet for my home project and was blown away. The color accuracy in photos matches perfectly. The swatches helped me decide before committing to a full order.', product: 'Italian Velvet' },
   { id: 4, name: 'Kavitha Nair', role: 'Wedding Planner, Kerala', avatar: 'KN', rating: 5, text: 'Sourced bridal fabrics for 12 weddings this season. Every bride was happy with the quality. RCS is my secret weapon for sourcing premium fabrics at fair prices.', product: 'French Lace Organza' },
 ];

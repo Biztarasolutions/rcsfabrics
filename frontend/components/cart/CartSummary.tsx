@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
+import { supabaseImg } from '@/lib/image';
 import { CartItem } from '@/types';
 import { formatPrice } from '@/lib/utils';
 
@@ -21,7 +22,7 @@ export default function CartSummary({ items }: CartSummaryProps) {
           <div className="relative w-24 h-24 flex-shrink-0 bg-gray-100 rounded-lg dark:bg-dark-700 overflow-hidden">
             {item.product.images[0] && (
               <Image
-                src={item.product.images[0].url}
+                src={supabaseImg(item.product.images[0].url, 200, 70, 'cover')}
                 alt={item.product.name}
                 fill
                 className="object-cover"

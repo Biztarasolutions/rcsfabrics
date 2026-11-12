@@ -6,6 +6,7 @@ import { useCartStore, useStoresHydrated } from '@/lib/store';
 import { formatPrice, productDisplayName } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
+import { supabaseImg } from '@/lib/image';
 
 export default function CartPage() {
   const { items, removeItem, updateQty, clearCart, totalPrice } = useCartStore();
@@ -52,7 +53,7 @@ export default function CartPage() {
                     {/* Image */}
                     <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-gray-50 dark:bg-dark-700 sm:h-28 sm:w-28">
                       {item.product.images?.[0] && (
-                        <Image src={item.product.images[0].url} alt={productDisplayName(item.product)}
+                        <Image src={supabaseImg(item.product.images[0].url, 200, 70, 'cover')} alt={productDisplayName(item.product)}
                           fill sizes="112px" className="object-cover"/>
                       )}
                     </div>

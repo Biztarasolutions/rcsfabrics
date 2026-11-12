@@ -8,6 +8,7 @@ import { orderApi, publicApi, userApi } from '@/lib/api';
 import { formatPrice, productDisplayName } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
+import { supabaseImg, BLUR_PLACEHOLDER } from '@/lib/image';
 import { useQuery } from '@tanstack/react-query';
 
 const STEPS = ['Cart Review', 'Shipping Address', 'Payment'];
@@ -23,7 +24,7 @@ function OrderSummary({ items, subtotal, shipping, discount, total, coupon, setC
       <div className="mt-4 max-h-60 space-y-3 overflow-y-auto scrollbar-hide">
         {items.map((item) => (
           <div key={item.id} className="flex items-center gap-3">
-            <Image src={item.product.images?.[0]?.url || '/placeholder.png'} alt={productDisplayName(item.product)} width={48} height={48} className="rounded-lg object-cover"/>
+            <Image src={supabaseImg(item.product.images?.[0]?.url || '', 160, 70, 'cover') || BLUR_PLACEHOLDER} alt={productDisplayName(item.product)} width={48} height={48} className="rounded-lg object-cover"/>
             <div className="flex-1 min-w-0">
               <p className="truncate text-sm font-medium text-gray-900 dark:text-white">{productDisplayName(item.product)}</p>
               <p className="text-xs text-gray-500">{item.quantity}m</p>
@@ -462,7 +463,7 @@ export default function CheckoutPage() {
                 <div className="mt-4 space-y-4">
                   {items.map((item) => (
                     <div key={item.id} className="flex items-center gap-4 rounded-xl border border-gray-100 p-4 dark:border-dark-700">
-                      <Image src={item.product.images?.[0]?.url || '/placeholder.png'} alt={productDisplayName(item.product)} width={64} height={64} className="rounded-xl object-cover"/>
+                      <Image src={supabaseImg(item.product.images?.[0]?.url || '', 160, 70, 'cover') || BLUR_PLACEHOLDER} alt={productDisplayName(item.product)} width={64} height={64} className="rounded-xl object-cover"/>
                       <div className="flex-1">
                         <p className="font-semibold text-gray-900 dark:text-white">{productDisplayName(item.product)}</p>
                         <p className="text-sm text-gray-500">{item.quantity}m · {formatPrice(item.product.discountPrice || item.product.basePrice)}/m</p>
