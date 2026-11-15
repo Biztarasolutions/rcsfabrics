@@ -6,6 +6,7 @@ import { useThemeStore, rehydrateStores } from '@/lib/store';
 import CartSidebar from '@/components/common/CartSidebar';
 import WishlistSync from '@/components/common/WishlistSync';
 import CartSync from '@/components/common/CartSync';
+import UserSync from '@/components/common/UserSync';
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -39,6 +40,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       <ThemeApplier />
       <WishlistSync />
       <CartSync />
+      <UserSync />
       {children}
       <CartSidebar />
       <Toaster
