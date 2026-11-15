@@ -1,79 +1,73 @@
 'use client';
 
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import toast from 'react-hot-toast';
-import { publicApi } from '@/lib/api';
+import React from 'react';
+import { BUSINESS } from '@/lib/business';
+
+// "RCS Fabrics Club" — customers ask to join the WhatsApp group; the request
+// arrives in Mayank's WhatsApp as a ready-typed message.
+const JOIN_MESSAGE =
+  'Hi! I would like to join the WhatsApp group to get updated with latest stock and pricing.';
+
+const PERKS = [
+  { title: 'New stock first', text: 'Photos of fresh arrivals the day they land in the shop.' },
+  { title: 'Latest pricing', text: 'Current rates and any special offers, shared directly with members.' },
+  { title: 'Ask anytime', text: 'Reply in the chat to check a colour, length or availability.' },
+];
+
+const WaIcon = ({ className = 'h-5 w-5' }: { className?: string }) => (
+  <svg className={`${className} fill-current`} viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347M12.05 21.785h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+  </svg>
+);
 
 export default function NewsletterSignup() {
-  const [email, setEmail] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || loading) return;
-    setLoading(true);
-    try {
-      const res = await publicApi.sendEnquiry({ type: 'newsletter', email });
-      toast.success(res.data?.message || "You're subscribed!");
-      setEmail('');
-    } catch (err: any) {
-      toast.error(err?.message || 'Could not subscribe right now. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const href = `${BUSINESS.whatsapp}?text=${encodeURIComponent(JOIN_MESSAGE)}`;
 
   return (
-    <section className="relative overflow-hidden py-16 lg:py-24">
-      {/* Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary-50 to-secondary-50 dark:from-primary-950/30 dark:to-dark-900"/>
-      <div className="absolute inset-0 texture-overlay"/>
-
-      <div className="container-main relative z-10">
-        <div className="mx-auto max-w-2xl text-center">
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }} transition={{ duration: 0.6 }}>
-            <span className="section-tag">Stay in touch</span>
-            <h2 className="section-title mt-3 font-display">Join the RCS Fabrics Club</h2>
-            <p className="section-subtitle">
-              Get new fabric arrivals, member offers and styling ideas in your inbox.
-              Unsubscribe anytime.
+    <section id="club" className="scroll-mt-24 bg-[#faf6ee] py-16 dark:bg-dark-900 lg:py-24" aria-labelledby="club-title">
+      <div className="container-main">
+        <div className="grid items-center gap-10 overflow-hidden rounded-3xl border border-[#e6dccb] bg-white p-8 dark:border-dark-700 dark:bg-dark-800 sm:p-12 lg:grid-cols-2 lg:gap-16">
+          <div>
+            <span className="section-tag">RCS Fabrics Club · on WhatsApp</span>
+            <h2 id="club-title" className="mt-3 font-display text-3xl leading-tight text-gray-900 dark:text-white sm:text-4xl">
+              Join the RCS Fabrics Club
+            </h2>
+            <p className="mt-4 text-base leading-relaxed text-gray-600 dark:text-gray-300 sm:text-lg">
+              Get our latest stock and pricing straight on WhatsApp. Tap the button to send a request — Mayank will add you
+              to the club group.
             </p>
 
-            <form onSubmit={handleSubmit} className="mt-8 flex gap-3">
-              <input type="email" id="newsletter-email" value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email address"
-                required className="input-field flex-1" />
-              <button type="submit" disabled={loading}
-                className="button-luxury shrink-0 px-6 py-3 text-sm font-semibold">
-                {loading ? (
-                  <svg className="h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                  </svg>
-                ) : 'Subscribe'}
-              </button>
-            </form>
-
-            <p className="mt-4 text-xs text-gray-500 dark:text-gray-400">
-              No spam, ever. Unsubscribe anytime.
+            <a href={href} target="_blank" rel="noopener noreferrer"
+              className="mt-8 inline-flex items-center gap-2.5 rounded-xl bg-[#25D366] px-7 py-4 text-base font-semibold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-[#1fb658] active:scale-95">
+              <WaIcon />
+              Request to join on WhatsApp
+            </a>
+            <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
+              Opens WhatsApp with your request ready to send. Free to join — leave the group anytime.
             </p>
+          </div>
 
-            {/* Perks */}
-            <div className="mt-8 flex flex-wrap justify-center gap-4">
-              {['Early Access to New Arrivals', 'Member-only Offers', 'Styling Inspiration'].map((perk) => (
-                <span key={perk}
-                  className="flex items-center gap-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">
-                  <svg className="h-4 w-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/>
-                  </svg>
-                  {perk}
-                </span>
-              ))}
+          <div className="space-y-4">
+            {/* What the request looks like */}
+            <div className="rounded-2xl bg-[#ece5dd] p-4 dark:bg-dark-900">
+              <p className="text-center text-[11px] font-medium uppercase tracking-wider text-gray-500">Your request</p>
+              <div className="ml-auto mt-3 max-w-[90%] rounded-xl rounded-tr-sm bg-[#d9fdd3] px-4 py-2.5 text-sm text-gray-800 shadow-sm">
+                {JOIN_MESSAGE}
+              </div>
             </div>
-          </motion.div>
+
+            <ul className="divide-y divide-gray-100 rounded-2xl border border-gray-100 dark:divide-dark-700 dark:border-dark-700">
+              {PERKS.map((p) => (
+                <li key={p.title} className="flex gap-3 px-5 py-4">
+                  <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#c9a24e]" aria-hidden="true" />
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{p.title}</p>
+                    <p className="mt-0.5 text-sm text-gray-600 dark:text-gray-400">{p.text}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       </div>
     </section>
