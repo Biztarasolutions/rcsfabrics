@@ -171,7 +171,6 @@ export default function AdminDashboard() {
               { label: 'Add Product', href: '/admin/products', icon: '➕', color: 'bg-primary-500' },
               { label: 'Manage Orders', href: '/admin/orders', icon: '📋', color: 'bg-blue-500' },
               { label: 'Analytics', href: '/admin/analytics', icon: '📈', color: 'bg-violet-500' },
-              { label: 'Settings', href: '/admin/settings', icon: '⚙️', color: 'bg-gray-500' },
             ].map((action: any) => (
               <Link key={action.label} href={action.href}
                 className="flex items-center gap-3 rounded-xl border border-gray-100 p-3 hover:bg-gray-50 dark:border-dark-700 dark:hover:bg-dark-700 transition-colors">
