@@ -418,6 +418,8 @@ enum UserRole {
   CUSTOMER
   ADMIN
   VENDOR
+  SUPER_ADMIN
+  EMPLOYEE
 }
 
 enum OrderStatus {

@@ -7,7 +7,7 @@ export interface User {
   firstName?: string;
   lastName?: string;
   phone?: string;
-  role: 'CUSTOMER' | 'ADMIN' | 'VENDOR';
+  role: 'CUSTOMER' | 'ADMIN' | 'VENDOR' | 'SUPER_ADMIN' | 'EMPLOYEE';
   isVerified: boolean;
 }
 

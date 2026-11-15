@@ -39,7 +39,10 @@ function parseAddress(raw: any) {
 export default function AdminOrdersPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
-  const [filterStatus, setFilterStatus] = useState('');
+  // '' = active orders (not cancelled), 'ALL' = everything incl. cancelled, or one status
+  const [filterStatus, setFilterStatus] = useState(() =>
+    typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('status') || '' : ''
+  );
   const [page, setPage] = useState(1);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
 
@@ -100,8 +103,9 @@ export default function AdminOrdersPage() {
         </div>
         <select value={filterStatus} onChange={(e) => { setFilterStatus(e.target.value); setPage(1); }}
           className="input-field w-44 py-2.5">
-          <option value="">All Status</option>
-          {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+          <option value="">Active orders</option>
+          <option value="ALL">All orders (incl. cancelled)</option>
+          {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s === 'CANCELLED' ? 'Cancelled' : s.charAt(0) + s.slice(1).toLowerCase()}</option>)}
         </select>
         {(filterStatus || search) && (
           <button onClick={() => { setFilterStatus(''); setSearch(''); setPage(1); }}

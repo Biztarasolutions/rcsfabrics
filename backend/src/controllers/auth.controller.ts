@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { effectiveRole } from '@/utils/roles';
 import { customerCode, phoneUsedByOther, recordPhone } from '@/utils/customer';
 import { Response } from 'express';
 import { prisma } from '@/index';
@@ -385,7 +386,7 @@ export const register = async (
       data: { userId: user.id },
     });
 
-    const token = generateToken(user.id, user.email, user.role);
+    const token = generateToken(user.id, user.email, effectiveRole(user));
 
     res.status(201).json({
       success: true,
@@ -399,7 +400,7 @@ export const register = async (
           lastName: user.lastName,
           phone: user.phone,
           phoneVerified: user.phoneVerified,
-          role: user.role,
+          role: effectiveRole(user),
         },
         token,
       },
@@ -500,7 +501,7 @@ export const login = async (
       throw new ApiError(400, 'Password or OTP is required to sign in');
     }
 
-    const token = generateToken(user.id, user.email, user.role);
+    const token = generateToken(user.id, user.email, effectiveRole(user));
 
     res.json({
       success: true,
@@ -513,7 +514,7 @@ export const login = async (
           firstName: user.firstName,
           lastName: user.lastName,
           phone: user.phone,
-          role: user.role,
+          role: effectiveRole(user),
         },
         token,
       },
@@ -688,7 +689,7 @@ export const me = async (
     res.json({
       success: true,
       message: 'User profile retrieved',
-      data: { ...profile, customerId: customerCode(customerNumber) },
+      data: { ...profile, role: effectiveRole(profile), customerId: customerCode(customerNumber) },
       statusCode: 200,
     } as ApiResponse);
   } catch (error) {

@@ -1,0 +1,3 @@
+-- Staff roles: super admin decides who is ADMIN / EMPLOYEE / CUSTOMER
+ALTER TYPE "UserRole" ADD VALUE IF NOT EXISTS 'SUPER_ADMIN';
+ALTER TYPE "UserRole" ADD VALUE IF NOT EXISTS 'EMPLOYEE';

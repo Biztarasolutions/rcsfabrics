@@ -6,19 +6,26 @@ import BrandLogo from '@/components/common/BrandLogo';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/store';
 import { queryClient } from '@/components/common/Providers';
+import { useQuery } from '@tanstack/react-query';
+import { adminApi } from '@/lib/api';
+import { isStaff, isManager, ROLE_LABEL, type Role } from '@/lib/roles';
+import { useStoresHydrated } from '@/lib/store';
 
+// `insights: true` = only admins and the super admin (employees don't see revenue, orders or customers)
 const NAV = [
-  { label: 'Dashboard', href: '/admin', icon: '📊' },
+  { label: 'Dashboard', href: '/admin', icon: '📊', insights: true },
   { label: 'Products', href: '/admin/products', icon: '🧵' },
-  { label: 'Orders', href: '/admin/orders', icon: '📦' },
-  { label: 'Customers', href: '/admin/customers', icon: '👥' },
+  { label: 'Orders', href: '/admin/orders', icon: '📦', insights: true },
+  { label: 'Customers', href: '/admin/customers', icon: '👥', insights: true },
   { label: 'Categories', href: '/admin/categories', icon: '🗂️' },
   { label: 'Banners', href: '/admin/banners', icon: '🖼️' },
   { label: 'Coupons', href: '/admin/coupons', icon: '🎟️' },
-  { label: 'Analytics', href: '/admin/analytics', icon: '📈' },
-  { label: 'Cancelled Orders', href: '/admin/cancelled-orders', icon: '❌' },
+  { label: 'Analytics', href: '/admin/analytics', icon: '📈', insights: true },
   { label: 'Settings', href: '/admin/settings', icon: '⚙️' },
 ];
+
+// Pages employees may not open (also covers pages not in the menu)
+const INSIGHT_PATHS = ['/admin', '/admin/orders', '/admin/customers', '/admin/analytics', '/admin/reports', '/admin/cancelled-orders', '/admin/users'];
 
 const SIDEBAR_COLLAPSED_KEY = 'admin-sidebar-collapsed';
 
@@ -30,6 +37,26 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const hydrated = useStoresHydrated();
+
+  // Current role straight from the server, so changes by the super admin apply at once
+  const { data: role, isLoading: roleLoading, isError: roleError } = useQuery({
+    queryKey: ['admin-me', user?.id],
+    queryFn: () => adminApi.getMyRole().then((r) => r.data?.data?.role as Role),
+    enabled: hydrated && !!user,
+    retry: false,
+    staleTime: 60 * 1000,
+  });
+  const nav = NAV.filter((n) => !n.insights || isManager(role));
+  const blockedHere = !!role && !isManager(role) && INSIGHT_PATHS.includes(pathname || '');
+
+  useEffect(() => {
+    if (!hydrated) return;
+    if (!user) { router.replace('/auth?next=/admin'); return; }
+    if (roleError || (role && !isStaff(role))) { router.replace('/'); return; }
+    // Employees land on Products instead of the dashboard
+    if (blockedHere) router.replace('/admin/products');
+  }, [hydrated, user, role, roleError, blockedHere, router]);
 
   const handleLogout = () => {
     logout();
@@ -61,17 +88,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   };
 
   const currentLabel = NAV.find((n) => n.href === pathname)?.label || 'Admin';
+  const homeHref = isManager(role) ? '/admin' : '/admin/products';
 
   const SidebarContent = ({ showLabels }: { showLabels: boolean }) => (
     <>
       <div className={`flex h-16 items-center border-b border-gray-200 dark:border-dark-800 ${showLabels ? 'justify-between px-4' : 'justify-center px-2'}`}>
         {showLabels ? (
-          <Link href="/admin" className="flex min-w-0 items-center gap-2">
+          <Link href={homeHref} className="flex min-w-0 items-center gap-2">
             <BrandLogo height={34} />
             <span className="truncate rounded-md bg-primary-50 px-2 py-0.5 text-xs font-semibold uppercase tracking-wider text-primary-700 dark:bg-primary-950/40 dark:text-primary-300">Admin</span>
           </Link>
         ) : (
-          <Link href="/admin" title="Admin home" className="flex h-8 w-8 items-center justify-center">
+          <Link href={homeHref} title="Admin home" className="flex h-8 w-8 items-center justify-center">
             <img src="/brand/icon-192.png" alt="RCS Fabrics" width={32} height={32} className="h-8 w-8 rounded-lg" />
           </Link>
         )}
@@ -91,7 +119,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto p-2">
-        {NAV.map((item) => {
+        {nav.map((item) => {
           const active = pathname === item.href;
           return (
             <Link
@@ -212,6 +240,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <div className="px-3 py-2 mb-1 border-b border-gray-100 dark:border-dark-700">
                   <p className="text-xs font-semibold text-gray-900 dark:text-white">{user?.firstName} {user?.lastName}</p>
                   <p className="text-xs text-gray-400 truncate">{user?.email}</p>
+                  {role && <p className="mt-1 inline-block rounded-md bg-primary-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary-700 dark:bg-primary-950/40 dark:text-primary-300">{ROLE_LABEL[role] || role}</p>}
                 </div>
                 <Link href="/account" onClick={() => setUserMenuOpen(false)}
                   className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-dark-700 transition-colors">
@@ -235,7 +264,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </header>
 
         <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6">
-          <div className="min-w-0 w-full max-w-full">{children}</div>
+          <div className="min-w-0 w-full max-w-full">
+            {!hydrated || roleLoading || !role || !isStaff(role) || blockedHere ? (
+              <div className="flex h-64 items-center justify-center">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-600 border-t-transparent" />
+              </div>
+            ) : children}
+          </div>
         </main>
       </div>
     </div>

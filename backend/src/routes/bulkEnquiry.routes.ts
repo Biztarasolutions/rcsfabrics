@@ -1,10 +1,9 @@
 import { Router } from 'express';
-import { authorizeRole } from '@/middleware/auth';
 import { getBulkEnquiries } from '@/controllers/bulkEnquiry.controller';
 
 const router = Router();
 
-// All routes under /admin/bulk-enquiries are admin only
-router.get('/', authorizeRole(['ADMIN']), getBulkEnquiries);
+// Mounted under /admin/bulk-enquiries, which already allows admins and the super admin only
+router.get('/', getBulkEnquiries);
 
 export default router;

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authorizeRole } from '@/middleware/auth';
+import { loadCurrentRole, allowRoles, STAFF, MANAGERS } from '@/utils/roles';
 import {
   createProduct,
   updateProduct,
@@ -31,14 +31,23 @@ import {
   updateSetting,
   getAnalytics,
   migrateProductCodes,
+  getMyRole,
+  setUserRole,
 } from '@/controllers/admin.controller';
 import bulkEnquiryRouter from '@/routes/bulkEnquiry.routes';
 import { createProductGroup } from '@/controllers/productGroupController';
 
 const router = Router();
 
-// Admin middleware
-router.use(authorizeRole(['ADMIN']));
+// Staff only (super admin, admin, employee). Role is re-read from the database each request.
+router.use(loadCurrentRole, allowRoles(STAFF));
+const managers = allowRoles(MANAGERS); // insights: orders, customers, dashboard, analytics, enquiries
+const superAdmin = allowRoles(['SUPER_ADMIN']);
+
+router.get('/me', getMyRole);
+
+// User roles — super admin only
+router.patch('/users/:id/role', superAdmin, setUserRole);
 
 // Product Management
 router.post('/products/group', createProductGroup);
@@ -55,17 +64,17 @@ router.get('/inventory', getInventory);
 router.patch('/products/:id/stock', adjustStock);
 
 // Order Management
-router.get('/orders/cancelled', getCancelledOrders);
-router.get('/orders', getOrders);
-router.put('/orders/:id', updateOrderStatus);
+router.get('/orders/cancelled', managers, getCancelledOrders);
+router.get('/orders', managers, getOrders);
+router.put('/orders/:id', managers, updateOrderStatus);
 
 // Customer Management
-router.get('/customers', getCustomers);
-router.get('/customers/:id', getCustomerDetail);
+router.get('/customers', managers, getCustomers);
+router.get('/customers/:id', managers, getCustomerDetail);
 
 // Dashboard
-router.get('/dashboard/stats', getDashboardStats);
-router.get('/analytics', getAnalytics);
+router.get('/dashboard/stats', managers, getDashboardStats);
+router.get('/analytics', managers, getAnalytics);
 
 // Coupon Management
 router.get('/coupons', getCoupons);
@@ -89,5 +98,5 @@ router.delete('/banners/:id', deleteBanner);
 router.get('/settings', getSettings);
 router.put('/settings/:key', updateSetting);
 
-router.use('/bulk-enquiries', bulkEnquiryRouter);
+router.use('/bulk-enquiries', managers, bulkEnquiryRouter);
 export default router;

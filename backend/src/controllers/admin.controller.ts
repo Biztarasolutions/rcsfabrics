@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { customerCode } from '@/utils/customer';
 import { prisma } from '@/index';
+import { isManager, isStaff, effectiveRole, isSuperAdminEmail, ASSIGNABLE_ROLES } from '@/utils/roles';
 import { AuthRequest, ApiResponse } from '@/types';
 import {
   generateSlug,
@@ -290,7 +291,7 @@ export const createProduct = async (
   res: Response
 ): Promise<void> => {
   try {
-    if (!req.user || req.user.role !== 'ADMIN') {
+    if (!req.user || !isStaff(req.user.role)) {
       throw new ApiError(403, 'Only admins can create products');
     }
 
@@ -454,7 +455,7 @@ export const updateProduct = async (
   res: Response
 ): Promise<void> => {
   try {
-    if (!req.user || req.user.role !== 'ADMIN') {
+    if (!req.user || !isStaff(req.user.role)) {
       throw new ApiError(403, 'Only admins can update products');
     }
 
@@ -716,7 +717,7 @@ export const deleteProduct = async (
   res: Response
 ): Promise<void> => {
   try {
-    if (!req.user || req.user.role !== 'ADMIN') {
+    if (!req.user || !isStaff(req.user.role)) {
       throw new ApiError(403, 'Only admins can delete products');
     }
 
@@ -776,7 +777,7 @@ export const getAdminProducts = async (
   res: Response
 ): Promise<void> => {
   try {
-    if (!req.user || req.user.role !== 'ADMIN') {
+    if (!req.user || !isStaff(req.user.role)) {
       throw new ApiError(403, 'Only admins can access this');
     }
 
@@ -913,7 +914,7 @@ export const getAdminOrders = async (
   res: Response
 ): Promise<void> => {
   try {
-    if (!req.user || req.user.role !== 'ADMIN') {
+    if (!req.user || !isManager(req.user.role)) {
       throw new ApiError(403, 'Only admins can access this');
     }
 
@@ -996,7 +997,7 @@ export const getCancelledOrders = async (
   res: Response
 ): Promise<void> => {
   try {
-    if (!req.user || req.user.role !== 'ADMIN') throw new ApiError(403, 'Forbidden');
+    if (!req.user || !isManager(req.user.role)) throw new ApiError(403, 'Forbidden');
 
     const { page, limit } = req.query;
     const { page: parsedPage, limit: parsedLimit, skip } = parsePagination(page as string, limit as string);
@@ -1072,7 +1073,7 @@ export const updateOrderStatus = async (
   res: Response
 ): Promise<void> => {
   try {
-    if (!req.user || req.user.role !== 'ADMIN') {
+    if (!req.user || !isManager(req.user.role)) {
       throw new ApiError(403, 'Only admins can update orders');
     }
 
@@ -1147,7 +1148,7 @@ export const getDashboardStats = async (
   res: Response
 ): Promise<void> => {
   try {
-    if (!req.user || req.user.role !== 'ADMIN') {
+    if (!req.user || !isManager(req.user.role)) {
       throw new ApiError(403, 'Only admins can access this');
     }
 
@@ -1195,7 +1196,7 @@ export const getDashboardStats = async (
 
 export const getAnalytics = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    if (!req.user || req.user.role !== 'ADMIN') throw new ApiError(403, 'Forbidden');
+    if (!req.user || !isManager(req.user.role)) throw new ApiError(403, 'Forbidden');
 
     const { from, to, status } = req.query as { from?: string; to?: string; status?: string };
 
@@ -1676,7 +1677,7 @@ export const deleteCategory = async (
   res: Response
 ): Promise<void> => {
   try {
-    if (!req.user || req.user.role !== 'ADMIN') {
+    if (!req.user || !isStaff(req.user.role)) {
       throw new ApiError(403, 'Only admins can delete categories');
     }
 
@@ -1729,7 +1730,7 @@ export const getCustomerDetail = async (
   res: Response
 ): Promise<void> => {
   try {
-    if (!req.user || req.user.role !== 'ADMIN') throw new ApiError(403, 'Forbidden');
+    if (!req.user || !isManager(req.user.role)) throw new ApiError(403, 'Forbidden');
     const { id } = req.params;
 
     const customer = await prisma.user.findUnique({
@@ -1794,12 +1795,15 @@ export const getCustomerDetail = async (
 };
 
 export const getCustomers = async (
-  _req: AuthRequest,
+  req: AuthRequest,
   res: Response
 ): Promise<void> => {
   try {
-    const customers = await prisma.user.findMany({
-      where: { role: 'CUSTOMER' },
+    // Super admin sees everyone (customers, employees, admins) and can filter by role;
+    // admins see customers only.
+    const isSuper = req.user?.role === 'SUPER_ADMIN';
+    const users = await prisma.user.findMany({
+      where: isSuper ? {} : { role: 'CUSTOMER' },
       select: {
         id: true,
         customerNumber: true,
@@ -1807,6 +1811,7 @@ export const getCustomers = async (
         lastName: true,
         email: true,
         phone: true,
+        role: true,
         createdAt: true,
         isActive: true,
         _count: {
@@ -1821,18 +1826,22 @@ export const getCustomers = async (
       orderBy: { createdAt: 'desc' },
     });
 
-    const formattedCustomers = customers.map((c) => ({
-      id: c.id,
-      customerId: customerCode(c.customerNumber),
-      name: `${c.firstName || ''} ${c.lastName || ''}`.trim() || 'Guest User',
-      email: c.email,
-      phone: c.phone || 'N/A',
-      orders: c._count.orders,
-      spent: c.orders.reduce((s, o) => s + (o.total || 0), 0),
-      joined: c.createdAt,
-      lastSeen: c.orders[0]?.createdAt || c.createdAt,
-      status: c.isActive ? 'Active' : 'Inactive',
-    }));
+    const formattedCustomers = users
+      .map((c) => ({
+        id: c.id,
+        customerId: customerCode(c.customerNumber),
+        name: `${c.firstName || ''} ${c.lastName || ''}`.trim() || 'Guest User',
+        email: c.email,
+        phone: c.phone || 'N/A',
+        role: effectiveRole(c),
+        orders: c._count.orders,
+        spent: c.orders.reduce((s, o) => s + (o.total || 0), 0),
+        joined: c.createdAt,
+        lastSeen: c.orders[0]?.createdAt || c.createdAt,
+        status: c.isActive ? 'Active' : 'Inactive',
+      }))
+      // an admin never sees staff, even if a super-admin email is stored as CUSTOMER
+      .filter((c) => isSuper || c.role === 'CUSTOMER');
 
     res.json({
       success: true,
@@ -1842,6 +1851,35 @@ export const getCustomers = async (
     } as ApiResponse);
   } catch (error) {
     res.status(500).json({ success: false, message: 'Internal server error', statusCode: 500 } as ApiResponse);
+  }
+};
+
+/** GET /admin/me — the signed-in staff member's current role (re-read from the database) */
+export const getMyRole = async (req: AuthRequest, res: Response): Promise<void> => {
+  res.json({ success: true, data: { role: req.user?.role }, statusCode: 200 } as ApiResponse);
+};
+
+/** PATCH /admin/users/:id/role — super admin only: set ADMIN, EMPLOYEE or CUSTOMER */
+export const setUserRole = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const role = String(req.body?.role || '').toUpperCase();
+    if (!ASSIGNABLE_ROLES.includes(role as any)) throw new ApiError(400, 'Role must be Admin, Employee or Customer');
+    const target = await prisma.user.findUnique({ where: { id: req.params.id }, select: { id: true, email: true } });
+    if (!target) throw new ApiError(404, 'User not found');
+    if (isSuperAdminEmail(target.email)) throw new ApiError(400, 'The super admin role cannot be changed');
+    const updated = await prisma.user.update({
+      where: { id: target.id },
+      data: { role: role as any },
+      select: { id: true, email: true, role: true },
+    });
+    res.json({ success: true, message: `Role updated to ${role.toLowerCase()}`, data: updated, statusCode: 200 } as ApiResponse);
+  } catch (error) {
+    if (error instanceof ApiError) {
+      res.status(error.statusCode).json({ success: false, message: error.message, statusCode: error.statusCode } as ApiResponse);
+    } else {
+      console.error('[Admin] setUserRole failed:', error);
+      res.status(500).json({ success: false, message: 'Could not update the role', statusCode: 500 } as ApiResponse);
+    }
   }
 };
 
@@ -1909,7 +1947,7 @@ export const syncProductImages = async (
   res: Response
 ): Promise<void> => {
   try {
-    if (!req.user || req.user.role !== 'ADMIN') {
+    if (!req.user || !isStaff(req.user.role)) {
       throw new ApiError(403, 'Only admins can sync product images');
     }
 
@@ -1962,7 +2000,7 @@ export const syncAllProductImages = async (
   res: Response
 ): Promise<void> => {
   try {
-    if (!req.user || req.user.role !== 'ADMIN') {
+    if (!req.user || !isStaff(req.user.role)) {
       throw new ApiError(403, 'Only admins can sync all product images');
     }
 

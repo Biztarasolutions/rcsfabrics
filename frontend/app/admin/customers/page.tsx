@@ -1,7 +1,10 @@
 'use client';
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
+import { useAuthStore } from '@/lib/store';
+import { ROLE_LABEL, type Role } from '@/lib/roles';
 import { adminApi } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
 import Image from 'next/image';
@@ -199,15 +202,63 @@ function CustomerDrawer({ customer, onClose }: { customer: any; onClose: () => v
   );
 }
 
+const ROLE_BADGE: Record<string, string> = {
+  SUPER_ADMIN: 'bg-primary-100 text-primary-800 dark:bg-primary-950/50 dark:text-primary-300',
+  ADMIN: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+  EMPLOYEE: 'bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-300',
+  CUSTOMER: 'bg-gray-100 text-gray-600 dark:bg-dark-700 dark:text-gray-400',
+};
+const ROLE_FILTERS: { key: string; label: string }[] = [
+  { key: 'ALL', label: 'Everyone' },
+  { key: 'CUSTOMER', label: 'Customers' },
+  { key: 'EMPLOYEE', label: 'Employees' },
+  { key: 'ADMIN', label: 'Admins' },
+];
+
 export default function AdminCustomersPage() {
+  const queryClient = useQueryClient();
+  const userId = useAuthStore((s) => s.user?.id);
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('spent');
+  const [roleFilter, setRoleFilter] = useState('ALL');
   const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
 
-  const { data: customers = [] } = useQuery({
+  const { data: myRole } = useQuery({
+    queryKey: ['admin-me', userId],
+    queryFn: () => adminApi.getMyRole().then((r) => r.data?.data?.role as Role),
+    staleTime: 60 * 1000,
+  });
+  const isSuper = myRole === 'SUPER_ADMIN';
+
+  const { data: allUsers = [] } = useQuery({
     queryKey: ['admin-customers'],
     queryFn: () => adminApi.getCustomers().then(res => res.data.data || []),
   });
+
+  const roleMutation = useMutation({
+    mutationFn: ({ id, role }: { id: string; role: 'ADMIN' | 'EMPLOYEE' | 'CUSTOMER' }) => adminApi.setUserRole(id, role),
+    onSuccess: (_, { role }) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-customers'] });
+      toast.success(`Role changed to ${ROLE_LABEL[role]}`);
+    },
+    onError: (err: any) => toast.error(err?.message || 'Could not change the role'),
+  });
+
+  const changeRole = (c: any, role: 'ADMIN' | 'EMPLOYEE' | 'CUSTOMER') => {
+    if (role === c.role) return;
+    const what = role === 'ADMIN'
+      ? 'Admins can see everything in the admin panel, including orders, customers and revenue.'
+      : role === 'EMPLOYEE'
+        ? 'Employees can manage products, stock, categories, banners and coupons, but cannot see orders, customers or revenue.'
+        : 'Customers have no access to the admin panel.';
+    if (!window.confirm(`Make ${c.name} (${c.email}) ${ROLE_LABEL[role].toLowerCase()}?\n\n${what}`)) return;
+    roleMutation.mutate({ id: c.id, role });
+  };
+
+  const roleCount = (k: string) => (k === 'ALL' ? allUsers.length : allUsers.filter((c: any) => (c.role || 'CUSTOMER') === k || (k === 'ADMIN' && c.role === 'SUPER_ADMIN')).length);
+  const customers = isSuper && roleFilter !== 'ALL'
+    ? allUsers.filter((c: any) => (c.role || 'CUSTOMER') === roleFilter || (roleFilter === 'ADMIN' && c.role === 'SUPER_ADMIN'))
+    : allUsers;
 
   let filtered = customers.filter((c: any) =>
     c.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -227,13 +278,26 @@ export default function AdminCustomersPage() {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Customers</h2>
-        <p className="text-sm text-gray-500">{totalCustomers} registered customers</p>
+        <p className="text-sm text-gray-500">
+          {isSuper ? `${totalCustomers} ${roleFilter === 'ALL' ? 'accounts' : ROLE_FILTERS.find((r) => r.key === roleFilter)?.label.toLowerCase()} · you decide who is admin, employee or customer` : `${totalCustomers} registered customers`}
+        </p>
       </div>
+
+      {isSuper && (
+        <div className="flex flex-wrap gap-2">
+          {ROLE_FILTERS.map((r) => (
+            <button key={r.key} type="button" onClick={() => setRoleFilter(r.key)}
+              className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${roleFilter === r.key ? 'border-primary-700 bg-primary-700 text-white' : 'border-gray-200 bg-white text-gray-700 hover:border-primary-300 dark:border-dark-600 dark:bg-dark-800 dark:text-gray-300'}`}>
+              {r.label} <span className="opacity-70">({roleCount(r.key)})</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-3">
         {[
-          { label: 'Total Customers', value: totalCustomers, icon: '👥' },
+          { label: isSuper && roleFilter !== 'CUSTOMER' ? 'Accounts' : 'Total Customers', value: totalCustomers, icon: '👥' },
           { label: 'Total Revenue', value: formatPrice(totalRevenue), icon: '💰' },
           { label: 'Avg Order Value', value: formatPrice(Math.round(avgOrderValue)), icon: '📊' },
         ].map((s) => (
@@ -273,6 +337,7 @@ export default function AdminCustomersPage() {
                 <th className="px-5 py-4">Total Spent</th>
                 <th className="px-5 py-4 hidden md:table-cell">Joined</th>
                 <th className="px-5 py-4 hidden lg:table-cell">Last Order</th>
+                {isSuper && <th className="px-5 py-4">Role</th>}
                 <th className="px-5 py-4">Status</th>
                 <th className="px-5 py-4 text-right">Action</th>
               </tr>
@@ -309,6 +374,24 @@ export default function AdminCustomersPage() {
                       </>
                     ) : '—'}
                   </td>
+                  {isSuper && (
+                    <td className="px-5 py-4" onClick={(e) => e.stopPropagation()}>
+                      {customer.role === 'SUPER_ADMIN' ? (
+                        <span className={`badge ${ROLE_BADGE.SUPER_ADMIN}`}>Super admin</span>
+                      ) : (
+                        <select
+                          value={customer.role || 'CUSTOMER'}
+                          disabled={roleMutation.isPending}
+                          onChange={(e) => changeRole(customer, e.target.value as any)}
+                          aria-label={`Role for ${customer.name}`}
+                          className={`cursor-pointer rounded-lg border-0 px-2 py-1 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary-500/30 ${ROLE_BADGE[customer.role || 'CUSTOMER']}`}>
+                          <option value="CUSTOMER">Customer</option>
+                          <option value="EMPLOYEE">Employee</option>
+                          <option value="ADMIN">Admin</option>
+                        </select>
+                      )}
+                    </td>
+                  )}
                   <td className="px-5 py-4">
                     <span className={`badge ${customer.status === 'Active' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-600 dark:bg-dark-700 dark:text-gray-400'}`}>
                       {customer.status}
@@ -327,7 +410,7 @@ export default function AdminCustomersPage() {
           </table>
         </div>
         {filtered.length === 0 && (
-          <div className="py-12 text-center text-gray-500">No customers found</div>
+          <div className="py-12 text-center text-gray-500">{isSuper && roleFilter !== 'ALL' && roleFilter !== 'CUSTOMER' ? 'No one has this role yet' : 'No customers found'}</div>
         )}
       </div>
 

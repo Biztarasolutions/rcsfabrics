@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { isStaff } from '@/lib/roles';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { authApi } from '@/lib/api';
@@ -37,7 +38,7 @@ export default function LoginForm() {
       toast.success(`Welcome back, ${user.firstName}!`);
       
       // Redirect to home or dashboard
-      if (user.role === 'ADMIN') {
+      if (isStaff(user.role)) {
         router.push('/admin');
       } else {
         router.push('/');

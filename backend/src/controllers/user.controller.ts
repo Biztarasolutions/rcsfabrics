@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import { effectiveRole } from '@/utils/roles';
 import { customerCode, normalizePhone, phoneUsedByOther, recordPhone } from '@/utils/customer';
 import { prisma } from '@/index';
 import { AuthRequest, ApiResponse } from '@/types';
@@ -58,7 +59,7 @@ export const updateProfile = async (
     res.json({
       success: true,
       message: 'Profile updated successfully',
-      data: { ...rest, customerId: customerCode(customerNumber) },
+      data: { ...rest, role: effectiveRole(rest), customerId: customerCode(customerNumber) },
       statusCode: 200,
     } as ApiResponse);
   } catch (error) {

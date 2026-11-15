@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { isManager } from '@/utils/roles';
 import { prisma } from '@/index';
 import { ApiError } from '@/middleware/errorHandler';
 import { ApiResponse } from '@/types';
@@ -12,7 +13,7 @@ export const getBulkEnquiries = async (req: Request, res: Response): Promise<voi
   try {
     // @ts-ignore - assume user added by auth middleware
     const user = (req as any).user;
-    if (!user || user.role !== 'ADMIN') {
+    if (!user || !isManager(user.role)) {
       throw new ApiError(403, 'Only admins can access bulk enquiries');
     }
     const { page = '1', limit = '20', search = '' } = req.query as any;
