@@ -2109,3 +2109,48 @@ export const migrateProductCodes = async (_req: AuthRequest, res: Response): Pro
 
 
 
+
+
+// ── History (activity log) ───────────────────────────────────────────────
+/** GET /admin/history?page=&limit=&entity=&q=&from=&to= — newest first */
+export const getHistory = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 50));
+    const entity = String(req.query.entity || '');
+    const q = String(req.query.q || '').trim();
+    const where: any = {};
+    if (entity && entity !== 'ALL') where.entity = entity;
+    if (q) where.details = { contains: q, mode: 'insensitive' };
+    const from = req.query.from ? new Date(String(req.query.from)) : null;
+    const to = req.query.to ? new Date(String(req.query.to)) : null;
+    if ((from && !isNaN(+from)) || (to && !isNaN(+to))) {
+      where.createdAt = {};
+      if (from && !isNaN(+from)) where.createdAt.gte = from;
+      if (to && !isNaN(+to)) where.createdAt.lte = to;
+    }
+    const [rows, total] = await Promise.all([
+      prisma.activityLog.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (page - 1) * limit, take: limit }),
+      prisma.activityLog.count({ where }),
+    ]);
+    const items = rows.map((r) => {
+      let d: any = {};
+      try { d = r.details ? JSON.parse(r.details) : {}; } catch { d = { summary: r.details }; }
+      return {
+        id: r.id,
+        action: r.action,
+        entity: r.entity,
+        entityId: r.entityId,
+        summary: d.summary || r.action,
+        actorName: d.actorName || null,
+        actorEmail: d.actorEmail || null,
+        actorRole: d.actorRole || null,
+        createdAt: r.createdAt,
+      };
+    });
+    res.json({ success: true, data: { items, total, page, pages: Math.max(1, Math.ceil(total / limit)) }, statusCode: 200 } as ApiResponse);
+  } catch (error) {
+    console.error('[History] list failed:', error);
+    res.status(500).json({ success: false, message: 'Could not load history', statusCode: 500 } as ApiResponse);
+  }
+};

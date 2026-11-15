@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { effectiveRole } from '@/utils/roles';
+import { logActivity } from '@/utils/activity';
 import { customerCode, phoneUsedByOther, recordPhone } from '@/utils/customer';
 import { Response } from 'express';
 import { prisma } from '@/index';
@@ -379,6 +380,18 @@ export const register = async (
     });
 
     await recordPhone(user.id, normalizedPhone);
+    logActivity({
+      userId: user.id,
+      action: 'CUSTOMER_SIGNED_UP',
+      entity: 'User',
+      entityId: user.id,
+      details: {
+        summary: `New customer signed up: ${`${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email} (${user.email}) · ${customerCode(user.customerNumber)}`,
+        actorName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email,
+        actorEmail: user.email,
+        actorRole: 'CUSTOMER',
+      },
+    });
 
     // Update OTP record with actual userId
     await prisma.oTP.update({

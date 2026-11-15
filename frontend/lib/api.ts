@@ -130,6 +130,7 @@ export const adminApi = {
   updateOrderStatus: (id: string, status: string) => api.put(`admin/orders/${id}`, { status }),
   getCustomers: (params?: any) => api.get('admin/customers', { params }),
   getMyRole: () => api.get('admin/me'),
+  getHistory: (params?: { page?: number; limit?: number; entity?: string; q?: string; from?: string; to?: string }) => api.get('admin/history', { params }),
   setUserRole: (id: string, role: 'ADMIN' | 'EMPLOYEE' | 'CUSTOMER') => api.patch(`admin/users/${id}/role`, { role }),
   getCustomerDetail: (id: string) => api.get(`admin/customers/${id}`),
   getCoupons: () => api.get('admin/coupons'),

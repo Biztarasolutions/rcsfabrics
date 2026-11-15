@@ -21,13 +21,14 @@ const NAV: { label: string; href: string; icon: string; insights?: boolean; supe
   { label: 'Banners', href: '/admin/banners', icon: '🖼️' },
   { label: 'Coupons', href: '/admin/coupons', icon: '🎟️', insights: true },
   { label: 'Analytics', href: '/admin/analytics', icon: '📈', insights: true },
+  { label: 'History', href: '/admin/history', icon: '🕑', insights: true },
   { label: 'Settings', href: '/admin/settings', icon: '⚙️', superOnly: true },
 ];
 
 const SUPER_ONLY_PATHS = ['/admin/settings'];
 
 // Pages employees may not open (also covers pages not in the menu)
-const INSIGHT_PATHS = ['/admin', '/admin/orders', '/admin/coupons', '/admin/customers', '/admin/analytics', '/admin/reports', '/admin/cancelled-orders', '/admin/users'];
+const INSIGHT_PATHS = ['/admin', '/admin/orders', '/admin/coupons', '/admin/customers', '/admin/analytics', '/admin/history', '/admin/reports', '/admin/cancelled-orders', '/admin/users'];
 
 const SIDEBAR_COLLAPSED_KEY = 'admin-sidebar-collapsed';
 

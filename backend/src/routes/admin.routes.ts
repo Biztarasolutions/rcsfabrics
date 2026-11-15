@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { loadCurrentRole, allowRoles, STAFF, MANAGERS } from '@/utils/roles';
+import { trackAdminActivity } from '@/utils/activity';
 import {
   createProduct,
   updateProduct,
@@ -33,6 +34,7 @@ import {
   migrateProductCodes,
   getMyRole,
   setUserRole,
+  getHistory,
 } from '@/controllers/admin.controller';
 import bulkEnquiryRouter from '@/routes/bulkEnquiry.routes';
 import { createProductGroup } from '@/controllers/productGroupController';
@@ -44,7 +46,11 @@ router.use(loadCurrentRole, allowRoles(STAFF));
 const managers = allowRoles(MANAGERS); // not for employees: orders, customers, dashboard, analytics, enquiries, coupons
 const superAdmin = allowRoles(['SUPER_ADMIN']);
 
+// Record every successful change made in the admin panel (History page)
+router.use(trackAdminActivity);
+
 router.get('/me', getMyRole);
+router.get('/history', managers, getHistory);
 
 // User roles — super admin only
 router.patch('/users/:id/role', superAdmin, setUserRole);

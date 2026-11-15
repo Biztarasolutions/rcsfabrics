@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import { logOrderEvent } from '@/utils/activity';
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
 import { prisma } from '@/index';
@@ -220,6 +221,8 @@ export const createOrder = async (
       await saveAddressIfNew(req.userId!, shippingAddress);
     }
 
+    void logOrderEvent(order.id, 'ORDER_PLACED', 'Order placed');
+
     res.status(201).json({
       success: true,
       message: 'Order created successfully',
@@ -359,6 +362,7 @@ export const verifyPayment = async (
     if (result.count === 0) throw new ApiError(409, 'Order is already paid');
     const updated = await prisma.order.findUnique({ where: { id } });
     void notifyOrder(id, 'paid');
+    void logOrderEvent(id, 'PAYMENT_RECEIVED', 'Payment received for order');
     // Online payment succeeded — remember a new delivery address for next time
     if (updated) await saveAddressIfNew(updated.userId, updated.shippingAddress);
 
@@ -451,6 +455,7 @@ export const cancelOrder = async (
       }
       return tx.order.findUnique({ where: { id } });
     });
+    void logOrderEvent(id, 'ORDER_CANCELLED', 'Order cancelled by customer');
     res.json({ success: true, message: 'Order cancelled', data: updated, statusCode: 200 } as ApiResponse);
   } catch (error) {
     if (error instanceof ApiError) {
