@@ -173,6 +173,11 @@ export default function Header() {
                         <div className="border-b border-gray-100 px-3 py-2 dark:border-dark-700">
                           <p className="text-sm font-semibold text-gray-900 dark:text-white">{user?.firstName} {user?.lastName}</p>
                           <p className="text-xs text-gray-500 dark:text-gray-400">{user?.email}</p>
+                          {(!user?.role || user.role === 'CUSTOMER') && (user as any)?.customerId && (
+                            <p className="mt-1 text-[11px] font-semibold tracking-wide text-primary-700 dark:text-primary-400">
+                              Customer ID: {(user as any).customerId}
+                            </p>
+                          )}
                         </div>
                         <div className="mt-1 space-y-0.5">
                           <Link href="/account" onClick={() => setUserMenuOpen(false)}
