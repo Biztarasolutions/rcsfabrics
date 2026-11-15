@@ -34,9 +34,9 @@ function buildDefaultSlides(data: any): Slide[] {
 
   const slides: Slide[] = [{
     id: 'heritage',
-    tag: 'Since 1970 · Dimapur, Nagaland',
+    tag: '',
     headline: 'Fabrics chosen\nby a family',
-    sub: 'Three generations of the Kashliwal family picking fabrics by hand. Buy by the metre, delivered across India.',
+    sub: '',
     cta: { label: 'Shop all fabrics', href: '/products' },
     ctaSecondary: { label: 'Our story', href: '/about' },
     image: firstPhoto,
@@ -48,9 +48,9 @@ function buildDefaultSlides(data: any): Slide[] {
     if (!img) return;
     slides.push({
       id: c.id,
-      tag: `${c.name} collection`,
+      tag: '',
       headline: `${c.name}\nby the metre`,
-      sub: c.productCount ? `${c.productCount} ${c.productCount === 1 ? 'design' : 'designs'} in stock now. Cut to the length you need.` : 'Cut to the length you need.',
+      sub: '',
       cta: { label: `Shop ${c.name}`, href: `/products?category=${c.slug}` },
       ctaSecondary: { label: 'Ask on WhatsApp', href: '/contact' },
       image: img,
@@ -81,16 +81,20 @@ export default function HeroBanner() {
   const slides = apiBanners === null
     ? null
     : apiBanners.length > 0
-      ? apiBanners.map((b: any, i: number) => ({
+      ? apiBanners.map((b: any, i: number) => {
+          // A banner linked to a product (e.g. a customer's design) gets a "Shop this fabric" button
+          const isProduct = /^\/products\/[^/?#]+/.test(b.link || '');
+          return {
           id: b.id,
-          tag: b.tag || '',
+          tag: '',
           headline: b.title,
           sub: b.subtitle || '',
-          cta: { label: b.ctaLabel || 'Shop Now', href: b.link || '/products' },
-          ctaSecondary: { label: 'View All', href: '/products' },
+          cta: { label: isProduct ? 'Shop this fabric' : 'Shop now', href: b.link || '/products' },
+          ctaSecondary: { label: 'View all fabrics', href: '/products' },
           image: b.image,
           accent: ACCENTS[i % ACCENTS.length],
-        })) as Slide[]
+          };
+        }) as Slide[]
       : buildDefaultSlides(homepageData);
 
   // Reset to slide 0 when slides become available or count changes
@@ -197,23 +201,6 @@ export default function HeroBanner() {
               </Link>
             </motion.div>
 
-            {/* Stats — only shown on default slides (not custom banners) */}
-            {(apiBanners === null || apiBanners.length === 0) && (
-              <motion.div key={`stats-${current}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                transition={{ duration: 0.6, delay: 0.5 }}
-                className="mt-12 flex gap-8">
-                {[
-                  { value: '1970', label: 'Founded' },
-                  { value: '3', label: 'Generations' },
-                  { value: '0.5 m', label: 'Minimum cut' },
-                ].map((stat) => (
-                  <div key={stat.label}>
-                    <p className="text-2xl font-bold text-white font-display">{stat.value}</p>
-                    <p className="text-sm text-white/70">{stat.label}</p>
-                  </div>
-                ))}
-              </motion.div>
-            )}
           </div>
         </div>
       </div>

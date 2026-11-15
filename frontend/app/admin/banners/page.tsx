@@ -2,7 +2,8 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { adminApi, uploadBannerImage } from '@/lib/api';
+import { adminApi, productApi, uploadBannerImage } from '@/lib/api';
+import { productDisplayName } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 import { BLUR_PLACEHOLDER } from '@/lib/image';
@@ -29,6 +30,14 @@ export default function AdminBannersPage() {
   const [uploading, setUploading] = useState(false);
   const [imageTab, setImageTab] = useState<'upload' | 'url'>('upload');
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Products for the "Linked fabric" picker (customer design photos → the fabric used)
+  const { data: products = [] } = useQuery({
+    queryKey: ['all-products'],
+    queryFn: () => productApi.getAll({ limit: 500 }).then((res) => (res.data?.data?.products || []) as any[]),
+    staleTime: 1000 * 60 * 5,
+  });
+  const linkedSlug = (form.link || '').match(/^\/products\/([^/?#]+)/)?.[1] || '';
 
   const { data: banners = [], isLoading } = useQuery({
     queryKey: ['admin-banners'],
@@ -341,6 +350,33 @@ export default function AdminBannersPage() {
                   <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Subtitle</label>
                   <input value={form.subtitle} onChange={(e) => setForm({ ...form, subtitle: e.target.value })}
                     className="input-field" placeholder="Shop the latest collection of premium fabrics…"/>
+                </div>
+
+                <div className="rounded-xl border border-[#e6dccb] bg-[#faf6ee] p-4 dark:border-dark-700 dark:bg-dark-900">
+                  <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Linked fabric</label>
+                  <select
+                    value={linkedSlug}
+                    onChange={(e) => {
+                      const slug = e.target.value;
+                      const p = (products as any[]).find((x) => x.slug === slug);
+                      setForm((f: any) => ({
+                        ...f,
+                        link: slug ? `/products/${slug}` : '',
+                        title: !f.title.trim() && p ? `Made with our ${p.name}` : f.title,
+                      }));
+                    }}
+                    className="input-field"
+                  >
+                    <option value="">None — use a custom link below</option>
+                    {(products as any[]).map((p) => (
+                      <option key={p.id} value={p.slug}>
+                        {productDisplayName(p)}{p.category?.name ? ` (${p.category.name})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    For a customer&apos;s design photo, pick the fabric they used. The banner then gets a &ldquo;Shop this fabric&rdquo; button that opens that fabric.
+                  </p>
                 </div>
 
                 <div>
