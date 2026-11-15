@@ -8,6 +8,7 @@ import FeaturedProducts from '@/components/products/FeaturedProducts';
 import NewArrivals from '@/components/products/NewArrivals';
 import BestSellers from '@/components/products/BestSellers';
 import CategoryShowcase from '@/components/products/CategoryShowcase';
+import CollectionsStrip from '@/components/collections/CollectionsStrip';
 
 import Testimonials from '@/components/common/Testimonials';
 import NewsletterSignup from '@/components/common/NewsletterSignup';
@@ -102,6 +103,7 @@ export default function HomePage() {
 
       {/* 7. Category Showcase */}
       <CategoryShowcase />
+      <CollectionsStrip />
 
 
 
