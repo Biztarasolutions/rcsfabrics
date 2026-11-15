@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 
-import { BUSINESS as B } from '@/lib/business';
+import { BUSINESS as B, waLink } from '@/lib/business';
 
 // Policy text refers to the business by its registered trade name
 export const BUSINESS = { ...B, legalName: B.tradeName };
@@ -30,7 +30,6 @@ export default function PolicyPage({
   /** Optional key facts shown as cards under the title */
   highlights?: PolicyHighlight[];
 }) {
-  const waNumber = BUSINESS.whatsapp.split('/').pop();
 
   return (
     <div className="min-h-screen bg-white dark:bg-dark-950">
@@ -101,7 +100,7 @@ export default function PolicyPage({
               {BUSINESS.tradeName} ({BUSINESS.brand}), {BUSINESS.city}. We reply Monday to Saturday, 9am–6pm.
             </p>
             <div className="mt-5 flex flex-wrap gap-3">
-              <a href={`https://wa.me/${waNumber}`} target="_blank" rel="noopener noreferrer"
+              <a href={waLink()} target="_blank" rel="noopener noreferrer"
                 className="inline-flex items-center rounded-xl bg-[#25D366] px-5 py-3 text-sm font-semibold text-white hover:bg-[#1fb658]">
                 WhatsApp {BUSINESS.phone}
               </a>

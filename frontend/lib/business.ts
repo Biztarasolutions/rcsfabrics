@@ -11,3 +11,12 @@ export const BUSINESS = {
   whatsapp: 'https://wa.me/919863026598',
   lastUpdated: '15 November 2026', // shown on policy pages — update when you change a policy
 };
+
+/** Default WhatsApp opener for general questions */
+export const WHATSAPP_QUERY = 'Hi! I have a few queries about RCS Fabrics.';
+
+/** wa.me link with a ready-typed message */
+export const waLink = (text: string = WHATSAPP_QUERY): string =>
+  `${BUSINESS.whatsapp}?text=${encodeURIComponent(text)}`;
+
+export const telLink = (): string => `tel:${BUSINESS.phone.replace(/\s/g, '')}`;

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { waLink } from '@/lib/business';
 import { usePathname } from 'next/navigation';
 import Header from '@/components/common/Header';
 import Footer from '@/components/common/Footer';
@@ -22,7 +23,7 @@ export default function SiteChrome({ children }: { children: React.ReactNode }) 
       <Footer />
       {/* WhatsApp floating button */}
       <a
-        href="https://wa.me/919863026598"
+        href={waLink()}
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Chat on WhatsApp"

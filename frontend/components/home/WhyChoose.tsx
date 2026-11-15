@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import { waLink } from '@/lib/business';
 
 // Concrete promises the shop actually keeps — no generic claims.
 const PROMISES = [
@@ -18,7 +19,7 @@ const PROMISES = [
   {
     title: 'Talk to us before you buy',
     text: 'Unsure about colour or feel? Message us on WhatsApp for extra photos and advice.',
-    href: 'https://wa.me/919863026598',
+    href: waLink(),
     link: 'Chat on WhatsApp',
   },
   {
