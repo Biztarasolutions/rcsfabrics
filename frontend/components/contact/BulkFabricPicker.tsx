@@ -5,17 +5,69 @@ import { useAllProducts } from '@/hooks/useCollections';
 import { supabaseImg, BLUR_PLACEHOLDER } from '@/lib/image';
 import { productDisplayName } from '@/lib/utils';
 import { SITE_URL } from '@/lib/seo';
+import toast from 'react-hot-toast';
 
 /**
  * Bulk enquiry fabric picker: choose a category, then tap the fabric (photo + name).
  * Calls onChange with a text summary (name, colour, category and link) for the enquiry.
  * "Something else" falls back to a free-text description.
  */
-export default function BulkFabricPicker({ onChange }: { onChange: (fabric: string) => void }) {
+const MAX_PHOTOS = 3;
+const OTHER_FALLBACK = 'Something else (see photos / notes)';
+
+/** Resize a photo in the browser (max 1600px, JPEG) so it emails quickly; returns a data URL */
+function shrinkPhoto(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new window.Image();
+    img.onload = () => {
+      const scale = Math.min(1, 1600 / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL('image/jpeg', 0.82));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('unreadable')); };
+    img.src = url;
+  });
+}
+
+export default function BulkFabricPicker({
+  onChange,
+  onImages,
+}: {
+  onChange: (fabric: string) => void;
+  /** Reference photos as data URLs (only for "Something else"); emailed, not stored */
+  onImages?: (photos: string[]) => void;
+}) {
   const { data: products = [], isLoading } = useAllProducts();
   const [category, setCategory] = useState('');
   const [selected, setSelected] = useState<string>('');
   const [other, setOther] = useState('');
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
+
+  const setPhotoList = (next: string[]) => { setPhotos(next); onImages?.(next); };
+
+  const addPhotos = async (files: FileList | null) => {
+    if (!files?.length) return;
+    const room = MAX_PHOTOS - photos.length;
+    const picked = Array.from(files).slice(0, room);
+    if (files.length > room) toast.error(`You can add up to ${MAX_PHOTOS} photos`);
+    setUploading(true);
+    const added: string[] = [];
+    for (const f of picked) {
+      try {
+        added.push(await shrinkPhoto(f));
+      } catch {
+        toast.error(`Could not read ${f.name}. Please use a JPG or PNG photo.`);
+      }
+    }
+    setUploading(false);
+    if (added.length) setPhotoList([...photos, ...added]);
+  };
 
   const categories = useMemo(() => {
     const map = new Map<string, string>();
@@ -33,7 +85,8 @@ export default function BulkFabricPicker({ onChange }: { onChange: (fabric: stri
   const pickCategory = (slug: string) => {
     setCategory(slug);
     setSelected('');
-    onChange(slug === '__other' ? other : '');
+    if (slug !== '__other' && photos.length) setPhotoList([]);
+    onChange(slug === '__other' ? other.trim() || OTHER_FALLBACK : '');
   };
 
   return (
@@ -49,9 +102,34 @@ export default function BulkFabricPicker({ onChange }: { onChange: (fabric: stri
 
       {category === '__other' ? (
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Describe the fabric</label>
-          <input value={other} required onChange={(e) => { setOther(e.target.value); onChange(e.target.value); }}
+          <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Describe the fabric <span className="font-normal text-gray-400">(optional)</span></label>
+          <input value={other} onChange={(e) => { setOther(e.target.value); onChange(e.target.value.trim() || OTHER_FALLBACK); }}
             className="input-field" placeholder="Fabric type, colour, weight…" />
+
+          <div className="mt-3">
+            <p className="mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">
+              Photos <span className="font-normal text-gray-400">(optional, up to {MAX_PHOTOS})</span>
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {photos.map((u, i) => (
+                <div key={i} className="relative h-20 w-20 overflow-hidden rounded-xl border border-gray-200 dark:border-dark-600">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={u} alt="Reference" className="h-full w-full object-cover" />
+                  <button type="button" onClick={() => setPhotoList(photos.filter((_, j) => j !== i))} aria-label="Remove photo"
+                    className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-xs text-white">×</button>
+                </div>
+              ))}
+              {photos.length < MAX_PHOTOS && (
+                <label className={`flex h-20 w-20 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 text-center text-[11px] text-gray-500 hover:border-primary-700 hover:text-primary-700 dark:border-dark-600 ${uploading ? 'pointer-events-none opacity-60' : ''}`}>
+                  <span className="text-xl leading-none">{uploading ? '…' : '+'}</span>
+                  {uploading ? 'Adding' : 'Add photo'}
+                  <input type="file" accept="image/*" multiple className="sr-only"
+                    onChange={(e) => { addPhotos(e.target.files); e.target.value = ''; }} />
+                </label>
+              )}
+            </div>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">A photo of the fabric or design you want helps us quote faster. It’s sent to us with your enquiry.</p>
+          </div>
         </div>
       ) : category ? (
         <div>

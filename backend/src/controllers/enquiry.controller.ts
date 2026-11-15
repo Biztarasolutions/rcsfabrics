@@ -68,6 +68,7 @@ export const createEnquiry = async (req: Request, res: Response): Promise<void> 
     if (phone && !PHONE_RE.test(phone)) throw new ApiError(400, 'Please enter a valid phone number');
 
     let details: string;
+    let attachments: { name: string; content: string }[] = [];
     let subjectLine: string;
 
     if (type === 'bulk') {
@@ -75,6 +76,8 @@ export const createEnquiry = async (req: Request, res: Response): Promise<void> 
       const quantity = Number(body.quantity);
       const deadline = clean(body.deadline, 20);
       const notes = clean(body.notes, 3000);
+      // Reference photos are only emailed (as attachments), never stored
+      attachments = readPhotos(body.photos);
       // Optional price the customer is hoping for (₹ per metre)
       const targetPrice = body.targetPrice === undefined || body.targetPrice === '' ? null : Number(body.targetPrice);
       if (targetPrice !== null && (!Number.isFinite(targetPrice) || targetPrice <= 0 || targetPrice > 100000)) {
@@ -90,6 +93,7 @@ export const createEnquiry = async (req: Request, res: Response): Promise<void> 
         `Fabric: ${fabric}`,
         `Quantity: ${quantity} m`,
         targetPrice !== null ? `Requested price: ₹${targetPrice} per metre` : '',
+        attachments.length ? `Reference photos: ${attachments.length} (attached to the email)` : '',
         deadline ? `Required by: ${deadline}` : '',
         notes ? `Notes: ${notes}` : '',
       ].filter(Boolean).join('\n');
@@ -120,6 +124,7 @@ export const createEnquiry = async (req: Request, res: Response): Promise<void> 
           ${company ? `<strong>Company:</strong> ${escapeHtml(company)}<br/>` : ''}</p>
           <pre style="font-family:inherit;white-space:pre-wrap">${escapeHtml(details)}</pre>
           <p style="color:#888">Enquiry ID: ${saved.id}</p>`,
+        attachments,
       });
     } catch (mailErr) {
       console.error('[Enquiry] Saved but email notification failed:', mailErr);
@@ -142,3 +147,31 @@ export const createEnquiry = async (req: Request, res: Response): Promise<void> 
     }
   }
 };
+
+
+// ── Reference photos (bulk enquiry) ─────────────────────────────────────────
+const MAX_PHOTOS = 3;
+const MAX_PHOTO_BYTES = 4 * 1024 * 1024;
+
+const imageType = (buf: Buffer): 'jpg' | 'png' | 'webp' | null => {
+  if (buf.length > 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return 'jpg';
+  if (buf.length > 8 && buf.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return 'png';
+  if (buf.length > 12 && buf.subarray(0, 4).toString() === 'RIFF' && buf.subarray(8, 12).toString() === 'WEBP') return 'webp';
+  return null;
+};
+
+/** Accepts up to 3 base64 images (JPG/PNG/WebP, ≤4 MB each); anything else is rejected */
+function readPhotos(input: unknown): { name: string; content: string }[] {
+  if (input === undefined || input === null) return [];
+  if (!Array.isArray(input)) throw new ApiError(400, 'Invalid photos');
+  if (input.length > MAX_PHOTOS) throw new ApiError(400, `You can attach up to ${MAX_PHOTOS} photos`);
+  return input.map((raw, i) => {
+    const data = typeof raw === 'string' ? raw : typeof (raw as any)?.data === 'string' ? (raw as any).data : '';
+    const b64 = data.replace(/^data:image\/[a-z+]+;base64,/i, '');
+    const buf = Buffer.from(b64, 'base64');
+    if (!buf.length || buf.length > MAX_PHOTO_BYTES) throw new ApiError(400, 'Each photo must be under 4 MB');
+    const ext = imageType(buf);
+    if (!ext) throw new ApiError(400, 'Photos must be JPG, PNG or WebP');
+    return { name: `reference-photo-${i + 1}.${ext}`, content: buf.toString('base64') };
+  });
+}

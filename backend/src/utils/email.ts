@@ -14,6 +14,8 @@ export interface EmailOptions {
   to: string[]; // list of recipient emails
   subject: string;
   html: string;
+  /** Optional files, base64-encoded */
+  attachments?: { name: string; content: string }[];
 }
 
 const BREVO_URL = 'https://api.brevo.com/v3/smtp/email';
@@ -50,6 +52,7 @@ async function sendViaBrevo(options: EmailOptions) {
     textContent: htmlToText(options.html),
   };
   if (process.env.EMAIL_REPLY_TO) body.replyTo = { email: process.env.EMAIL_REPLY_TO };
+  if (options.attachments?.length) body.attachment = options.attachments;
 
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 15000);
@@ -109,6 +112,7 @@ export const sendEmail = async (options: EmailOptions) => {
       subject: options.subject,
       html: options.html,
       text: htmlToText(options.html),
+      attachments: options.attachments?.map((a) => ({ filename: a.name, content: Buffer.from(a.content, 'base64') })),
     });
     console.log('Email sent via SMTP:', info.messageId);
     return info;
