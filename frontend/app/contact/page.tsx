@@ -13,7 +13,7 @@ const WA = (
 export default function ContactPage() {
   const [activeForm, setActiveForm] = useState<'contact' | 'bulk'>('contact');
   const [form, setForm] = useState({ name: '', email: '', phone: '', subject: '', message: '' });
-  const [bulkForm, setBulkForm] = useState({ name: '', company: '', email: '', phone: '', fabric: '', quantity: '', deadline: '', notes: '' });
+  const [bulkForm, setBulkForm] = useState({ name: '', company: '', email: '', phone: '', fabric: '', quantity: '', targetPrice: '', deadline: '', notes: '' });
   const [loading, setLoading] = useState(false);
   const [bulkKey, setBulkKey] = useState(0); // remounts the fabric picker after a successful send
 
@@ -30,7 +30,7 @@ export default function ContactPage() {
       const res = await publicApi.sendEnquiry(payload);
       toast.success(res.data?.message || 'Message sent! We\'ll get back to you soon.');
       if (activeForm === 'bulk') {
-        setBulkForm({ name: '', company: '', email: '', phone: '', fabric: '', quantity: '', deadline: '', notes: '' });
+        setBulkForm({ name: '', company: '', email: '', phone: '', fabric: '', quantity: '', targetPrice: '', deadline: '', notes: '' });
         setBulkKey((k) => k + 1);
       } else {
         setForm({ name: '', email: '', phone: '', subject: '', message: '' });
@@ -139,6 +139,16 @@ export default function ContactPage() {
                   <BulkFabricPicker key={bulkKey} onChange={(fabric) => setBulkForm((f) => ({ ...f, fabric }))} />
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div><label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Quantity (metres)</label><input type="number" min={20} value={bulkForm.quantity} onChange={(e) => setBulkForm({ ...bulkForm, quantity: e.target.value })} required className="input-field" placeholder="e.g. 100"/></div>
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Your price per metre <span className="font-normal text-gray-400">(optional)</span></label>
+                      <div className="relative">
+                        <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">₹</span>
+                        <input type="number" min={1} step="0.01" inputMode="decimal" value={bulkForm.targetPrice}
+                          onChange={(e) => setBulkForm({ ...bulkForm, targetPrice: e.target.value })}
+                          className="input-field pl-8" placeholder="e.g. 120" />
+                      </div>
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">The rate you&apos;re hoping for — we&apos;ll do our best to match it.</p>
+                    </div>
                     <div><label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Required By</label><input type="date" value={bulkForm.deadline} onChange={(e) => setBulkForm({ ...bulkForm, deadline: e.target.value })} className="input-field"/></div>
                   </div>
                   <div><label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Additional Notes</label><textarea value={bulkForm.notes} onChange={(e) => setBulkForm({ ...bulkForm, notes: e.target.value })} rows={3} className="input-field resize-none" placeholder="Color preferences, special requirements..."/></div>

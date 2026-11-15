@@ -75,6 +75,11 @@ export const createEnquiry = async (req: Request, res: Response): Promise<void> 
       const quantity = Number(body.quantity);
       const deadline = clean(body.deadline, 20);
       const notes = clean(body.notes, 3000);
+      // Optional price the customer is hoping for (₹ per metre)
+      const targetPrice = body.targetPrice === undefined || body.targetPrice === '' ? null : Number(body.targetPrice);
+      if (targetPrice !== null && (!Number.isFinite(targetPrice) || targetPrice <= 0 || targetPrice > 100000)) {
+        throw new ApiError(400, 'Please enter a valid price per metre');
+      }
       if (!phone) throw new ApiError(400, 'Phone number is required for bulk quotes');
       if (fabric.length < 2) throw new ApiError(400, 'Please tell us which fabric you need');
       if (!Number.isFinite(quantity) || quantity <= 0 || quantity > 1_000_000) {
@@ -84,6 +89,7 @@ export const createEnquiry = async (req: Request, res: Response): Promise<void> 
         '[Bulk order]',
         `Fabric: ${fabric}`,
         `Quantity: ${quantity} m`,
+        targetPrice !== null ? `Requested price: ₹${targetPrice} per metre` : '',
         deadline ? `Required by: ${deadline}` : '',
         notes ? `Notes: ${notes}` : '',
       ].filter(Boolean).join('\n');
