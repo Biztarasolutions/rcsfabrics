@@ -95,8 +95,8 @@ router.put('/banners/:id', updateBanner);
 router.delete('/banners/:id', deleteBanner);
 
 // Settings Management
-router.get('/settings', getSettings);
-router.put('/settings/:key', updateSetting);
+router.get('/settings', superAdmin, getSettings);
+router.put('/settings/:key', superAdmin, updateSetting);
 
 router.use('/bulk-enquiries', managers, bulkEnquiryRouter);
 export default router;

@@ -12,7 +12,7 @@ import { isStaff, isManager, ROLE_LABEL, type Role } from '@/lib/roles';
 import { useStoresHydrated } from '@/lib/store';
 
 // `insights: true` = only admins and the super admin (employees don't see revenue, orders or customers)
-const NAV = [
+const NAV: { label: string; href: string; icon: string; insights?: boolean; superOnly?: boolean }[] = [
   { label: 'Dashboard', href: '/admin', icon: '📊', insights: true },
   { label: 'Products', href: '/admin/products', icon: '🧵' },
   { label: 'Orders', href: '/admin/orders', icon: '📦', insights: true },
@@ -21,8 +21,10 @@ const NAV = [
   { label: 'Banners', href: '/admin/banners', icon: '🖼️' },
   { label: 'Coupons', href: '/admin/coupons', icon: '🎟️' },
   { label: 'Analytics', href: '/admin/analytics', icon: '📈', insights: true },
-  { label: 'Settings', href: '/admin/settings', icon: '⚙️' },
+  { label: 'Settings', href: '/admin/settings', icon: '⚙️', superOnly: true },
 ];
+
+const SUPER_ONLY_PATHS = ['/admin/settings'];
 
 // Pages employees may not open (also covers pages not in the menu)
 const INSIGHT_PATHS = ['/admin', '/admin/orders', '/admin/customers', '/admin/analytics', '/admin/reports', '/admin/cancelled-orders', '/admin/users'];
@@ -47,15 +49,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     retry: false,
     staleTime: 60 * 1000,
   });
-  const nav = NAV.filter((n) => !n.insights || isManager(role));
-  const blockedHere = !!role && !isManager(role) && INSIGHT_PATHS.includes(pathname || '');
+  const nav = NAV.filter((n) => (!n.insights || isManager(role)) && (!n.superOnly || role === 'SUPER_ADMIN'));
+  const blockedHere = !!role && (
+    (!isManager(role) && INSIGHT_PATHS.includes(pathname || '')) ||
+    (role !== 'SUPER_ADMIN' && SUPER_ONLY_PATHS.includes(pathname || ''))
+  );
 
   useEffect(() => {
     if (!hydrated) return;
     if (!user) { router.replace('/auth?next=/admin'); return; }
     if (roleError || (role && !isStaff(role))) { router.replace('/'); return; }
     // Employees land on Products instead of the dashboard
-    if (blockedHere) router.replace('/admin/products');
+    if (blockedHere) router.replace(isManager(role) ? '/admin' : '/admin/products');
   }, [hydrated, user, role, roleError, blockedHere, router]);
 
   const handleLogout = () => {
