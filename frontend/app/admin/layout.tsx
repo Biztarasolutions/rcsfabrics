@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import BrandLogo from '@/components/common/BrandLogo';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/store';
 import { queryClient } from '@/components/common/Providers';
@@ -66,8 +67,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <div className={`flex h-16 items-center border-b border-gray-200 dark:border-dark-800 ${showLabels ? 'justify-between px-4' : 'justify-center px-2'}`}>
         {showLabels ? (
           <Link href="/admin" className="flex min-w-0 items-center gap-2">
-            <img src="/brand/icon-192.png" alt="RCS Fabrics" width={32} height={32} className="h-8 w-8 shrink-0 rounded-lg" />
-            <span className="truncate font-display text-lg font-bold text-gradient">Admin</span>
+            <BrandLogo height={34} />
+            <span className="truncate rounded-md bg-primary-50 px-2 py-0.5 text-xs font-semibold uppercase tracking-wider text-primary-700 dark:bg-primary-950/40 dark:text-primary-300">Admin</span>
           </Link>
         ) : (
           <Link href="/admin" title="Admin home" className="flex h-8 w-8 items-center justify-center">
