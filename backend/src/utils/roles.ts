@@ -4,7 +4,8 @@
 //               Always the email(s) in SUPER_ADMIN_EMAILS (default rish6.jain@gmail.com).
 //  ADMIN        full admin panel, but cannot change anyone's role.
 //  EMPLOYEE     admin panel without insights: no dashboard, orders, customers,
-//               analytics or enquiries — products, inventory, categories, banners etc. only.
+//               analytics, enquiries or coupons — products, inventory, categories and banners only.
+//  Settings: super admin only.
 //  CUSTOMER     default for every new account; no admin panel.
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '@/index';

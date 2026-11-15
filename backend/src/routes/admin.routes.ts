@@ -41,7 +41,7 @@ const router = Router();
 
 // Staff only (super admin, admin, employee). Role is re-read from the database each request.
 router.use(loadCurrentRole, allowRoles(STAFF));
-const managers = allowRoles(MANAGERS); // insights: orders, customers, dashboard, analytics, enquiries
+const managers = allowRoles(MANAGERS); // not for employees: orders, customers, dashboard, analytics, enquiries, coupons
 const superAdmin = allowRoles(['SUPER_ADMIN']);
 
 router.get('/me', getMyRole);
@@ -77,10 +77,10 @@ router.get('/dashboard/stats', managers, getDashboardStats);
 router.get('/analytics', managers, getAnalytics);
 
 // Coupon Management
-router.get('/coupons', getCoupons);
-router.post('/coupons', createCoupon);
-router.patch('/coupons/:id', updateCoupon);
-router.delete('/coupons/:id', deleteCoupon);
+router.get('/coupons', managers, getCoupons);
+router.post('/coupons', managers, createCoupon);
+router.patch('/coupons/:id', managers, updateCoupon);
+router.delete('/coupons/:id', managers, deleteCoupon);
 
 // Category Management
 router.get('/categories', getCategories);
