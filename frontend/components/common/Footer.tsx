@@ -20,7 +20,6 @@ const FOOTER_SECTIONS = [
       { label: 'FAQs', href: '/contact#faq' },
       { label: 'Shipping Policy', href: '/shipping' },
       { label: 'Return Policy', href: '/returns' },
-      { label: 'Sample Request', href: '/contact#swatch' },
       { label: 'Bulk Orders', href: '/contact#bulk' },
     ],
   },
@@ -113,7 +112,7 @@ export default function Footer() {
         <div className="mt-12 grid grid-cols-2 gap-6 border-t border-dark-800 pt-12 sm:grid-cols-4">
           {[
             { title: 'Free Shipping', desc: 'Orders above ₹2,000' },
-            { title: 'Easy Returns', desc: '30-day return policy' },
+            { title: 'Easy Returns', desc: '15-day return policy' },
             { title: 'Secure Payment', desc: '100% safe checkout' },
             { title: 'Quality Checked', desc: 'Inspected before dispatch' },
           ].map((badge) => (

@@ -401,7 +401,7 @@ export default function AuthPage() {
             needs.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-4">
-            {['500+ Fabrics', 'Free Shipping', '30-Day Returns', 'Swatch Samples'].map(perk => (
+            {['Family-run since 1970', 'Free shipping over ₹2,000', '15-day returns', 'Cut from 0.5 m'].map(perk => (
               <span
                 key={perk}
                 className="flex items-center gap-1.5 rounded-full bg-white/15 px-4 py-2 text-sm text-white backdrop-blur-sm"

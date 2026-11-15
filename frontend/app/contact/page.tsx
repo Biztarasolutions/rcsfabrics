@@ -42,9 +42,9 @@ export default function ContactPage() {
 
   const faqs = [
     { q: 'What is the minimum order quantity?', a: 'Minimum order is 0.5 metres for most fabrics. Some specialty fabrics require 1 metre minimum.' },
-    { q: 'Do you offer samples/swatches?', a: 'Yes! Request physical swatches before committing to a full order. Swatch requests are processed within 2-3 days.' },
+    { q: 'Do you offer samples or swatches?', a: 'We don’t send samples, but we’re happy to share extra photos or a short video of any fabric on WhatsApp before you order.' },
     { q: 'How long does delivery take?', a: 'Usually dispatched in 1–2 business days and delivered in 2–5 business days. Free shipping on orders of ₹2,000 or more; ₹150 below that.' },
-    { q: 'Can I return fabric?', a: 'We accept returns within 30 days for unused, uncut fabric in original condition. Cut fabric cannot be returned.' },
+    { q: 'Can I return fabric?', a: 'Yes — within 15 days of delivery, for fabric bought in a length of 2 metres or more that is unused, unwashed and not cut further. Pieces under 2 metres are not returnable unless they arrive damaged or wrong.' },
     { q: 'Do you offer bulk discounts?', a: 'Yes — for larger quantities we offer wholesale pricing. Use the Bulk Order form or WhatsApp us for a quote.' },
   ];
 
@@ -55,7 +55,7 @@ export default function ContactPage() {
         <div className="container-main text-center">
           <span className="section-tag">Get in touch</span>
           <h1 className="section-title mt-3 font-display">Contact Us</h1>
-          <p className="section-subtitle">We're here to help. Reach out for orders, swatches, or anything else.</p>
+          <p className="section-subtitle">We're here to help. Reach out for orders, bulk quotes or anything else.</p>
         </div>
       </div>
 
@@ -65,7 +65,7 @@ export default function ContactPage() {
           <div className="space-y-8">
             <div>
               <h2 className="font-display text-2xl font-bold text-gray-900 dark:text-white">We'd love to hear from you</h2>
-              <p className="mt-3 text-gray-600 dark:text-gray-400">Whether you need help with an order, want to request a swatch, or have a bulk requirement — we're just a message away.</p>
+              <p className="mt-3 text-gray-600 dark:text-gray-400">Whether you need help with an order, want more photos of a fabric, or have a bulk requirement — we're just a message away.</p>
             </div>
             {[
               { icon: '📞', title: 'Call Us', info: '+91 98630 26598', sub: 'Mayank Jain · Mon–Sat, 9am–6pm' },
