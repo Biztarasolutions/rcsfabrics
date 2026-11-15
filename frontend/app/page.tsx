@@ -33,7 +33,7 @@ export default function HomePage() {
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             {[
               { label: 'Free Shipping', sub: 'Orders above ₹2,000' },
-              { label: 'Easy Returns', sub: '15-day return policy' },
+              { label: 'Easy Returns', sub: '7-day return policy' },
               { label: 'Fast Delivery', sub: '2–5 business days' },
               { label: 'Quality Checked', sub: 'Inspected before dispatch' },
             ].map((b) => (

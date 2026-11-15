@@ -23,7 +23,7 @@ const PROMISES = [
   },
   {
     title: 'Simple, fair returns',
-    text: 'Pieces of 2 metres or more can be returned within 15 days. Free shipping on orders above ₹2,000.',
+    text: 'Pieces of 2 metres or more can be returned within 7 days. Free shipping on orders above ₹2,000.',
     href: '/returns',
     link: 'Return policy',
   },

@@ -132,7 +132,7 @@ export default function CartPage() {
 
               {/* Trust row */}
               <div className="mt-5 flex flex-col gap-1.5 border-t border-gray-100 pt-4 dark:border-dark-700">
-                {['🔒 Secure 256-bit SSL checkout', '✅ 100% authentic fabrics', '↩️ 15-day returns (2 m and above)'].map((t) => (
+                {['🔒 Secure 256-bit SSL checkout', '✅ 100% authentic fabrics', '↩️ 7-day returns (2 m and above)'].map((t) => (
                   <span key={t} className="text-xs text-gray-500 dark:text-gray-400">{t}</span>
                 ))}
               </div>
