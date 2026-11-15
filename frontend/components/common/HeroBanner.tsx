@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { BLUR_PLACEHOLDER, supabaseImg } from '@/lib/image';
 import { useHomepageData } from '@/hooks/useHomepageData';
+import { BUSINESS } from '@/lib/business';
 
 const ACCENTS = [
   'from-[#1d150e]/85 via-[#1d150e]/45 to-transparent',
@@ -52,7 +53,10 @@ function buildDefaultSlides(data: any): Slide[] {
       headline: `${c.name}\nby the metre`,
       sub: '',
       cta: { label: `Shop ${c.name}`, href: `/products?category=${c.slug}` },
-      ctaSecondary: { label: 'Ask on WhatsApp', href: '/contact' },
+      ctaSecondary: {
+        label: 'Ask on WhatsApp',
+        href: `${BUSINESS.whatsapp}?text=${encodeURIComponent(`Hi! I'd like to know more about your ${c.name} fabrics.`)}`,
+      },
       image: img,
       accent: ACCENTS[(i + 1) % ACCENTS.length],
     });
@@ -195,10 +199,17 @@ export default function HeroBanner() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3"/>
                 </svg>
               </Link>
+{slide.ctaSecondary.href.startsWith('http') ? (
+              <a href={slide.ctaSecondary.href} target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-xl border border-white/40 px-8 py-4 text-base font-semibold text-white backdrop-blur-sm transition-all hover:bg-white/15">
+                {slide.ctaSecondary.label}
+              </a>
+              ) : (
               <Link href={slide.ctaSecondary.href}
                 className="inline-flex items-center gap-2 rounded-xl border border-white/40 px-8 py-4 text-base font-semibold text-white backdrop-blur-sm transition-all hover:bg-white/15">
                 {slide.ctaSecondary.label}
               </Link>
+              )}
             </motion.div>
 
           </div>
