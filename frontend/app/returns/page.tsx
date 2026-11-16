@@ -14,8 +14,8 @@ export default function ReturnPolicy() {
       title="Returns, Cancellation & Refund Policy"
       intro={
         <p>
-          The short version: <strong>we don&apos;t accept returns</strong>, but you are fully covered if something goes wrong on
-          our side — and you can cancel for free until your order is shipped.
+          Every RCS Fabrics order is cut fresh to your length and checked before it leaves our shop. Here&apos;s how
+          cancellations, replacements and refunds work — including what we do if anything ever arrives wrong or damaged.
         </p>
       }
       highlights={[
@@ -26,20 +26,20 @@ export default function ReturnPolicy() {
       ]}
       sections={[
         {
-          heading: 'At a glance',
+          heading: 'Common situations',
           body: (
             <div className="not-prose overflow-hidden rounded-xl border border-gray-200 dark:border-dark-700">
               {[
-                ['I want to cancel and my order is not shipped yet', 'Yes — cancel for free, full refund', true],
-                ['I received the wrong fabric, colour or a short length', 'Yes — report within 48 hours', true],
-                ['My fabric arrived damaged or defective', 'Yes — report within 48 hours', true],
-                ['I changed my mind / don’t like the colour after delivery', 'No — returns are not accepted', false],
-                ['My order has already been shipped and I want to cancel', 'No — it can’t be cancelled once shipped', false],
+                ['Cancelling before your order is shipped', 'Free cancellation, full refund', true],
+                ['Wrong fabric, colour or a shorter length received', 'Replacement or refund — report within 48 hours', true],
+                ['Fabric arrives damaged or defective', 'Replacement or refund — report within 48 hours', true],
+                ['Change of mind after delivery', 'Not eligible for return', false],
+                ['Cancelling after your order is shipped', 'Not possible once shipped', false],
               ].map(([q, a, ok]) => (
                 <div key={q as string} className="flex flex-col gap-1 border-b border-gray-100 px-4 py-3 last:border-0 sm:flex-row sm:items-center sm:justify-between sm:gap-4 dark:border-dark-700">
                   <span className="text-gray-700 dark:text-gray-300">{q}</span>
-                  <span className={`shrink-0 text-sm font-semibold ${ok ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
-                    {ok ? '✓ ' : '✕ '}{a}
+                  <span className={`shrink-0 text-sm font-semibold ${ok ? 'text-emerald-700 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                    {ok ? '✓ ' : '— '}{a}
                   </span>
                 </div>
               ))}
