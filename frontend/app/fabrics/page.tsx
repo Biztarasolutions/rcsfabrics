@@ -176,7 +176,6 @@ function ProductsContent() {
             {/* Products Grid */}
             {!isLoading && products.length === 0 ? (
               <>
-                {(() => { console.log('No products found. Data:', data, 'Products:', products); return null; })()}
                 <div className="py-24 text-center">
                   <p className="text-6xl">🧵</p>
                   <h3 className="mt-4 text-xl font-semibold text-gray-900 dark:text-white">No fabrics found</h3>
