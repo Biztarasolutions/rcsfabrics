@@ -12,7 +12,6 @@ import { queryClient } from '@/components/common/Providers';
 const NAV_LINKS = [
   { label: 'Home', href: '/' },
   { label: 'Fabrics', href: '/products' },
-  { label: 'Collections', href: '/collections' },
   { label: 'About', href: '/about' },
   { label: 'Contact', href: '/contact' },
 ];
