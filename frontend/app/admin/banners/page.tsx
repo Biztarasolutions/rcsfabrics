@@ -37,7 +37,7 @@ export default function AdminBannersPage() {
     queryFn: () => productApi.getAll({ limit: 500 }).then((res) => (res.data?.data?.products || []) as any[]),
     staleTime: 1000 * 60 * 5,
   });
-  const linkedSlug = (form.link || '').match(/^\/products\/([^/?#]+)/)?.[1] || '';
+  const linkedSlug = (form.link || '').match(/^\/(?:products|fabrics)\/([^/?#]+)/)?.[1] || '';
 
   const { data: banners = [], isLoading } = useQuery({
     queryKey: ['admin-banners'],
@@ -361,7 +361,7 @@ export default function AdminBannersPage() {
                       const p = (products as any[]).find((x) => x.slug === slug);
                       setForm((f: any) => ({
                         ...f,
-                        link: slug ? `/products/${slug}` : '',
+                        link: slug ? `/fabrics/${slug}` : '',
                         title: !f.title.trim() && p ? `Made with our ${p.name}` : f.title,
                       }));
                     }}
@@ -382,7 +382,7 @@ export default function AdminBannersPage() {
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Button Link</label>
                   <input value={form.link} onChange={(e) => setForm({ ...form, link: e.target.value })}
-                    className="input-field" placeholder="/products?sale=true"/>
+                    className="input-field" placeholder="/fabrics?sale=true"/>
                   <p className="mt-1 text-xs text-gray-400">Where the "Shop Now" button points. Leave blank for /products.</p>
                 </div>
 

@@ -30,6 +30,11 @@ const nextConfig = {
       },
     ];
   },
+  // Shop pages moved from /products to /fabrics — keep old links (Google, WhatsApp shares) working
+  redirects: async () => [
+    { source: '/products', destination: '/fabrics', permanent: true },
+    { source: '/products/:slug', destination: '/fabrics/:slug', permanent: true },
+  ],
   compress: true,
   poweredByHeader: false,
   generateEtags: true,

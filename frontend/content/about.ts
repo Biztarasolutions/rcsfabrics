@@ -176,6 +176,6 @@ export const ABOUT = {
       'From our grandfather’s first fabric collection to the expanded collections of the next generation, and now to our digital presence, the passion for fabrics continues.',
       'We invite you to become a part of our story.',
     ],
-    cta: { label: 'Explore Our Collection', href: '/products' },
+    cta: { label: 'Explore Our Collection', href: '/fabrics' },
   },
 };

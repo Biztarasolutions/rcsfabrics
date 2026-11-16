@@ -33,7 +33,7 @@ export default function CategoryShowcase() {
                 <motion.div key={cat.id}
                   initial={{ opacity: 0, y: 8 }} whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }} transition={{ duration: 0.25, delay: i * 0.04 }}>
-                  <Link href={`/products?category=${cat.slug}`}
+                  <Link href={`/fabrics?category=${cat.slug}`}
                     className="group relative block overflow-hidden rounded-2xl">
                     {/* Image */}
                     <div className="relative h-64 overflow-hidden bg-[#efe7da] dark:bg-dark-800">

@@ -38,7 +38,7 @@ function buildDefaultSlides(data: any): Slide[] {
     tag: '',
     headline: 'Fabrics chosen\nby a family',
     sub: '',
-    cta: { label: 'Shop all fabrics', href: '/products' },
+    cta: { label: 'Shop all fabrics', href: '/fabrics' },
     ctaSecondary: { label: 'Our story', href: '/about' },
     image: firstPhoto,
     accent: ACCENTS[0],
@@ -52,7 +52,7 @@ function buildDefaultSlides(data: any): Slide[] {
       tag: '',
       headline: `${c.name}\nby the metre`,
       sub: '',
-      cta: { label: `Shop ${c.name}`, href: `/products?category=${c.slug}` },
+      cta: { label: `Shop ${c.name}`, href: `/fabrics?category=${c.slug}` },
       ctaSecondary: {
         label: 'Ask on WhatsApp',
         href: `${BUSINESS.whatsapp}?text=${encodeURIComponent(`Hi! I'd like to know more about your ${c.name} fabrics.`)}`,
@@ -87,14 +87,14 @@ export default function HeroBanner() {
     : apiBanners.length > 0
       ? apiBanners.map((b: any, i: number) => {
           // A banner linked to a product (e.g. a customer's design) gets a "Shop this fabric" button
-          const isProduct = /^\/products\/[^/?#]+/.test(b.link || '');
+          const isProduct = /^\/(products|fabrics)\/[^/?#]+/.test(b.link || '');
           return {
           id: b.id,
           tag: '',
           headline: b.title,
           sub: b.subtitle || '',
-          cta: { label: isProduct ? 'Shop this fabric' : 'Shop now', href: b.link || '/products' },
-          ctaSecondary: { label: 'View all fabrics', href: '/products' },
+          cta: { label: isProduct ? 'Shop this fabric' : 'Shop now', href: b.link || '/fabrics' },
+          ctaSecondary: { label: 'View all fabrics', href: '/fabrics' },
           image: b.image,
           accent: ACCENTS[i % ACCENTS.length],
           };

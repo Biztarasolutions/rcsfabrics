@@ -10,8 +10,8 @@ const FOOTER_SECTIONS = [
   {
     title: 'Shop',
     links: [
-      { label: 'All Fabrics', href: '/products' },
-      { label: 'New Arrivals', href: '/products?sort=newest' },
+      { label: 'All Fabrics', href: '/fabrics' },
+      { label: 'New Arrivals', href: '/fabrics?sort=newest' },
     ],
   },
   {
@@ -43,7 +43,7 @@ export default function Footer() {
   const categoryLinks = (homepageData?.categories || [])
     .filter((c: any) => c.productCount !== 0)
     .slice(0, 5)
-    .map((c: any) => ({ label: c.name, href: `/products?category=${c.slug}` }));
+    .map((c: any) => ({ label: c.name, href: `/fabrics?category=${c.slug}` }));
   const sections = FOOTER_SECTIONS.map((sec, i) =>
     i === 0 ? { ...sec, links: [sec.links[0], ...categoryLinks, ...sec.links.slice(1)] } : sec
   );

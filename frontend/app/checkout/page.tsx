@@ -200,7 +200,7 @@ function ThankYouScreen({ order }: { order: any }) {
             className="mt-6 flex gap-3"
           >
             <Link href={`/account/orders/${order.id}`} className="button-secondary flex-1 py-3 text-center">View Order Details</Link>
-            <Link href="/products" className="button-primary flex-1 py-3 text-center">Continue Shopping</Link>
+            <Link href="/fabrics" className="button-primary flex-1 py-3 text-center">Continue Shopping</Link>
           </motion.div>
         </div>
       </div>
@@ -407,7 +407,7 @@ export default function CheckoutPage() {
       <div className="flex min-h-screen flex-col items-center justify-center py-24">
         <p className="text-6xl">🛒</p>
         <h2 className="mt-4 font-display text-2xl font-bold text-gray-900 dark:text-white">Your cart is empty</h2>
-        <Link href="/products" className="button-primary mt-6 px-8 py-3">Start Shopping</Link>
+        <Link href="/fabrics" className="button-primary mt-6 px-8 py-3">Start Shopping</Link>
       </div>
     );
   }

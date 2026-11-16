@@ -54,7 +54,7 @@ function ProductsContent() {
     Object.entries(patch).forEach(([k, v]) => (v ? params.set(k, v) : params.delete(k)));
     if (!('page' in patch)) params.delete('page'); // reset page on filter change
     params.delete('minPrice');
-    router.push(`/products?${params.toString()}`, { scroll: false });
+    router.push(`/fabrics?${params.toString()}`, { scroll: false });
   };
   const updateParam = (key: string, value: string) => updateParams({ [key]: value });
 
@@ -180,7 +180,7 @@ function ProductsContent() {
                 <div className="py-24 text-center">
                   <p className="text-6xl">🧵</p>
                   <h3 className="mt-4 text-xl font-semibold text-gray-900 dark:text-white">No fabrics found</h3>
-                  <button onClick={() => router.push('/products')} className="button-primary mt-6 px-6 py-3">Clear Filters</button>
+                  <button onClick={() => router.push('/fabrics')} className="button-primary mt-6 px-6 py-3">Clear Filters</button>
                 </div>
               </>
             ) : (

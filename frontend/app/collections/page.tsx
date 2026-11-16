@@ -31,7 +31,7 @@ export default function CollectionsPage() {
             {collections.map((c) => <CollectionCard key={c.slug} c={c} />)}
           </div>
         ) : (
-          <p className="text-gray-600 dark:text-gray-400">New collections are coming soon. <Link href="/products" className="font-semibold text-primary-700">Browse all fabrics →</Link></p>
+          <p className="text-gray-600 dark:text-gray-400">New collections are coming soon. <Link href="/fabrics" className="font-semibold text-primary-700">Browse all fabrics →</Link></p>
         )}
       </div>
     </div>

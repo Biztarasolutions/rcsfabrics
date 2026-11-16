@@ -378,7 +378,7 @@ export default function OrderDetailPage() {
 
           <div className="flex gap-3 pt-2">
             <Link href="/account/orders" className="button-secondary flex-1 py-3 text-center">← All Orders</Link>
-            <Link href="/products" className="button-primary flex-1 py-3 text-center">Continue Shopping</Link>
+            <Link href="/fabrics" className="button-primary flex-1 py-3 text-center">Continue Shopping</Link>
           </div>
         </div>
       </div>

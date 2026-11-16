@@ -13,13 +13,13 @@ export default function TermsOfService() {
       intro={<p>These terms apply when you use this website or buy from {BUSINESS.legalName} ({BUSINESS.brand}). By placing an order you agree to them.</p>}
       sections={[
         {
-          heading: 'Products and pricing',
+          heading: 'Fabrics and pricing',
           body: (
             <ul>
-              <li>Fabrics are sold by the metre, in steps of 0.5 m, subject to each product’s minimum order.</li>
+              <li>Fabrics are sold by the metre, in steps of 0.5 m, subject to each fabric’s minimum order.</li>
               <li>All prices are in Indian Rupees (₹) and include applicable taxes unless stated otherwise.</li>
               <li>Colours may look slightly different on different screens. Measurements such as width are approximate.</li>
-              <li>We may change prices or stop selling a product at any time; the price you pay is the one shown at checkout.</li>
+              <li>We may change prices or stop selling a fabric at any time; the price you pay is the one shown at checkout.</li>
             </ul>
           ),
         },

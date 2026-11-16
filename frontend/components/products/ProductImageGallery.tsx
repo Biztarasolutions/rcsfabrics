@@ -19,7 +19,7 @@ export default function ProductImageGallery({ images }: ProductImageGalleryProps
         {selected && (
           <Image
             src={selected.url}
-            alt={selected.alt || 'Product image'}
+            alt={selected.alt || 'Fabric photo'}
             fill
             className="object-cover"
             priority

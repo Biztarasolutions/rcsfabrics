@@ -23,7 +23,7 @@ export default function CartPage() {
         <p className="text-7xl">🛒</p>
         <h2 className="mt-5 font-display text-3xl font-bold text-gray-900 dark:text-white">Your cart is empty</h2>
         <p className="mt-2 text-gray-500 dark:text-gray-400">Explore our premium fabric collection and fill it up!</p>
-        <Link href="/products" className="button-primary mt-8 px-10 py-3.5">Browse Fabrics</Link>
+        <Link href="/fabrics" className="button-primary mt-8 px-10 py-3.5">Browse Fabrics</Link>
       </div>
     );
   }
@@ -126,7 +126,7 @@ export default function CartPage() {
               <Link href="/checkout" className="button-luxury mt-5 block w-full py-4 text-center font-semibold text-base">
                 🔒 Proceed to Checkout
               </Link>
-              <Link href="/products" className="mt-3 block text-center text-sm font-medium text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400 transition-colors">
+              <Link href="/fabrics" className="mt-3 block text-center text-sm font-medium text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400 transition-colors">
                 ← Continue Shopping
               </Link>
 

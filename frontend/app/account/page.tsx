@@ -310,7 +310,7 @@ function AccountPage() {
                         <div className="mt-4 py-8 text-center text-gray-500 dark:text-gray-400">
                           <p className="text-3xl mb-2">🛍️</p>
                           <p className="font-medium">No orders yet</p>
-                          <Link href="/products" className="text-primary-600 font-semibold hover:underline text-sm mt-1 inline-block">Start exploring fabrics</Link>
+                          <Link href="/fabrics" className="text-primary-600 font-semibold hover:underline text-sm mt-1 inline-block">Start exploring fabrics</Link>
                         </div>
                       ) : (
                         <>
@@ -357,7 +357,7 @@ function AccountPage() {
                       <div className="py-12 text-center text-gray-500 dark:text-gray-400">
                         <p className="text-5xl mb-3">📦</p>
                         <p className="font-medium text-lg">You have not placed any orders yet</p>
-                        <Link href="/products" className="button-primary mt-5 px-6 py-2.5 text-sm">Shop Now</Link>
+                        <Link href="/fabrics" className="button-primary mt-5 px-6 py-2.5 text-sm">Shop Now</Link>
                       </div>
                     ) : (
                       <div className="mt-5 space-y-4">
@@ -379,7 +379,7 @@ function AccountPage() {
                             </div>
                             <div className="mt-4 space-y-2 border-t border-gray-100 pt-3 dark:border-dark-700">
                               {order.items?.map((item: any, i: number) => (
-                                <Link key={i} href={item.product?.slug ? `/products/${item.product.slug}` : '/products'}
+                                <Link key={i} href={item.product?.slug ? `/fabrics/${item.product.slug}` : '/fabrics'}
                                   className="flex items-center gap-3 rounded-xl p-2 -mx-2 hover:bg-gray-50 dark:hover:bg-dark-700/50 transition-colors group">
                                   {item.productImage ? (
                                     <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-dark-700">

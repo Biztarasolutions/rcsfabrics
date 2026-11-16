@@ -52,7 +52,7 @@ export default function CollectionPage({ params }: { params: { slug: string } })
         ) : (
           <div className="py-10 text-center">
             <p className="font-display text-2xl text-gray-900 dark:text-white">New fabrics for this collection are on the way.</p>
-            <Link href="/products" className="button-primary mt-6 inline-flex px-8 py-3">Browse all fabrics</Link>
+            <Link href="/fabrics" className="button-primary mt-6 inline-flex px-8 py-3">Browse all fabrics</Link>
           </div>
         )}
 

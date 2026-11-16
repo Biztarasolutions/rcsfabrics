@@ -13,7 +13,7 @@ const PROMISES = [
   {
     title: 'Cut to the length you need',
     text: 'Order from 0.5 metre, in half-metre steps — no fixed packs, no waste.',
-    href: '/products',
+    href: '/fabrics',
     link: 'Shop fabrics',
   },
   {

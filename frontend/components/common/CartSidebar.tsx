@@ -63,7 +63,7 @@ export default function CartSidebar() {
                   <p className="font-semibold text-gray-900 dark:text-white">Your cart is empty</p>
                   <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Add fabrics you love to get started</p>
                 </div>
-                <Link href="/products" onClick={closeCart} className="button-primary px-8 py-3">
+                <Link href="/fabrics" onClick={closeCart} className="button-primary px-8 py-3">
                   Browse Fabrics
                 </Link>
               </div>

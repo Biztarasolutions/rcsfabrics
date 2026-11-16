@@ -11,7 +11,7 @@ import { queryClient } from '@/components/common/Providers';
 
 const NAV_LINKS = [
   { label: 'Home', href: '/' },
-  { label: 'Fabrics', href: '/products' },
+  { label: 'Fabrics', href: '/fabrics' },
   { label: 'About', href: '/about' },
   { label: 'Contact', href: '/contact' },
 ];
@@ -60,7 +60,7 @@ export default function Header() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      router.push(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
+      router.push(`/fabrics?search=${encodeURIComponent(searchQuery.trim())}`);
       setSearchQuery('');
       closeSearch();
     }
@@ -277,7 +277,7 @@ export default function Header() {
               </form>
               <div className="mt-3 flex flex-wrap gap-2">
                 {['Rayon', 'Cotton', 'Linen', 'Chiffon', 'Crepe'].map((tag) => (
-                  <button key={tag} onClick={() => { router.push(`/products?search=${tag}`); closeSearch(); }}
+                  <button key={tag} onClick={() => { router.push(`/fabrics?search=${tag}`); closeSearch(); }}
                     className="rounded-full border border-gray-200 px-3 py-1 text-xs font-medium text-gray-600 hover:border-primary-400 hover:text-primary-600 dark:border-dark-600 dark:text-gray-400 transition-colors">
                     {tag}
                   </button>

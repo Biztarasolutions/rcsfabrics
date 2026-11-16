@@ -112,7 +112,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
     setSelectedVariant(cached || v);
     setActiveImg(0);
     // Update the address bar (shareable link) without reloading the page
-    if (typeof window !== 'undefined') window.history.replaceState(window.history.state, '', `/products/${v.slug}`);
+    if (typeof window !== 'undefined') window.history.replaceState(window.history.state, '', `/fabrics/${v.slug}`);
     if (!cached || !cached.images?.length) {
       queryClient
         .fetchQuery({ queryKey: ['product', v.slug], queryFn: () => productApi.getBySlug(v.slug).then((res) => res.data.data) })
@@ -155,7 +155,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
   });
 
   if (isProductLoading) return <div className="flex min-h-screen items-center justify-center"><div className="h-10 w-10 animate-spin rounded-full border-4 border-primary-600 border-t-transparent"/></div>;
-  if (isProductError || !initialProduct) return <div className="flex min-h-screen items-center justify-center text-center py-20"><div><p className="text-6xl">🧶</p><h2 className="mt-4 text-2xl font-bold">Product not found</h2><button onClick={() => router.back()} className="button-primary mt-6 px-8 py-3">Go Back</button></div></div>;
+  if (isProductError || !initialProduct) return <div className="flex min-h-screen items-center justify-center text-center py-20"><div><p className="text-6xl">🧶</p><h2 className="mt-4 text-2xl font-bold">Fabric not found</h2><button onClick={() => router.back()} className="button-primary mt-6 px-8 py-3">Go Back</button></div></div>;
 
   const PRODUCT = selectedVariant || initialProduct;
   const images = PRODUCT.images ?? [];
@@ -192,7 +192,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
   // WhatsApp chat with Mayank. WhatsApp links can't attach files, so the product
   // link is included — WhatsApp shows it as a preview card with the product photo.
   const whatsappHref = (() => {
-    const url = `${SITE_URL}/products/${PRODUCT.slug}`;
+    const url = `${SITE_URL}/fabrics/${PRODUCT.slug}`;
     const text = `Hey! I am looking for this fabric. Is it available?\n\n${productDisplayName(PRODUCT)}\n${url}`;
     return `${BUSINESS.whatsapp}?text=${encodeURIComponent(text)}`;
   })();
@@ -233,9 +233,9 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
         <div className="container-main py-4 text-sm text-gray-500 dark:text-gray-400 flex flex-wrap items-center gap-1">
           <Link href="/" className="hover:text-primary-600 transition-colors">Home</Link>
           <span className="mx-1">/</span>
-          <Link href="/products" className="hover:text-primary-600 transition-colors">Fabrics</Link>
+          <Link href="/fabrics" className="hover:text-primary-600 transition-colors">Fabrics</Link>
           <span className="mx-1">/</span>
-          <Link href={`/products?category=${PRODUCT.category?.slug}`} className="hover:text-primary-600 transition-colors">{PRODUCT.category?.name}</Link>
+          <Link href={`/fabrics?category=${PRODUCT.category?.slug}`} className="hover:text-primary-600 transition-colors">{PRODUCT.category?.name}</Link>
           <span className="mx-1">/</span>
           <span className="text-gray-900 dark:text-white">{PRODUCT.name}</span>
         </div>
@@ -442,7 +442,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-500">No product properties available.</p>
+                  <p className="text-sm text-gray-500">No fabric details available yet.</p>
                 )}
               </div>
             )}
@@ -515,7 +515,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
             <h2 className="font-display text-2xl font-bold text-gray-900 dark:text-white">Recently Viewed</h2>
             <div className="mt-6 grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
               {recentlyViewed.slice(0, 5).map((p) => (
-                <Link key={p.id} href={`/products/${p.slug}`}
+                <Link key={p.id} href={`/fabrics/${p.slug}`}
                   className="group rounded-2xl border border-gray-100 bg-white p-3 transition-shadow hover:shadow-md dark:border-dark-700 dark:bg-dark-800">
                   <div className="relative overflow-hidden rounded-xl bg-gray-50 dark:bg-dark-700" style={{ aspectRatio: '4/5' }}>
                     {p.image ? (

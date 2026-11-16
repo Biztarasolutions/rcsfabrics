@@ -25,7 +25,7 @@ export default function EmptyCart() {
       <p className="mt-2 text-gray-600 dark:text-gray-400">
         Start shopping to add items to your cart
       </p>
-      <Link href="/products">
+      <Link href="/fabrics">
         <button className="button-primary mt-8 px-8 py-3">
           Continue Shopping
         </button>

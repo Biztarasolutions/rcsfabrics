@@ -44,7 +44,7 @@ const ProductCard = React.memo(function ProductCard({ product, priority = false 
 
   return (
     <Link
-      href={`/products/${product.slug}`}
+      href={`/fabrics/${product.slug}`}
       prefetch
       onClick={() => queryClient.setQueryData(['product-preview', product.slug], product)}
       className="block cursor-pointer rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"

@@ -60,7 +60,7 @@ export default function NewArrivals() {
         </div>
 
         <div className="mt-8 text-center">
-          <Link href="/products?sort=newest" className="button-secondary inline-flex items-center gap-2 px-8 py-3">
+          <Link href="/fabrics?sort=newest" className="button-secondary inline-flex items-center gap-2 px-8 py-3">
             See All New Arrivals
           </Link>
         </div>

@@ -28,8 +28,8 @@ export default function WishlistGrid({ compact = false }: { compact?: boolean })
           <div className={`${compact ? "mt-6" : "mt-16"} flex flex-col items-center justify-center py-12 text-center`}>
             <p className="text-7xl">❤️</p>
             <h3 className="mt-5 font-display text-2xl font-bold text-gray-900 dark:text-white">Your wishlist is empty</h3>
-            <p className="mt-2 text-gray-500 dark:text-gray-400">Save fabrics you love by clicking the heart icon on any product.</p>
-            <Link href="/products" className="button-primary mt-6 px-8 py-3">Explore Fabrics</Link>
+            <p className="mt-2 text-gray-500 dark:text-gray-400">Save fabrics you love by clicking the heart icon on any fabric.</p>
+            <Link href="/fabrics" className="button-primary mt-6 px-8 py-3">Explore Fabrics</Link>
           </div>
         ) : (
           <div className={`${compact ? "mt-6 grid gap-5 sm:grid-cols-2 xl:grid-cols-3" : "mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"}`}>
@@ -39,7 +39,7 @@ export default function WishlistGrid({ compact = false }: { compact?: boolean })
                 className="group relative overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm dark:border-dark-700 dark:bg-dark-800">
                 {/* Image */}
                 <div className="relative overflow-hidden" style={{ aspectRatio: '4/5' }}>
-                  <Link href={`/products/${item.product.slug}`} aria-label={`View ${productDisplayName(item.product)}`} className="absolute inset-0 block cursor-pointer">
+                  <Link href={`/fabrics/${item.product.slug}`} aria-label={`View ${productDisplayName(item.product)}`} className="absolute inset-0 block cursor-pointer">
                     <Image src={supabaseImg(item.product.images?.[0]?.url || '', 500, 70, 'cover') || BLUR_PLACEHOLDER} alt={productDisplayName(item.product)}
                       fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" className="object-cover transition-transform duration-300 group-hover:scale-105"/>
                   </Link>
@@ -53,7 +53,7 @@ export default function WishlistGrid({ compact = false }: { compact?: boolean })
                 <div className="p-4">
                   <p className="text-xs font-medium uppercase tracking-wider text-primary-600 dark:text-primary-400">{item.product.bestFor?.join(', ') || item.product.category?.name}</p>
                   <h3 className="mt-1 font-semibold text-gray-900 dark:text-white">
-                    <Link href={`/products/${item.product.slug}`} className="hover:text-primary-700 hover:underline dark:hover:text-primary-400">
+                    <Link href={`/fabrics/${item.product.slug}`} className="hover:text-primary-700 hover:underline dark:hover:text-primary-400">
                       {productDisplayName(item.product)}
                     </Link>
                   </h3>
@@ -70,7 +70,7 @@ export default function WishlistGrid({ compact = false }: { compact?: boolean })
                       className="button-primary flex-1 py-2 text-sm">
                       Move to Cart
                     </button>
-                    <Link href={`/products/${item.product.slug}`}
+                    <Link href={`/fabrics/${item.product.slug}`}
                       className="button-secondary px-3 py-2 text-sm">
                       View
                     </Link>

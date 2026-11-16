@@ -216,7 +216,7 @@ function OrdersContent() {
           <div className="py-20 text-center">
             <p className="text-5xl">📦</p>
             <h3 className="mt-4 font-display text-2xl font-bold text-gray-900 dark:text-white">No orders yet</h3>
-            <Link href="/products" className="button-primary mt-6 px-8 py-3 inline-block">Start Shopping</Link>
+            <Link href="/fabrics" className="button-primary mt-6 px-8 py-3 inline-block">Start Shopping</Link>
           </div>
         )}
       </div>

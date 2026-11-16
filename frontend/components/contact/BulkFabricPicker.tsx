@@ -79,7 +79,7 @@ export default function BulkFabricPicker({
 
   const choose = (p: any) => {
     setSelected(p.id);
-    onChange(`${productDisplayName(p)} (${p.category?.name || 'Fabric'}) — ${SITE_URL}/products/${p.slug}`);
+    onChange(`${productDisplayName(p)} (${p.category?.name || 'Fabric'}) — ${SITE_URL}/fabrics/${p.slug}`);
   };
 
   const pickCategory = (slug: string) => {

@@ -10,7 +10,7 @@ export default function SiteChrome({ children }: { children: React.ReactNode }) 
   const pathname = usePathname();
   const isAdmin = pathname?.startsWith('/admin');
   // Product pages have their own WhatsApp buttons (with the product link) on mobile
-  const liftWhatsApp = /^\/products\/[^/]+/.test(pathname || '');
+  const liftWhatsApp = /^\/fabrics\/[^/]+/.test(pathname || '');
 
   if (isAdmin) {
     return <>{children}</>;

@@ -18,7 +18,7 @@ export default function NotFound() {
         <Link href="/" className="button-primary px-8 py-3">
           ← Back to Home
         </Link>
-        <Link href="/products" className="button-secondary px-8 py-3">
+        <Link href="/fabrics" className="button-secondary px-8 py-3">
           Browse Fabrics
         </Link>
       </div>

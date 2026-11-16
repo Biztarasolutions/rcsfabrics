@@ -27,7 +27,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   const res = await fetchApi<{ data?: any }>(`products/slug/${encodeURIComponent(params.slug)}`, IS_BUILD ? 60000 : 2500);
   const p = res?.data;
   if (!p) {
-    return { title: `${nameFromSlug(params.slug)} — Fabric by the Metre`, alternates: { canonical: `/products/${params.slug}` } };
+    return { title: `${nameFromSlug(params.slug)} — Fabric by the Metre`, alternates: { canonical: `/fabrics/${params.slug}` } };
   }
   const name = productDisplayName(p);
   const price = p.discountPrice || p.basePrice;
@@ -44,11 +44,11 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   return {
     title: `${name} — ${p.category?.name ? `${p.category.name} ` : ''}Fabric by the Metre`,
     description,
-    alternates: { canonical: `/products/${p.slug}` },
+    alternates: { canonical: `/fabrics/${p.slug}` },
     openGraph: {
       title: name,
       description,
-      url: `${SITE_URL}/products/${p.slug}`,
+      url: `${SITE_URL}/fabrics/${p.slug}`,
       type: 'website',
       ...(image ? { images: [{ url: image }] } : {}),
     },

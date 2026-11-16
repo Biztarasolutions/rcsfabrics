@@ -20,7 +20,7 @@ export default function BestSellers() {
             <h2 className="section-title mt-3 font-display">Best Sellers</h2>
             <p className="section-subtitle">Customer favourites — ordered again and again</p>
           </div>
-          <Link href="/products"
+          <Link href="/fabrics"
             className="hidden text-sm font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-400 sm:block">
             View All →
           </Link>
