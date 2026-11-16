@@ -398,7 +398,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
             </a>
 
             <div className="flex flex-wrap gap-6 border-t border-gray-100 pt-5 dark:border-dark-800">
-              {['🚚 Free Shipping ₹2K+', '↩️ 7-Day Returns (2 m+)', '✅ 100% Authentic'].map((t) => (
+              {['🚚 Free Shipping ₹2K+', '🛡️ Damage cover (48 h)', '✅ 100% Authentic'].map((t) => (
                 <span key={t} className="text-sm font-medium text-gray-600 dark:text-gray-400">{t}</span>
               ))}
             </div>

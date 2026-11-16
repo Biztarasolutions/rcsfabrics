@@ -136,7 +136,7 @@ export default function ProductInfo({
         <div className="text-center">
           <p className="text-2xl">✓</p>
           <p className="text-xs text-gray-600 dark:text-gray-400">
-            7-Day Returns
+            Damage cover (48 h)
           </p>
         </div>
         <div className="text-center">

@@ -23,10 +23,10 @@ const PROMISES = [
     link: 'Chat on WhatsApp',
   },
   {
-    title: 'Simple, fair returns',
-    text: 'Pieces of 2 metres or more can be returned within 7 days. Free shipping on orders above ₹2,000.',
+    title: 'Covered if anything goes wrong',
+    text: 'Wrong or damaged fabric? Tell us within 48 hours and we’ll put it right. Free shipping on orders above ₹2,000.',
     href: '/returns',
-    link: 'Return policy',
+    link: 'Our policy',
   },
 ];
 
