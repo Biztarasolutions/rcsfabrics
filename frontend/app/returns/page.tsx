@@ -19,7 +19,7 @@ export default function ReturnPolicy() {
         </p>
       }
       highlights={[
-        { value: 'No returns', label: 'Fabric is cut to your length and gets damaged in transit back' },
+        { value: 'No returns', label: 'Every piece is cut fresh to your length and reaches you untouched' },
         { value: '48 hours', label: 'To report a wrong or damaged item' },
         { value: 'Free', label: 'Cancellation any time before shipping' },
         { value: '5–7 days', label: 'Refund to your original payment method' },
@@ -51,9 +51,11 @@ export default function ReturnPolicy() {
           body: (
             <>
               <p>
-                Every order at {BUSINESS.legalName} ({BUSINESS.brand}) is cut fresh to the length you choose. Fabric sent back to
-                us often arrives creased, stretched or soiled and can no longer be sold, so we&apos;re unable to accept returns
-                for a change of mind.
+                Every order at {BUSINESS.legalName} ({BUSINESS.brand}) is cut fresh to the length you choose, so the fabric you
+                receive has never been sent to anyone before. Fabric is delicate: each extra round of packing, shipping and
+                handling wears on its fold, finish and drape. If pieces went back and forth between customers, the next person
+                could receive fabric that is no longer in perfect condition — so to keep every order fresh, we don&apos;t accept
+                returns for a change of mind.
               </p>
               <p>
                 Not sure about a colour or feel? <strong>Ask us on WhatsApp before you order</strong> — we&apos;ll happily send
