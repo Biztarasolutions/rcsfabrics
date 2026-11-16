@@ -24,16 +24,22 @@ function ProductsContent() {
   const search = searchParams.get('search') || '';
   const category = searchParams.get('category') || '';
   const sort = searchParams.get('sort') || 'featured';
-  const minPrice = searchParams.get('minPrice');
   const maxPrice = searchParams.get('maxPrice');
+  const color = searchParams.get('color') || '';
+  const pattern = searchParams.get('pattern') || '';
+  const stretch = searchParams.get('stretch') || '';
   const page = searchParams.get('page') || '1';
+  const [filtersOpen, setFiltersOpen] = React.useState(false);
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['products', { search, category, sort, minPrice, maxPrice, page }],
+    queryKey: ['products', { search, category, sort, maxPrice, color, pattern, stretch, page }],
+    placeholderData: (prev: any) => prev, // keep showing results while a filter loads
     queryFn: () => productApi.getAll({
       search, category, sort,
-      minPrice: minPrice ? Number(minPrice) : undefined,
       maxPrice: maxPrice ? Number(maxPrice) : undefined,
+      color: color || undefined,
+      pattern: pattern || undefined,
+      stretch: stretch || undefined,
       page: Number(page),
       limit: 12,
     }).then(res => res.data.data),
@@ -42,12 +48,26 @@ function ProductsContent() {
   const products = data?.products || [];
   const pagination = data;
 
-  const updateParam = (key: string, value: string) => {
+  // Update one or more URL filters at once (so they never overwrite each other)
+  const updateParams = (patch: Record<string, string>) => {
     const params = new URLSearchParams(searchParams.toString());
-    if (value) params.set(key, value); else params.delete(key);
-    if (key !== 'page') params.delete('page'); // Reset page on filter change
-    router.push(`/products?${params.toString()}`);
+    Object.entries(patch).forEach(([k, v]) => (v ? params.set(k, v) : params.delete(k)));
+    if (!('page' in patch)) params.delete('page'); // reset page on filter change
+    params.delete('minPrice');
+    router.push(`/products?${params.toString()}`, { scroll: false });
   };
+  const updateParam = (key: string, value: string) => updateParams({ [key]: value });
+
+  const split = (v: string) => (v ? v.split(',').filter(Boolean) : []);
+  const filterValues = {
+    category,
+    color: split(color),
+    pattern: split(pattern),
+    stretch: split(stretch),
+    maxPrice: maxPrice ? Number(maxPrice) : null,
+  };
+  const activeCount = (category ? 1 : 0) + filterValues.color.length + filterValues.pattern.length + filterValues.stretch.length + (maxPrice ? 1 : 0);
+  const filters = <ProductFilters values={filterValues} facets={data?.facets} onChange={(p) => updateParams(p as Record<string, string>)} />;
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-white dark:bg-dark-950">
@@ -67,13 +87,26 @@ function ProductsContent() {
       <div className="container-main py-8">
         <div className="flex gap-8">
           {/* Sidebar Filters */}
-          <aside className="hidden w-64 shrink-0 lg:block">
-            <ProductFilters
-              selectedCategory={category}
-              onCategoryChange={(v) => updateParam('category', v)}
-              onPriceChange={(min, max) => { updateParam('minPrice', String(min)); updateParam('maxPrice', String(max)); }}
-            />
-          </aside>
+          <aside className="hidden w-64 shrink-0 lg:block">{filters}</aside>
+
+          {/* Mobile filter drawer */}
+          {filtersOpen && (
+            <div className="fixed inset-0 z-[90] lg:hidden" role="dialog" aria-modal="true" aria-label="Filters">
+              <div className="absolute inset-0 bg-black/40" onClick={() => setFiltersOpen(false)} />
+              <div className="absolute inset-y-0 left-0 flex w-[85%] max-w-sm flex-col bg-white shadow-xl dark:bg-dark-900">
+                <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4 dark:border-dark-700">
+                  <p className="font-display text-xl text-gray-900 dark:text-white">Filters</p>
+                  <button type="button" onClick={() => setFiltersOpen(false)} aria-label="Close filters" className="text-2xl leading-none text-gray-400">×</button>
+                </div>
+                <div className="flex-1 overflow-y-auto px-5 py-5">{filters}</div>
+                <div className="border-t border-gray-100 p-4 dark:border-dark-700">
+                  <button type="button" onClick={() => setFiltersOpen(false)} className="button-primary w-full py-3">
+                    Show {pagination?.total ?? 0} {pagination?.total === 1 ? 'fabric' : 'fabrics'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Main Content */}
           <div className="flex-1 min-w-0">
@@ -98,6 +131,10 @@ function ProductsContent() {
                 {category && <span className="ml-1">in <strong className="text-gray-700 dark:text-gray-300">{category}</strong></span>}
               </p>
               <div className="flex items-center gap-3">
+                <button type="button" onClick={() => setFiltersOpen(true)}
+                  className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 lg:hidden dark:border-dark-700 dark:bg-dark-800 dark:text-gray-200">
+                  Filters{activeCount > 0 && <span className="rounded-full bg-primary-700 px-1.5 text-xs text-white">{activeCount}</span>}
+                </button>
                 <select value={sort} onChange={(e) => updateParam('sort', e.target.value)}
                   className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm dark:border-dark-700 dark:bg-dark-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500/20">
                   {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}

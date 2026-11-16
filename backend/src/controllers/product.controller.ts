@@ -45,7 +45,7 @@ export const getProducts = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { category, search, page, limit, sort } = req.query;
+    const { category, search, page, limit, sort, color, pattern, stretch, minPrice, maxPrice } = req.query;
 
     const { page: parsedPage, limit: parsedLimit, skip } = parsePagination(
       page as string,
@@ -56,6 +56,7 @@ export const getProducts = async (
     const where: any = {
       isActive: true,
     };
+    const and: any[] = [];
 
     if (category) {
       where.category = {
@@ -65,26 +66,40 @@ export const getProducts = async (
 
     if (search) {
       where.OR = [
-        {
-          name: {
-            contains: search as string,
-            mode: 'insensitive',
-          },
-        },
-        {
-          description: {
-            contains: search as string,
-            mode: 'insensitive',
-          },
-        },
+        { name: { contains: search as string, mode: 'insensitive' } },
+        { description: { contains: search as string, mode: 'insensitive' } },
+        { color: { contains: search as string, mode: 'insensitive' } },
+        { pattern: { contains: search as string, mode: 'insensitive' } },
       ];
     }
 
+    // Base for the filter options shown in the sidebar (category + search only)
+    const facetWhere = { ...where };
+
+    // Colour / pattern / stretch: comma-separated lists, case-insensitive exact match
+    const list = (v: unknown) => String(v || '').split(',').map((x) => x.trim()).filter(Boolean).slice(0, 20);
+    const anyOf = (field: string, values: string[]) =>
+      values.length ? and.push({ OR: values.map((v) => ({ [field]: { equals: v, mode: 'insensitive' } })) }) : null;
+    anyOf('color', list(color));
+    anyOf('pattern', list(pattern));
+    anyOf('stretchability', list(stretch));
+
+    // Price per metre, using the sale price when there is one
+    const min = minPrice !== undefined && minPrice !== '' ? Number(minPrice) : NaN;
+    const max = maxPrice !== undefined && maxPrice !== '' ? Number(maxPrice) : NaN;
+    if (Number.isFinite(min) || Number.isFinite(max)) {
+      const range: any = {};
+      if (Number.isFinite(min)) range.gte = min;
+      if (Number.isFinite(max)) range.lte = max;
+      and.push({ OR: [{ discountPrice: { not: null, ...range } }, { discountPrice: null, basePrice: range }] });
+    }
+    if (and.length) where.AND = and;
+
     // Build sort
     const orderBy: any = {};
-    if (sort === 'price_asc') {
+    if (sort === 'price_asc' || sort === 'price-asc') {
       orderBy.basePrice = 'asc';
-    } else if (sort === 'price_desc') {
+    } else if (sort === 'price_desc' || sort === 'price-desc') {
       orderBy.basePrice = 'desc';
     } else if (sort === 'newest') {
       orderBy.createdAt = 'desc';
@@ -93,11 +108,12 @@ export const getProducts = async (
     } else {
       orderBy.createdAt = 'desc';
     }
+    const order = sort === 'featured' || !sort ? [{ isFeatured: 'desc' as const }, { createdAt: 'desc' as const }] : orderBy;
 
     const [products, total] = await Promise.all([
       prisma.product.findMany({
         where,
-        orderBy,
+        orderBy: order,
         skip,
         take: parsedLimit,
         include: {
@@ -113,6 +129,21 @@ export const getProducts = async (
       prisma.product.count({ where }),
     ]);
 
+    // Filter options that actually exist (for the current category / search)
+    const facetRows = await prisma.product.findMany({
+      where: facetWhere,
+      select: { color: true, pattern: true, stretchability: true, basePrice: true, discountPrice: true },
+    });
+    const uniq = (vals: (string | null | undefined)[]) =>
+      Array.from(new Map(vals.filter((v): v is string => !!v && !!v.trim() && !/^(standard|n\/a|none)$/i.test(v.trim()))
+        .map((v) => [v.trim().toLowerCase(), v.trim()])).values()).sort((x, y) => x.localeCompare(y));
+    const facets = {
+      colors: uniq(facetRows.map((r) => r.color)),
+      patterns: uniq(facetRows.map((r) => r.pattern)),
+      stretch: uniq(facetRows.map((r) => r.stretchability)),
+      maxPrice: Math.ceil(Math.max(0, ...facetRows.map((r) => r.discountPrice ?? r.basePrice)) / 50) * 50,
+    };
+
     const meta = createPaginationMeta(total, parsedPage, parsedLimit);
 
     res.json({
@@ -121,6 +152,7 @@ export const getProducts = async (
       data: {
         products,
         ...meta,
+        facets,
       },
       statusCode: 200,
     } as ApiResponse);
