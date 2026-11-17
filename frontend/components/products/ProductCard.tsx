@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { customerImages } from '@/lib/rawPhoto';
 import { Product } from '@/types';
 import { formatPrice, calculateDiscount, productDisplayName } from '@/lib/utils';
 import { useCartStore, useWishlistStore } from '@/lib/store';
@@ -17,8 +18,9 @@ const ProductCard = React.memo(function ProductCard({ product, priority = false 
   const [hovered, setHovered] = useState(false);
   const [everHovered, setEverHovered] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
-  const mainImage = product.images?.find((img) => img.isMain) || product.images?.[0];
-  const secondImage = product.images?.[1];
+  const photos = customerImages(product.images);
+  const mainImage = photos.find((img) => img.isMain) || photos[0];
+  const secondImage = photos[1];
   const discountPercent = product.discountPrice ? calculateDiscount(product.basePrice, product.discountPrice) : 0;
   const price = product.discountPrice || product.basePrice;
   const { addItem } = useCartStore();

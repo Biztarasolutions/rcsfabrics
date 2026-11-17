@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
+import { customerImages } from '@/lib/rawPhoto';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { productApi, adminApi } from '@/lib/api';
 import { useCartStore, useWishlistStore, useAuthStore, useStoresHydrated } from '@/lib/store';
@@ -169,7 +170,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
   if (isProductError || !initialProduct) return <div className="flex min-h-screen items-center justify-center text-center py-20"><div><p className="text-6xl">🧶</p><h2 className="mt-4 text-2xl font-bold">Fabric not found</h2>{previewMode && <p className="mt-2 text-sm text-gray-500">Preview is only available when signed in as staff.</p>}<button onClick={() => router.back()} className="button-primary mt-6 px-8 py-3">Go Back</button></div></div>;
 
   const PRODUCT = selectedVariant || initialProduct;
-  const images = PRODUCT.images ?? [];
+  const images = customerImages(PRODUCT.images); // never the admin-only Raw photo
   const isWishlisted = hasItem(PRODUCT.id);
   const price = PRODUCT.discountPrice ?? PRODUCT.basePrice;
   const minQty = PRODUCT.minOrderQty || 0.5;

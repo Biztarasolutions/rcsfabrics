@@ -3,6 +3,7 @@
 // "Raw image.jpg", "P10002 Raw.heic", "raw-1.jpg", "Raw (1).jpg".
 // A fabric whose name merely contains the word (e.g. "Raw Silk-1.jpg") is NOT treated as Raw.
 import { prisma } from '@/index';
+import { invalidateCache } from '@/middleware/cache';
 
 const ALLOWED_EXTRA = new Set(['image', 'img', 'photo', 'pic', 'picture', 'original', 'copy']);
 
@@ -42,6 +43,7 @@ export async function moveRawPhotosOutOfCustomerImages(): Promise<void> {
         if (next) await prisma.productImage.update({ where: { id: next.id }, data: { isMain: true } });
       }
     }
+    invalidateCache(); // drop any cached product responses that still had them
     console.log(`[Raw photos] Moved ${raws.length} Raw photo(s) out of customer photos`);
   } catch (err) {
     console.error('[Raw photos] cleanup failed:', err);
