@@ -129,6 +129,8 @@ process.on('SIGINT', async () => {
 });
 
 app.listen(port, () => {
+  // Move any Raw (admin-only) photo out of customer photos
+  void import('@/utils/rawPhoto').then((m) => m.moveRawPhotosOutOfCustomerImages());
   startUnpaidOrderSweeper();
   console.log(`⚡ Server is running at http://localhost:${port}`);
   console.log(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);

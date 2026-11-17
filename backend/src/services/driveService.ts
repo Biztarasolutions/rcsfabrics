@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import { getDriveImageStream, fetchFolderImageDetails, findFolderIdByName } from '../utils/googleDrive.util';
 import { uploadImageToSupabase } from '../utils/supabase.util';
 import { optimizeImage } from '../utils/imageOptimize';
+import { isRawFileName } from '../utils/rawPhoto';
 
 const prisma = new PrismaClient();
 
@@ -29,7 +30,7 @@ const uploadDriveImagesToSupabase = async (folderId: string): Promise<{ urls: st
       const publicUrl = await uploadImageToSupabase(img.buffer, img.filename, img.mimeType);
       
       // A photo named "Raw" is the admin-only original — never a customer photo
-      if (file.name.replace(/\.[a-z0-9]+$/i, '').trim().toLowerCase() === 'raw') rawUrl = publicUrl;
+      if (isRawFileName(file.name)) rawUrl = publicUrl;
       else publicUrls.push(publicUrl);
       console.log(`  [Product Sync] Uploaded: ${file.name} -> ${publicUrl}`);
     }

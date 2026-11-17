@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import { optimizeImage } from '@/utils/imageOptimize';
+import { isRawFileName } from '@/utils/rawPhoto';
 import { customerCode } from '@/utils/customer';
 import { prisma } from '@/index';
 import { isManager, isStaff, effectiveRole, isSuperAdminEmail, ASSIGNABLE_ROLES } from '@/utils/roles';
@@ -37,9 +38,7 @@ const streamToBuffer = (stream: any): Promise<Buffer> => {
   });
 };
 
-/** A Drive photo named "Raw" (any extension, any case) is the admin-only original */
-export const isRawFileName = (name: string): boolean =>
-  name.replace(/\.[a-z0-9]+$/i, '').trim().toLowerCase() === 'raw';
+export { isRawFileName };
 
 type SyncedFiles = { urls: string[]; rawUrl: string | null };
 
