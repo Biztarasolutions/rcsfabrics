@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { getDriveImageStream, fetchFolderImageDetails, findFolderIdByName } from '../utils/googleDrive.util';
 import { uploadImageToSupabase } from '../utils/supabase.util';
+import { optimizeImage } from '../utils/imageOptimize';
 
 const prisma = new PrismaClient();
 
@@ -21,13 +22,9 @@ const uploadDriveImagesToSupabase = async (folderId: string): Promise<string[]> 
     for (const file of files) {
       console.log(`  [Product Sync] Downloading: ${file.name} (${file.id})`);
       const streamRes = await getDriveImageStream(file.id);
-      const buffer = await streamToBuffer(streamRes.data);
-      
-      const publicUrl = await uploadImageToSupabase(
-        buffer,
-        file.name,
-        file.mimeType || 'image/jpeg'
-      );
+      const raw = await streamToBuffer(streamRes.data);
+      const img = await optimizeImage(raw, file.name, file.mimeType || 'image/jpeg');
+      const publicUrl = await uploadImageToSupabase(img.buffer, img.filename, img.mimeType);
       
       publicUrls.push(publicUrl);
       console.log(`  [Product Sync] Uploaded: ${file.name} -> ${publicUrl}`);

@@ -45,6 +45,7 @@
     "node-cache": "^5.1.2",
     "nodemailer": "^6.9.7",
     "razorpay": "^2.9.2",
+    "sharp": "^0.33.5",
     "slugify": "^1.6.9",
     "ts-node": "^10.9.1",
     "tsc-alias": "^1.8.8",

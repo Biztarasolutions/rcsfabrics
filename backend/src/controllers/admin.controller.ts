@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import { optimizeImage } from '@/utils/imageOptimize';
 import { customerCode } from '@/utils/customer';
 import { prisma } from '@/index';
 import { isManager, isStaff, effectiveRole, isSuperAdminEmail, ASSIGNABLE_ROLES } from '@/utils/roles';
@@ -41,12 +42,9 @@ const uploadDriveFilesToSupabase = async (files: DriveFileDetails[]): Promise<st
   for (const file of files) {
     console.log(`[Supabase Upload] Downloading file: ${file.name} (${file.id})`);
     const streamRes = await getDriveImageStream(file.id);
-    const buffer = await streamToBuffer(streamRes.data);
-    const publicUrl = await uploadImageToSupabase(
-      buffer,
-      file.name,
-      file.mimeType || 'image/jpeg'
-    );
+    const raw = await streamToBuffer(streamRes.data);
+    const img = await optimizeImage(raw, file.name, file.mimeType || 'image/jpeg');
+    const publicUrl = await uploadImageToSupabase(img.buffer, img.filename, img.mimeType);
     publicUrls.push(publicUrl);
     console.log(`[Supabase Upload] Uploaded successfully: ${file.name} -> ${publicUrl}`);
   }
