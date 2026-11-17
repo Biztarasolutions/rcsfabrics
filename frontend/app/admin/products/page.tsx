@@ -36,6 +36,9 @@ export default function AdminProductsPage() {
   const actualData = productsData?.data || productsData;
   const products = actualData?.products || [];
   const noPhotoCount = products.filter((p: any) => !p.images?.length).length;
+  const [bigPhoto, setBigPhoto] = useState<string | null>(null);
+  // Admin thumbnail: the Raw original if synced, else the main customer photo
+  const thumbOf = (p: any): string | null => p.rawImage?.url || p.images?.[0]?.url || null;
   const totalProducts = actualData?.total ?? products.length;
   const totalPages = actualData?.pages ?? 1;
 
@@ -130,8 +133,62 @@ export default function AdminProductsPage() {
         </div>
       )}
 
-      {/* Products Table — horizontal scroll only inside this card */}
-      <div className="min-w-0 w-full max-w-full rounded-2xl border border-gray-200 bg-white dark:border-dark-700 dark:bg-dark-800">
+      {/* Mobile: one card per fabric with a large, uncropped photo */}
+      <div className="space-y-3 md:hidden">
+        {isLoading ? (
+          <p className="py-10 text-center text-gray-500">Loading products...</p>
+        ) : products.length === 0 ? (
+          <p className="py-10 text-center text-gray-500">No products found. Create your first product!</p>
+        ) : products.map((product: any) => (
+          <div key={product.id} className="rounded-2xl border border-gray-200 bg-white p-3 dark:border-dark-700 dark:bg-dark-800">
+            <div className="flex gap-3">
+              <button type="button" onClick={() => thumbOf(product) && setBigPhoto(thumbOf(product))}
+                className="h-24 w-24 shrink-0 overflow-hidden rounded-xl border border-gray-100 bg-[#f4efe7] dark:border-dark-700 dark:bg-dark-700" aria-label="View photo">
+                {thumbOf(product) && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={supabaseImg(thumbOf(product)!, 300, 75)} alt={product.name} className="h-full w-full object-contain" loading="lazy" />
+                )}
+              </button>
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-bold text-gray-900 dark:text-white">{product.name}</p>
+                <p className="text-xs text-gray-500">{product.code ? `P${product.code}` : (product.styleCode?.split('-').pop() || '—')} · {product.category?.name || '—'}</p>
+                <p className="mt-1 text-sm">
+                  <span className="font-semibold text-gray-900 dark:text-white">{formatPrice(product.discountPrice || product.basePrice)}</span>
+                  {product.discountPrice && product.discountPrice < product.basePrice && <span className="ml-1.5 text-xs text-gray-400 line-through">{formatPrice(product.basePrice)}</span>}
+                  <span className={`ml-2 text-xs font-semibold ${product.totalStock <= 10 ? 'text-red-600' : 'text-gray-600 dark:text-gray-300'}`}>{product.totalStock}m stock</span>
+                </p>
+                {product.colors?.length > 0 && (
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {product.colors.map((c: any, i: number) => (
+                      <span key={i} title={c.name} className={`h-4 w-4 rounded-full border border-gray-300 ${(c.stock ?? 0) === 0 ? 'opacity-40' : ''}`} style={{ backgroundColor: c.hexCode }} />
+                    ))}
+                  </div>
+                )}
+                {!product.images?.length && (
+                  <span className="mt-1.5 inline-block rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">No photos · hidden from shop</span>
+                )}
+              </div>
+            </div>
+            <div className="mt-3 grid grid-cols-4 gap-2 text-xs font-medium">
+              <button onClick={() => handleSyncSingle(product.id)} disabled={syncSingleMutation.isPending}
+                className="rounded-lg border border-blue-200 py-2 text-blue-600 dark:border-blue-900 dark:text-blue-400">
+                {syncSingleMutation.variables === product.id && syncSingleMutation.isPending ? 'Syncing…' : 'Sync'}
+              </button>
+              {product.slug ? (
+                <a href={`/fabrics/${product.slug}?preview=1`} target="_blank" rel="noopener noreferrer"
+                  className="rounded-lg border border-gray-200 py-2 text-center text-gray-700 dark:border-dark-600 dark:text-gray-300">Preview</a>
+              ) : <span />}
+              <button onClick={() => { setEditingProduct(product); setShowModal(true); }}
+                className="rounded-lg border border-green-200 py-2 text-green-600 dark:border-green-900 dark:text-green-400">Edit</button>
+              <button onClick={() => setDeleteConfirm(product.id)}
+                className="rounded-lg border border-red-200 py-2 text-red-600 dark:border-red-900 dark:text-red-400">Delete</button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop table — horizontal scroll only inside this card */}
+      <div className="hidden min-w-0 w-full max-w-full rounded-2xl border border-gray-200 bg-white dark:border-dark-700 dark:bg-dark-800 md:block">
         <div className="w-full max-w-full overflow-x-auto overflow-y-visible overscroll-x-contain">
           <table className="w-full min-w-[800px] table-fixed text-sm whitespace-nowrap sm:min-w-[1000px]">
             <thead className="border-b border-gray-100 dark:border-dark-700 bg-gray-50 dark:bg-dark-700/50">
@@ -164,11 +221,13 @@ export default function AdminProductsPage() {
                     {/* Product Name */}
                     <td className="w-[22%] px-4 py-3.5 align-middle">
                       <div className="flex items-center space-x-2.5">
-                        <img
-                          src={(product.rawImage?.url || product.images?.[0]?.url) ? supabaseImg(product.rawImage?.url || product.images[0].url, 120, 70, 'cover') : 'data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1 1%22><rect fill=%22%23f3ead9%22 width=%221%22 height=%221%22/></svg>'}
-                          alt={product.name}
-                          className="h-10 w-10 rounded-lg object-cover border border-gray-100 dark:border-dark-700 shadow-sm shrink-0"
-                        />
+                        <button type="button" onClick={() => thumbOf(product) && setBigPhoto(thumbOf(product))}
+                          title="View photo" className="h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-gray-100 bg-[#f4efe7] shadow-sm dark:border-dark-700 dark:bg-dark-700">
+                          {thumbOf(product) && (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={supabaseImg(thumbOf(product)!, 160, 75)} alt={product.name} className="h-full w-full object-contain" loading="lazy" />
+                          )}
+                        </button>
                         <div className="flex flex-col min-w-0 leading-tight">
                           <span className="font-bold text-gray-900 dark:text-white truncate block" title={product.name}>
                             {product.name}
@@ -366,6 +425,14 @@ export default function AdminProductsPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {bigPhoto && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 p-3" onClick={() => setBigPhoto(null)} role="dialog" aria-modal="true">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={supabaseImg(bigPhoto, 2000, 85)} alt="" className="max-h-full max-w-full object-contain" />
+          <button type="button" onClick={() => setBigPhoto(null)} aria-label="Close" className="absolute right-4 top-4 h-10 w-10 rounded-full bg-white/15 text-2xl text-white">×</button>
+        </div>
+      )}
 
       {/* Delete Confirmation Modal */}
       <AnimatePresence>
