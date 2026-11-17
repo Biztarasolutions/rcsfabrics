@@ -160,7 +160,8 @@ export const getProductGroup = async (req: Request, res: Response): Promise<void
   try {
     const { styleCode } = req.params;
     const products = await prisma.product.findMany({
-      where: { styleCode },
+      // other colours of the design, as customers see them (active, with photos)
+      where: { styleCode, isActive: true, images: { some: {} } },
       include: {
         images: { orderBy: { order: 'asc' } },
         category: true,

@@ -40,6 +40,10 @@ export const createReview = async (req: AuthRequest, res: Response): Promise<voi
 const imageCache = new Map<string, { buffer: Buffer, contentType: string }>();
 const CACHE_LIMIT = 200;
 
+// Shown to customers only when active AND it has at least one photo
+// (a product whose Google Drive photos haven't synced yet stays hidden).
+const VISIBLE = { isActive: true, images: { some: {} } } as const;
+
 export const getProducts = async (
   req: AuthRequest,
   res: Response
@@ -53,9 +57,7 @@ export const getProducts = async (
     );
 
     // Build filter
-    const where: any = {
-      isActive: true,
-    };
+    const where: any = { ...VISIBLE };
     const and: any[] = [];
 
     if (category) {
@@ -192,7 +194,7 @@ export const getProductById = async (
       },
     });
 
-    if (!product) {
+    if (!product || !product.isActive || product.images.length === 0) {
       throw new ApiError(404, 'Product not found');
     }
 
@@ -248,7 +250,7 @@ export const getProductBySlug = async (
       },
     });
 
-    if (!product) {
+    if (!product || !product.isActive || product.images.length === 0) {
       throw new ApiError(404, 'Product not found');
     }
 
@@ -284,7 +286,7 @@ export const getFeaturedProducts = async (
 
     const products = await prisma.product.findMany({
       where: {
-        isActive: true,
+        ...VISIBLE,
         isFeatured: true,
       },
       take: parseInt(limit as string),
@@ -323,9 +325,7 @@ export const getNewArrivals = async (
     const { limit = '8' } = req.query;
 
     const products = await prisma.product.findMany({
-      where: {
-        isActive: true,
-      },
+      where: { ...VISIBLE },
       take: parseInt(limit as string),
       include: {
         images: {
@@ -369,7 +369,7 @@ export const getHomepageData = async (
     const [featured, newArrivals, bestSellers, categories, banners] = await Promise.all([
       // Featured products
       prisma.product.findMany({
-        where: { isActive: true, isFeatured: true },
+        where: { ...VISIBLE, isFeatured: true },
         take: limit,
         include: {
           images: { where: { isMain: true }, take: 1 },
@@ -379,7 +379,7 @@ export const getHomepageData = async (
       }),
       // New arrivals
       prisma.product.findMany({
-        where: { isActive: true },
+        where: { ...VISIBLE },
         take: limit,
         include: {
           images: { where: { isMain: true }, take: 1 },
@@ -389,7 +389,7 @@ export const getHomepageData = async (
       }),
       // Best sellers (products with most sales)
       prisma.product.findMany({
-        where: { isActive: true, orderItems: { some: {} } }, // only products that have actually sold
+        where: { ...VISIBLE, orderItems: { some: {} } }, // only products that have actually sold
         take: limit,
         include: {
           images: { where: { isMain: true }, take: 1 },
@@ -400,17 +400,17 @@ export const getHomepageData = async (
       // Active categories
       // Only categories that actually have products on sale — empty ones are hidden
       prisma.category.findMany({
-        where: { isActive: true, products: { some: { isActive: true } } },
+        where: { isActive: true, products: { some: VISIBLE } },
         select: {
           id: true,
           name: true,
           slug: true,
           image: true,
           imageUrl: true,
-          _count: { select: { products: { where: { isActive: true } } } },
+          _count: { select: { products: { where: VISIBLE } } },
           // Newest product's main photo — used as the cover when the category has no image
           products: {
-            where: { isActive: true },
+            where: VISIBLE,
             take: 1,
             orderBy: { createdAt: 'desc' },
             select: { images: { where: { isMain: true }, take: 1, select: { url: true } } },

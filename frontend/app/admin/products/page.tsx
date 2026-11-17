@@ -33,6 +33,7 @@ export default function AdminProductsPage() {
   });
   const actualData = productsData?.data || productsData;
   const products = actualData?.products || [];
+  const noPhotoCount = products.filter((p: any) => !p.images?.length).length;
   const totalProducts = actualData?.total ?? products.length;
   const totalPages = actualData?.pages ?? 1;
 
@@ -120,6 +121,13 @@ export default function AdminProductsPage() {
         </div>
       </div>
 
+      {noPhotoCount > 0 && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
+          <strong>{noPhotoCount} {noPhotoCount === 1 ? 'product has' : 'products have'} no photos</strong> on this page and {noPhotoCount === 1 ? 'is' : 'are'} hidden from the shop.
+          Check the Google Drive folder is named exactly like the product code and shared with the website, then press <strong>Sync</strong> on the product.
+        </div>
+      )}
+
       {/* Products Table — horizontal scroll only inside this card */}
       <div className="min-w-0 w-full max-w-full rounded-2xl border border-gray-200 bg-white dark:border-dark-700 dark:bg-dark-800">
         <div className="w-full max-w-full overflow-x-auto overflow-y-visible overscroll-x-contain">
@@ -155,7 +163,7 @@ export default function AdminProductsPage() {
                     <td className="w-[22%] px-4 py-3.5 align-middle">
                       <div className="flex items-center space-x-2.5">
                         <img
-                          src={product.images?.[0]?.url || '/placeholder.png'}
+                          src={product.images?.[0]?.url || 'data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1 1%22><rect fill=%22%23f3ead9%22 width=%221%22 height=%221%22/></svg>'}
                           alt={product.name}
                           className="h-10 w-10 rounded-lg object-cover border border-gray-100 dark:border-dark-700 shadow-sm shrink-0"
                         />
@@ -166,6 +174,12 @@ export default function AdminProductsPage() {
                           <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium mt-0.5">
                             {product.code ? `P${product.code}` : (product.styleCode?.split('-').pop() || '—')}
                           </span>
+                          {!product.images?.length && (
+                            <span className="mt-1 inline-block w-fit rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
+                              title="Hidden from the shop until photos sync. Check the Google Drive folder name matches the product code, then press Sync.">
+                              No photos · hidden from shop
+                            </span>
+                          )}
                         </div>
                       </div>
                     </td>
