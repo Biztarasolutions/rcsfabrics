@@ -134,6 +134,7 @@ model Product {
   cartItems       CartItem[]
   orderItems      OrderItem[]
   images          ProductImage[]
+  rawImage        ProductRawImage? // admin-only original photo ("Raw" in the Drive folder)
   category        Category            @relation(fields: [categoryId], references: [id])
   reviews         Review[]
   swatchRequests  SwatchRequest[]
@@ -167,6 +168,18 @@ model ProductImage {
 
   @@index([productId])
   @@map("product_images")
+}
+
+/// Original fabric photo ("Raw" file in the product's Google Drive folder).
+/// Admin-only: kept apart from ProductImage so it can never reach customers.
+model ProductRawImage {
+  id        String   @id @default(cuid())
+  productId String   @unique
+  url       String
+  updatedAt DateTime @default(now()) @updatedAt
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("product_raw_images")
 }
 
 

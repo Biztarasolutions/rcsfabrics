@@ -8,6 +8,8 @@ import toast from 'react-hot-toast';
 // (removed unused Image import)
 import Link from 'next/link';
 import ProductFormAdvanced from '@/components/products/ProductFormAdvanced';
+import ProductPhotosPanel from '@/components/admin/ProductPhotosPanel';
+import { supabaseImg } from '@/lib/image';
 
 export default function AdminProductsPage() {
   const queryClient = useQueryClient();
@@ -163,7 +165,7 @@ export default function AdminProductsPage() {
                     <td className="w-[22%] px-4 py-3.5 align-middle">
                       <div className="flex items-center space-x-2.5">
                         <img
-                          src={product.images?.[0]?.url || 'data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1 1%22><rect fill=%22%23f3ead9%22 width=%221%22 height=%221%22/></svg>'}
+                          src={(product.rawImage?.url || product.images?.[0]?.url) ? supabaseImg(product.rawImage?.url || product.images[0].url, 120, 70, 'cover') : 'data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1 1%22><rect fill=%22%23f3ead9%22 width=%221%22 height=%221%22/></svg>'}
                           alt={product.name}
                           className="h-10 w-10 rounded-lg object-cover border border-gray-100 dark:border-dark-700 shadow-sm shrink-0"
                         />
@@ -244,6 +246,13 @@ export default function AdminProductsPage() {
                           </svg>
                           Sync
                         </button>
+                        {product.slug && (
+                          <a href={`/fabrics/${product.slug}?preview=1`} target="_blank" rel="noopener noreferrer"
+                            title="See this product exactly as customers do (opens a new tab)"
+                            className="rounded-lg border border-gray-200 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-dark-600 dark:text-gray-300 dark:hover:bg-dark-700 transition-colors">
+                            Preview
+                          </a>
+                        )}
                         <button 
                           onClick={() => { setEditingProduct(product); setShowModal(true); }} 
                           className="rounded-lg border border-green-200 px-2 py-1 text-xs font-medium text-green-600 hover:bg-green-50 dark:border-green-900 dark:text-green-400 dark:hover:bg-green-950/30 transition-colors"
@@ -346,6 +355,9 @@ export default function AdminProductsPage() {
                   </svg>
                 </button>
               </div>
+              {editingProduct && (
+                <ProductPhotosPanel variants={editingProduct.variants?.length ? editingProduct.variants : [editingProduct]} />
+              )}
               <ProductFormAdvanced 
                 initialData={editingProduct}
                 onClose={() => { setShowModal(false); setEditingProduct(null); }}

@@ -14,10 +14,12 @@ const streamToBuffer = (stream: any): Promise<Buffer> => {
   });
 };
 
-const uploadDriveImagesToSupabase = async (folderId: string): Promise<string[]> => {
+const uploadDriveImagesToSupabase = async (folderId: string): Promise<{ urls: string[]; rawUrl: string | null }> => {
   try {
-    const files = await fetchFolderImageDetails(folderId);
+    const files = (await fetchFolderImageDetails(folderId))
+      .sort((a: any, b: any) => a.name.localeCompare(b.name, undefined, { numeric: true }));
     const publicUrls: string[] = [];
+    let rawUrl: string | null = null;
 
     for (const file of files) {
       console.log(`  [Product Sync] Downloading: ${file.name} (${file.id})`);
@@ -26,11 +28,13 @@ const uploadDriveImagesToSupabase = async (folderId: string): Promise<string[]> 
       const img = await optimizeImage(raw, file.name, file.mimeType || 'image/jpeg');
       const publicUrl = await uploadImageToSupabase(img.buffer, img.filename, img.mimeType);
       
-      publicUrls.push(publicUrl);
+      // A photo named "Raw" is the admin-only original — never a customer photo
+      if (file.name.replace(/\.[a-z0-9]+$/i, '').trim().toLowerCase() === 'raw') rawUrl = publicUrl;
+      else publicUrls.push(publicUrl);
       console.log(`  [Product Sync] Uploaded: ${file.name} -> ${publicUrl}`);
     }
 
-    return publicUrls;
+    return { urls: publicUrls, rawUrl };
   } catch (error: any) {
     console.error('  [Product Sync] Error syncing folder:', error.message);
     throw error;
@@ -66,7 +70,14 @@ export const syncImagesForProduct = async (productId: string, productName: strin
       return 0;
     }
 
-    const allPublicUrls = await uploadDriveImagesToSupabase(folderId);
+    const { urls: allPublicUrls, rawUrl } = await uploadDriveImagesToSupabase(folderId);
+    if (rawUrl) {
+      await prisma.productRawImage.upsert({
+        where: { productId },
+        create: { productId, url: rawUrl },
+        update: { url: rawUrl },
+      });
+    }
 
     if (allPublicUrls.length > 0) {
       await prisma.$transaction([

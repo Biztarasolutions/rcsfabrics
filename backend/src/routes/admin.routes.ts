@@ -35,6 +35,8 @@ import {
   getMyRole,
   setUserRole,
   getHistory,
+  getProductPhotos,
+  previewProduct,
 } from '@/controllers/admin.controller';
 import bulkEnquiryRouter from '@/routes/bulkEnquiry.routes';
 import { createProductGroup } from '@/controllers/productGroupController';
@@ -51,6 +53,10 @@ router.use(trackAdminActivity);
 
 router.get('/me', getMyRole);
 router.get('/history', managers, getHistory);
+
+// Product photos (Raw + customer photos) and customer-view preview — any staff
+router.get('/products/preview/:slug', previewProduct);
+router.get('/products/:id/photos', getProductPhotos);
 
 // User roles — super admin only
 router.patch('/users/:id/role', superAdmin, setUserRole);

@@ -1,8 +1,8 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { productApi } from '@/lib/api';
-import { useCartStore, useWishlistStore, useAuthStore } from '@/lib/store';
+import { productApi, adminApi } from '@/lib/api';
+import { useCartStore, useWishlistStore, useAuthStore, useStoresHydrated } from '@/lib/store';
 import { formatPrice, productDisplayName } from '@/lib/utils';
 import { BUSINESS } from '@/lib/business';
 import { SITE_URL } from '@/lib/seo';
@@ -72,11 +72,22 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
 
   const { isAuthenticated } = useAuthStore();
 
+  // ?preview=1 from Admin → Products: staff see the customer view with the latest
+  // saved data, even for products that are switched off or have no photos yet.
+  const [previewMode, setPreviewMode] = useState<boolean | null>(null);
+  const storesHydrated = useStoresHydrated();
+  useEffect(() => {
+    setPreviewMode(new URLSearchParams(window.location.search).get('preview') === '1');
+  }, []);
+
   const { data: initialProduct, isLoading: isProductLoading, isError: isProductError } = useQuery({
-    queryKey: ['product', params.slug],
-    queryFn: () => productApi.getBySlug(params.slug).then(res => res.data.data),
+    queryKey: previewMode ? ['product-admin-preview', params.slug] : ['product', params.slug],
+    queryFn: () =>
+      (previewMode ? adminApi.previewProduct(params.slug) : productApi.getBySlug(params.slug)).then((res) => res.data.data),
+    enabled: previewMode === false || (previewMode === true && storesHydrated), // preview needs the staff login
+    staleTime: previewMode ? 0 : undefined,
     // Use what the product card already had, so the page appears instantly
-    placeholderData: () => queryClient.getQueryData<any>(['product-preview', params.slug]),
+    placeholderData: () => (previewMode ? undefined : queryClient.getQueryData<any>(['product-preview', params.slug])),
   });
 
   const styleCode = initialProduct?.styleCode;
@@ -154,8 +165,8 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
     onError: (err: any) => toast.error(err.message || 'Failed to submit review'),
   });
 
-  if (isProductLoading) return <div className="flex min-h-screen items-center justify-center"><div className="h-10 w-10 animate-spin rounded-full border-4 border-primary-600 border-t-transparent"/></div>;
-  if (isProductError || !initialProduct) return <div className="flex min-h-screen items-center justify-center text-center py-20"><div><p className="text-6xl">🧶</p><h2 className="mt-4 text-2xl font-bold">Fabric not found</h2><button onClick={() => router.back()} className="button-primary mt-6 px-8 py-3">Go Back</button></div></div>;
+  if (isProductLoading || previewMode === null || (previewMode && !storesHydrated)) return <div className="flex min-h-screen items-center justify-center"><div className="h-10 w-10 animate-spin rounded-full border-4 border-primary-600 border-t-transparent"/></div>;
+  if (isProductError || !initialProduct) return <div className="flex min-h-screen items-center justify-center text-center py-20"><div><p className="text-6xl">🧶</p><h2 className="mt-4 text-2xl font-bold">Fabric not found</h2>{previewMode && <p className="mt-2 text-sm text-gray-500">Preview is only available when signed in as staff.</p>}<button onClick={() => router.back()} className="button-primary mt-6 px-8 py-3">Go Back</button></div></div>;
 
   const PRODUCT = selectedVariant || initialProduct;
   const images = PRODUCT.images ?? [];
@@ -228,6 +239,12 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
 
   return (
     <div className="min-h-screen bg-white dark:bg-dark-950">
+      {previewMode && (
+        <div className="sticky top-0 z-40 bg-[#2b2118] px-4 py-2 text-center text-xs font-medium text-[#efe2c6]">
+          Admin preview — this is how customers see this fabric.
+          {initialProduct?.previewOnly && <strong className="ml-1 text-amber-300">Currently hidden from customers (switched off or no photos).</strong>}
+        </div>
+      )}
       {/* Breadcrumb */}
       <div className="border-b border-gray-100 dark:border-dark-800">
         <div className="container-main py-4 text-sm text-gray-500 dark:text-gray-400 flex flex-wrap items-center gap-1">

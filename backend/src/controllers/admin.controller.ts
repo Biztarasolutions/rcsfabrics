@@ -37,25 +37,40 @@ const streamToBuffer = (stream: any): Promise<Buffer> => {
   });
 };
 
-const uploadDriveFilesToSupabase = async (files: DriveFileDetails[]): Promise<string[]> => {
-  const publicUrls: string[] = [];
-  for (const file of files) {
+/** A Drive photo named "Raw" (any extension, any case) is the admin-only original */
+export const isRawFileName = (name: string): boolean =>
+  name.replace(/\.[a-z0-9]+$/i, '').trim().toLowerCase() === 'raw';
+
+type SyncedFiles = { urls: string[]; rawUrl: string | null };
+
+/** Copies Drive photos to Supabase (shrunk). "Raw" is returned separately, never in `urls`. */
+const uploadDriveFilesToSupabase = async (files: DriveFileDetails[]): Promise<SyncedFiles> => {
+  const urls: string[] = [];
+  let rawUrl: string | null = null;
+  const ordered = [...files].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+  for (const file of ordered) {
     console.log(`[Supabase Upload] Downloading file: ${file.name} (${file.id})`);
     const streamRes = await getDriveImageStream(file.id);
     const raw = await streamToBuffer(streamRes.data);
     const img = await optimizeImage(raw, file.name, file.mimeType || 'image/jpeg');
     const publicUrl = await uploadImageToSupabase(img.buffer, img.filename, img.mimeType);
-    publicUrls.push(publicUrl);
-    console.log(`[Supabase Upload] Uploaded successfully: ${file.name} -> ${publicUrl}`);
+    if (isRawFileName(file.name)) {
+      rawUrl = publicUrl;
+      console.log(`[Supabase Upload] Raw (admin-only) photo: ${file.name} -> ${publicUrl}`);
+    } else {
+      urls.push(publicUrl);
+      console.log(`[Supabase Upload] Uploaded successfully: ${file.name} -> ${publicUrl}`);
+    }
   }
-  return publicUrls;
+  return { urls, rawUrl };
 };
 
 /**
  * Downloads all images from a product-code-named Drive folder.
- * Image filenames inside the folder can be anything (e.g. Stretchable-1.png).
+ * Image filenames inside the folder can be anything (e.g. Stretchable-1.png);
+ * a file named "Raw" is kept apart as the admin-only original.
  */
-const uploadAllImagesFromFolder = async (folderId: string): Promise<string[]> => {
+const uploadAllImagesFromFolder = async (folderId: string): Promise<SyncedFiles> => {
   try {
     const accessible = await verifyFolderAccess(folderId);
     if (!accessible) {
@@ -83,7 +98,14 @@ type ProductWithColors = {
   }>;
 };
 
-const saveSyncedImages = async (productId: string, supabaseUrls: string[]) => {
+const saveSyncedImages = async (productId: string, supabaseUrls: string[], rawUrl: string | null = null) => {
+  if (rawUrl) {
+    await prisma.productRawImage.upsert({
+      where: { productId },
+      create: { productId, url: rawUrl },
+      update: { url: rawUrl },
+    });
+  }
   await prisma.$transaction([
     prisma.productImage.deleteMany({ where: { productId } }),
     ...(supabaseUrls.length > 0
@@ -209,14 +231,16 @@ const syncImagesForProduct = async (
   const productCodes = collectProductCodesForSync(product, categoryName);
 
   const supabaseUrls: string[] = [];
+  let rawUrl: string | null = null;
   const uploadedFileIds = new Set<string>();
   const syncedFolderIds = new Set<string>();
 
   const syncFolderOnce = async (folderId: string) => {
     if (syncedFolderIds.has(folderId)) return;
     syncedFolderIds.add(folderId);
-    const urls = await uploadAllImagesFromFolder(folderId);
-    supabaseUrls.push(...urls);
+    const res = await uploadAllImagesFromFolder(folderId);
+    supabaseUrls.push(...res.urls);
+    if (res.rawUrl && !rawUrl) rawUrl = res.rawUrl;
   };
 
   // 1) Folders from saved URLs or name search — sync every image inside
@@ -263,8 +287,9 @@ const syncImagesForProduct = async (
     if (newFiles.length === 0) continue;
     newFiles.forEach((f) => uploadedFileIds.add(f.id));
     try {
-      const urls = await uploadDriveFilesToSupabase(newFiles);
-      supabaseUrls.push(...urls);
+      const res = await uploadDriveFilesToSupabase(newFiles);
+      supabaseUrls.push(...res.urls);
+      if (res.rawUrl && !rawUrl) rawUrl = res.rawUrl;
     } catch (err: any) {
       console.error(`[Sync] Failed uploading files for code "${productCode}":`, err.message || err);
     }
@@ -280,7 +305,7 @@ const syncImagesForProduct = async (
     );
   }
 
-  await saveSyncedImages(product.id, uniqueUrls);
+  await saveSyncedImages(product.id, uniqueUrls, rawUrl);
   return uniqueUrls.length;
 };
 
@@ -663,7 +688,15 @@ export const updateProduct = async (
     if (folderUrl) {
       const folderId = extractFolderId(folderUrl);
       if (folderId) {
-        finalImageUrls = await uploadAllImagesFromFolder(folderId);
+        const synced = await uploadAllImagesFromFolder(folderId);
+        finalImageUrls = synced.urls;
+        if (synced.rawUrl) {
+          await prisma.productRawImage.upsert({
+            where: { productId: id },
+            create: { productId: id, url: synced.rawUrl },
+            update: { url: synced.rawUrl },
+          });
+        }
       }
     } else if (imageUrls && Array.isArray(imageUrls)) {
       finalImageUrls = imageUrls.filter((url: string) => url);
@@ -837,6 +870,7 @@ export const getAdminProducts = async (
           where: { isMain: true },
           take: 1,
         },
+        rawImage: { select: { url: true } }, // admin thumbnail (original photo)
         category: {
           select: { name: true, id: true },
         },
@@ -871,6 +905,7 @@ export const getAdminProducts = async (
       } else {
         const group = groupedProductsMap.get(p.styleCode);
         group.variants.push(p);
+        if (!group.rawImage && p.rawImage) group.rawImage = p.rawImage;
         group.totalStock += p.totalStock; // Aggregate stock
         group.colors.push(...colorsWithStock); // Aggregate colors
       }
@@ -2150,5 +2185,58 @@ export const getHistory = async (req: AuthRequest, res: Response): Promise<void>
   } catch (error) {
     console.error('[History] list failed:', error);
     res.status(500).json({ success: false, message: 'Could not load history', statusCode: 500 } as ApiResponse);
+  }
+};
+
+
+// ── Product photos (admin) ───────────────────────────────────────────────
+/** GET /admin/products/:id/photos — Raw original + the customer photos, in order */
+export const getProductPhotos = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const product = await prisma.product.findUnique({
+      where: { id: req.params.id },
+      select: {
+        id: true, name: true, color: true, slug: true,
+        rawImage: { select: { url: true, updatedAt: true } },
+        images: { orderBy: { order: 'asc' }, select: { id: true, url: true, isMain: true, order: true } },
+      },
+    });
+    if (!product) throw new ApiError(404, 'Product not found');
+    res.json({ success: true, data: product, statusCode: 200 } as ApiResponse);
+  } catch (error) {
+    const code = error instanceof ApiError ? error.statusCode : 500;
+    res.status(code).json({ success: false, message: error instanceof ApiError ? error.message : 'Could not load photos', statusCode: code } as ApiResponse);
+  }
+};
+
+/**
+ * GET /admin/products/preview/:slug — the customer view of a product for staff,
+ * even if it is switched off or has no photos yet. Same shape as the public
+ * product endpoint; never includes the Raw photo.
+ */
+export const previewProduct = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const product = await prisma.product.findUnique({
+      where: { slug: req.params.slug },
+      include: {
+        images: { orderBy: { order: 'asc' } },
+        category: { select: { name: true, slug: true } },
+        reviews: {
+          include: { user: { select: { firstName: true, lastName: true } } },
+          take: 10,
+          orderBy: { createdAt: 'desc' },
+        },
+        _count: { select: { reviews: true } },
+      },
+    });
+    if (!product) throw new ApiError(404, 'Product not found');
+    res.json({
+      success: true,
+      data: { ...product, previewOnly: !product.isActive || product.images.length === 0 },
+      statusCode: 200,
+    } as ApiResponse);
+  } catch (error) {
+    const code = error instanceof ApiError ? error.statusCode : 500;
+    res.status(code).json({ success: false, message: error instanceof ApiError ? error.message : 'Could not load preview', statusCode: code } as ApiResponse);
   }
 };
