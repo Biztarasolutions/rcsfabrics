@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
+import { loadCashfree, openCashfreeCheckout } from '@/lib/cashfree';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -220,7 +221,7 @@ export default function CheckoutPage() {
   const [coupon, setCoupon] = useState('');
   const [couponData, setCouponData] = useState<any>(null);
   const [placing, setPlacing] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'razorpay' | 'upi' | 'cod'>('upi');
+  const [paymentMethod, setPaymentMethod] = useState<'online' | 'cod'>('online');
   const [placedOrder, setPlacedOrder] = useState<any>(null);
 
   const { items, clearCart, totalPrice } = useCartStore();
@@ -234,18 +235,14 @@ export default function CheckoutPage() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const upiEnabled = settings?.payment_upi_enabled !== 'false';
   const codEnabled = settings?.payment_cod_enabled !== 'false';
-  const razorpayEnabled = settings?.payment_razorpay_enabled !== 'false';
+  // Online = Cashfree (UPI, cards, net banking, wallets). Existing on/off switches still apply.
+  const onlineEnabled = settings?.payment_razorpay_enabled !== 'false' || settings?.payment_upi_enabled !== 'false';
 
+  // Load the Cashfree checkout script early so the payment pop-up opens instantly
   useEffect(() => {
-    if (!razorpayEnabled && !upiEnabled) return;
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.async = true;
-    document.body.appendChild(script);
-    return () => { if (document.body.contains(script)) document.body.removeChild(script); };
-  }, [razorpayEnabled, upiEnabled]);
+    if (onlineEnabled) loadCashfree().catch(() => {});
+  }, [onlineEnabled]);
 
   useEffect(() => {
     if (!user) return;
@@ -265,11 +262,10 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     if (settings) {
-      if (upiEnabled) setPaymentMethod('upi');
-      else if (razorpayEnabled) setPaymentMethod('razorpay');
+      if (onlineEnabled) setPaymentMethod('online');
       else if (codEnabled) setPaymentMethod('cod');
     }
-  }, [settings, upiEnabled, razorpayEnabled, codEnabled]);
+  }, [settings, onlineEnabled, codEnabled]);
 
   const subtotal = totalPrice();
   const shipping = subtotal >= 2000 ? 0 : 150;
@@ -304,7 +300,6 @@ export default function CheckoutPage() {
     }
 
     setPlacing(true);
-    let openedRazorpay = false;
     try {
       const orderPayload: any = {
         items: items.map(item => ({
@@ -315,85 +310,53 @@ export default function CheckoutPage() {
         shippingAddress: address,
         shippingCost: shipping,
         tax: 0,
-        paymentMethod: paymentMethod === 'upi' ? 'UPI' : paymentMethod.toUpperCase(),
+        paymentMethod: paymentMethod === 'online' ? 'CASHFREE' : 'COD',
         couponCode: couponData?.code,
       };
 
       const res = await orderApi.create(orderPayload);
       const order = res.data?.data ?? res.data;
 
-      if ((paymentMethod === 'razorpay' || paymentMethod === 'upi') && order.razorpayOrderId) {
-        const options: any = {
-          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-          amount: order.total * 100,
-          currency: 'INR',
-          name: 'RCS Fabrics',
-          description: `Order #${order.orderNumber || order.id}`,
-          order_id: order.razorpayOrderId,
-          handler: async (response: any) => {
-            try {
-              await orderApi.verifyPayment(order.id, {
-                razorpayOrderId: response.razorpay_order_id,
-                razorpayPaymentId: response.razorpay_payment_id,
-                razorpaySignature: response.razorpay_signature,
-              });
-              clearCart();
-              toast.success('🎉 Payment successful! Your order is confirmed.');
-              setPlacedOrder(order);
-            } catch {
-              toast.error('Payment verification failed. Please contact support with your order ID.');
-            }
-            setPlacing(false);
-          },
-          modal: {
-            ondismiss: () => {
-              toast('Payment cancelled. Your order is saved — complete payment anytime.');
-              setPlacing(false);
-              router.push(`/account/orders/${order.id}`);
-            },
-          },
-          prefill: { name: `${address.firstName} ${address.lastName}`, email: user?.email, contact: address.phone },
-          theme: { color: '#000000' },
-        };
-
-        if (paymentMethod === 'upi') {
-          options.config = {
-            display: {
-              blocks: {
-                upi_block: {
-                  name: 'Pay via UPI',
-                  instruments: [{ method: 'upi', flows: ['intent', 'collect', 'qr'] }],
-                },
-              },
-              sequence: ['block.upi_block'],
-              preferences: { show_default_blocks: false },
-            },
-          };
+      if (paymentMethod === 'online') {
+        // The order is saved (stock reserved); now take payment with Cashfree
+        clearCart();
+        if (!order.paymentSessionId) {
+          toast.error('Could not open the payment page. Your order is saved — tap “Pay now” to try again.');
+          router.push(`/account/orders/${order.id}`);
+          return;
         }
-
-        new (window as any).Razorpay(options).open();
-        openedRazorpay = true;
-        return; // handler/ondismiss calls setPlacing(false)
+        const result = await openCashfreeCheckout(order.paymentSessionId, order.cashfreeMode);
+        if (result.redirecting) return; // Cashfree takes over and brings the customer back to the order page
+        // Always confirm with our server, whatever the pop-up says
+        const v = await orderApi.verifyPayment(order.id).catch(() => null);
+        const paid = v?.data?.data?.paid;
+        if (paid) {
+          toast.success('🎉 Payment successful! Your order is confirmed.');
+          setPlacedOrder({ ...order, paymentStatus: 'PAID' });
+        } else {
+          toast(result.closed ? 'Payment not completed. Your order is saved — you can pay from My Orders.' : 'Payment is being confirmed. We’ll update your order shortly.');
+          router.push(`/account/orders/${order.id}`);
+        }
+        setPlacing(false);
+        return;
       }
 
       clearCart();
       toast.success('🎉 Order placed successfully!');
       setPlacedOrder(order);
+      setPlacing(false);
     } catch (error: any) {
       toast.error(error.message || 'Failed to place order. Please try again.');
       setPlacing(false);
-    } finally {
-      if (!openedRazorpay) setPlacing(false); // no-op on catch path, resets on normal COD path
     }
   };
 
   const handleMainButton = () => placeOrder();
 
   const paymentOptions = [
-    upiEnabled && { id: 'upi' as const, label: 'UPI', sub: 'GPay, PhonePe, Paytm & more', icon: '📲' },
-    razorpayEnabled && { id: 'razorpay' as const, label: 'Card / Net Banking / Wallet', sub: 'Powered by Razorpay', icon: '💳' },
+    onlineEnabled && { id: 'online' as const, label: 'Pay online', sub: 'UPI, cards, net banking & wallets · secured by Cashfree', icon: '💳' },
     codEnabled && { id: 'cod' as const, label: 'Cash on Delivery', sub: 'Pay when order arrives', icon: '💵' },
-  ].filter(Boolean) as { id: 'upi' | 'razorpay' | 'cod'; label: string; sub: string; icon: string }[];
+  ].filter(Boolean) as { id: 'online' | 'cod'; label: string; sub: string; icon: string }[];
 
   if (placedOrder) return <ThankYouScreen order={placedOrder} />;
 
@@ -570,8 +533,8 @@ export default function CheckoutPage() {
                     className="button-luxury flex-1 py-3 font-semibold disabled:opacity-60">
                     {placing
                       ? '⏳ Processing...'
-                      : paymentMethod === 'upi'
-                        ? `📲 Pay ${formatPrice(total)} via UPI`
+                      : paymentMethod === 'online'
+                        ? `Pay ${formatPrice(total)} securely`
                         : `🔒 Place Order · ${formatPrice(total)}`}
                   </button>
                 </div>

@@ -147,7 +147,7 @@ export default function Footer() {
           </div>
           <div className="flex items-center gap-2 text-xs text-gray-500">
             <span>Payments:</span>
-            <span className="font-semibold text-gray-400">Razorpay · UPI · Cards</span>
+            <span className="font-semibold text-gray-400">Cashfree · UPI · Cards</span>
           </div>
         </div>
       </div>

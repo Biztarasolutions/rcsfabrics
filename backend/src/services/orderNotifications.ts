@@ -1,4 +1,5 @@
 import { prisma } from '@/index';
+import { getCashfreePaymentStatus } from '@/utils/cashfree';
 import { sendEmail } from '@/utils/email';
 
 const DEFAULT_NOTIFY = ['rish6.jain@gmail.com', 'mayankjain23102000@gmail.com'];
@@ -22,7 +23,8 @@ const inr = (n: number): string => {
 const PAYMENT_LABEL: Record<string, string> = {
   COD: 'Cash on Delivery',
   UPI: 'UPI',
-  RAZORPAY: 'Online (Razorpay)',
+  RAZORPAY: 'Online payment',
+  CASHFREE: 'Online payment (Cashfree)',
   BANK_TRANSFER: 'Bank transfer',
 };
 
@@ -98,7 +100,7 @@ export async function notifyOrder(orderId: string, event: 'placed' | 'paid'): Pr
 }
 
 /**
- * Online orders (Razorpay / UPI via Razorpay) that were never paid hold stock.
+ * Online orders (Cashfree; older Razorpay ones too) that were never paid hold stock.
  * Cancel them after UNPAID_ORDER_TIMEOUT_MINUTES (default 30) and put the stock back.
  * Manual UPI orders with a UTR reference are left for the admin to verify.
  */
@@ -109,17 +111,36 @@ export async function releaseUnpaidOrders(): Promise<number> {
     where: {
       status: 'PENDING',
       paymentStatus: 'PENDING',
-      paymentMethod: { in: ['RAZORPAY', 'UPI'] },
-      razorpayOrderId: { not: null },
+      OR: [
+        { paymentMethod: 'CASHFREE' as any, cashfreeOrderId: { not: null } },
+        { paymentMethod: { in: ['RAZORPAY', 'UPI'] }, razorpayOrderId: { not: null } },
+      ],
       utrReference: null,
       createdAt: { lt: cutoff },
     },
-    select: { id: true },
+    select: { id: true, cashfreeOrderId: true, total: true },
     take: 100,
   });
 
   let released = 0;
-  for (const { id } of stale) {
+  for (const { id, cashfreeOrderId, total } of stale) {
+    // Before cancelling, ask Cashfree whether it was actually paid (a missed notification)
+    if (cashfreeOrderId) {
+      try {
+        const st = await getCashfreePaymentStatus(cashfreeOrderId);
+        if (st.paid && Math.abs(st.amount - total) <= 0.5) {
+          const r = await prisma.order.updateMany({
+            where: { id, paymentStatus: { not: 'PAID' } },
+            data: { paymentStatus: 'PAID', status: 'PROCESSING', cashfreePaymentId: st.paymentId, paidAt: new Date() },
+          });
+          if (r.count) void notifyOrder(id, 'paid');
+          continue;
+        }
+      } catch (err) {
+        console.error('[Cashfree] status check before release failed — keeping order for now:', err);
+        continue;
+      }
+    }
     try {
       await prisma.$transaction(async (tx) => {
         // Conditional update: only one process can cancel it, and never a paid order

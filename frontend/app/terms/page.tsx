@@ -29,7 +29,7 @@ export default function TermsOfService() {
         },
         {
           heading: 'Payment',
-          body: <p>We accept the payment methods shown at checkout, which may include UPI, Razorpay (cards, UPI, netbanking, wallets) and Cash on Delivery. Coupons are subject to their own conditions and cannot be combined unless stated.</p>,
+          body: <p>We accept the payment methods shown at checkout, which may include online payment through Cashfree (UPI, cards, net banking, wallets) and Cash on Delivery. Coupons are subject to their own conditions and cannot be combined unless stated.</p>,
         },
         {
           heading: 'Shipping, returns and refunds',

@@ -1,7 +1,6 @@
 import { Response } from 'express';
 import { logOrderEvent } from '@/utils/activity';
-import Razorpay from 'razorpay';
-import crypto from 'crypto';
+import { cashfreeConfigured, createCashfreeOrder, getCashfreePaymentStatus, verifyCashfreeWebhook } from '@/utils/cashfree';
 import { prisma } from '@/index';
 import { AuthRequest, ApiResponse } from '@/types';
 import { generateOrderNumber, calculateOrderTotal } from '@/utils/order.util';
@@ -10,22 +9,7 @@ import { ApiError } from '@/middleware/errorHandler';
 import { notifyOrder } from '@/services/orderNotifications';
 import { saveAddressIfNew } from '@/services/addressService';
 
-// Lazily create the Razorpay client. The Razorpay constructor throws if keys are missing,
-// so constructing at module load time crashes the entire server when env vars aren't set.
-// Initialize on first use instead, and surface a clean error rather than a boot crash.
-let razorpayClient: InstanceType<typeof Razorpay> | null = null;
-const getRazorpay = (): InstanceType<typeof Razorpay> => {
-  if (!razorpayClient) {
-    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
-      throw new ApiError(503, 'Online payments are not configured. Please contact support or use another payment method.');
-    }
-    razorpayClient = new Razorpay({
-      key_id: process.env.RAZORPAY_KEY_ID,
-      key_secret: process.env.RAZORPAY_KEY_SECRET,
-    });
-  }
-  return razorpayClient;
-};
+// Online payments go through Cashfree (see utils/cashfree.ts).
 
 import {
   MIN_QTY, MAX_QTY_PER_LINE, roundMoney, isHalfMetreStep, calculateShipping, couponDiscount,
@@ -60,7 +44,17 @@ export const createOrder = async (
     }
 
     // shippingCost / tax from the client are deliberately ignored — the server prices the order.
-    const { items, shippingAddress, couponCode, paymentMethod, utrReference } = req.body;
+    const { items, shippingAddress, couponCode, utrReference } = req.body;
+    // Online payments (card, UPI, net banking, wallets) all go through Cashfree.
+    // "UPI" with a UTR reference is the manual bank-UPI transfer and stays as UPI.
+    const requested = String(req.body.paymentMethod || '').toUpperCase();
+    const paymentMethod =
+      requested === 'COD' || requested === 'BANK_TRANSFER' ? requested
+      : requested === 'UPI' && utrReference ? 'UPI'
+      : requested ? 'CASHFREE' : undefined;
+    if (paymentMethod === 'CASHFREE' && !cashfreeConfigured()) {
+      throw new ApiError(503, 'Online payment is temporarily unavailable. Please choose Cash on Delivery or try again later.');
+    }
 
     if (!Array.isArray(items) || items.length === 0) {
       throw new ApiError(400, 'Order must contain at least one item');
@@ -187,35 +181,28 @@ export const createOrder = async (
           discountAmount,
           couponCode: appliedCoupon?.code,
           total,
-          paymentMethod: paymentMethod || undefined,
+          paymentMethod: (paymentMethod as any) || undefined,
           utrReference: utrReference || undefined,
         },
         include: { items: { include: { product: true } } },
       });
     });
 
-    // Create Razorpay order for online payments (RAZORPAY or UPI)
-    let razorpayOrderId: string | undefined;
-    if (paymentMethod === 'RAZORPAY' || paymentMethod === 'UPI') {
+    // Online payment: open a Cashfree payment session for this order
+    let paymentSessionId: string | undefined;
+    let cashfreeMode: string | undefined;
+    if (paymentMethod === 'CASHFREE') {
       try {
-        const rzOrder = await getRazorpay().orders.create({
-          amount: Math.round(total * 100),
-          currency: 'INR',
-          receipt: order.orderNumber,
-          notes: { orderId: order.id },
-        });
-        razorpayOrderId = rzOrder.id as string;
-        await prisma.order.update({
-          where: { id: order.id },
-          data: { razorpayOrderId },
-        });
-      } catch (rzErr) {
-        console.error('[Razorpay] Failed to create order:', rzErr);
+        const session = await startCashfreeSession(order.id, req);
+        paymentSessionId = session.paymentSessionId;
+        cashfreeMode = session.mode;
+      } catch (cfErr) {
+        console.error('[Cashfree] Failed to create order:', cfErr);
       }
     }
 
-    // Email customer + team now for COD / manual UPI; online payments are announced once verified
-    if (!razorpayOrderId || utrReference) {
+    // Email customer + team now for COD / manual UPI; online payments are announced once paid
+    if (paymentMethod !== 'CASHFREE') {
       void notifyOrder(order.id, 'placed');
       // COD / manual UPI: the order is placed now, so remember a new address now
       await saveAddressIfNew(req.userId!, shippingAddress);
@@ -226,7 +213,7 @@ export const createOrder = async (
     res.status(201).json({
       success: true,
       message: 'Order created successfully',
-      data: { ...order, razorpayOrderId },
+      data: { ...order, paymentSessionId, cashfreeMode },
       statusCode: 201,
     } as ApiResponse);
   } catch (error) {
@@ -304,75 +291,120 @@ export const getOrders = async (
   }
 };
 
-export const verifyPayment = async (
-  req: AuthRequest,
-  res: Response
-): Promise<void> => {
+/**
+ * Opens a fresh Cashfree payment session for an unpaid order (also used to retry
+ * payment later from My Orders). Each attempt gets its own Cashfree order id.
+ */
+const startCashfreeSession = async (orderId: string, req: AuthRequest) => {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { user: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } } },
+  });
+  if (!order) throw new ApiError(404, 'Order not found');
+  const site = (process.env.FRONTEND_URL || 'https://rcsfabrics.netlify.app').split(',')[0].trim().replace(/\/$/, '');
+  const api = `${req.protocol}://${req.get('host')}`;
+  const cfOrderId = `${order.orderNumber}-${Date.now().toString(36)}`.slice(0, 45);
+  const session = await createCashfreeOrder({
+    cfOrderId,
+    amount: order.total,
+    customerId: order.userId,
+    name: `${order.user?.firstName || ''} ${order.user?.lastName || ''}`.trim(),
+    email: order.user?.email || undefined,
+    phone: order.customerPhone || order.user?.phone,
+    returnUrl: `${site}/account/orders/${order.id}?payment=return`,
+    notifyUrl: `${api}/api/payments/cashfree/webhook`,
+    note: `RCS Fabrics order ${order.orderNumber}`,
+  });
+  await prisma.order.update({ where: { id: order.id }, data: { cashfreeOrderId: session.cfOrderId, paymentMethod: 'CASHFREE' as any } });
+  return { ...session, mode: (process.env.CASHFREE_ENV || 'production').toLowerCase() === 'sandbox' ? 'sandbox' : 'production' };
+};
+
+/** Marks an order paid exactly once (from the browser check or the Cashfree webhook) */
+const markOrderPaid = async (orderId: string, paymentId?: string): Promise<boolean> => {
+  const result = await prisma.order.updateMany({
+    where: { id: orderId, paymentStatus: { not: 'PAID' }, status: { not: 'CANCELLED' } },
+    data: { paymentStatus: 'PAID', status: 'PROCESSING', cashfreePaymentId: paymentId || undefined, paidAt: new Date() },
+  });
+  if (result.count === 0) return false;
+  const updated = await prisma.order.findUnique({ where: { id: orderId } });
+  void notifyOrder(orderId, 'paid');
+  void logOrderEvent(orderId, 'PAYMENT_RECEIVED', 'Payment received for order');
+  if (updated) await saveAddressIfNew(updated.userId, updated.shippingAddress);
+  return true;
+};
+
+/** Asks Cashfree (server-side) whether the order's current payment session is paid */
+const checkCashfreeOrder = async (order: { id: string; total: number; cashfreeOrderId: string | null }) => {
+  if (!order.cashfreeOrderId) return { paid: false, status: 'NO_PAYMENT' };
+  const st = await getCashfreePaymentStatus(order.cashfreeOrderId);
+  if (st.paid && Math.abs(st.amount - order.total) > 0.5) {
+    console.error(`[Cashfree] Amount mismatch for ${order.id}: paid ${st.amount}, order ${order.total}`);
+    return { paid: false, status: 'AMOUNT_MISMATCH' };
+  }
+  if (st.paid) await markOrderPaid(order.id, st.paymentId);
+  return { paid: st.paid, status: st.status };
+};
+
+/** POST /orders/:id/pay — new Cashfree session to (re)try paying an unpaid order */
+export const payOrder = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     if (!req.userId) throw new ApiError(401, 'Unauthorized');
-
-    const { id } = req.params;
-    const { razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
-
-    const secret = process.env.RAZORPAY_KEY_SECRET;
-    if (!secret) {
-      throw new ApiError(503, 'Online payments are not configured');
-    }
-    if (
-      typeof razorpayOrderId !== 'string' || !razorpayOrderId ||
-      typeof razorpayPaymentId !== 'string' || !razorpayPaymentId ||
-      typeof razorpaySignature !== 'string' || !razorpaySignature
-    ) {
-      throw new ApiError(400, 'Missing payment details');
-    }
-
-    const order = await prisma.order.findUnique({ where: { id } });
+    if (!cashfreeConfigured()) throw new ApiError(503, 'Online payment is temporarily unavailable');
+    const order = await prisma.order.findUnique({ where: { id: req.params.id } });
     if (!order) throw new ApiError(404, 'Order not found');
     if (order.userId !== req.userId) throw new ApiError(403, 'Forbidden');
     if (order.paymentStatus === 'PAID') throw new ApiError(409, 'Order is already paid');
     if (order.status === 'CANCELLED') throw new ApiError(409, 'Order was cancelled');
-
-    // The payment must belong to the Razorpay order we created for THIS order,
-    // otherwise a valid signature from a cheaper order could be replayed here.
-    if (!order.razorpayOrderId || order.razorpayOrderId !== razorpayOrderId) {
-      throw new ApiError(400, 'Payment does not match this order');
+    // If the previous attempt actually went through, don't charge again
+    if (order.cashfreeOrderId) {
+      const st = await checkCashfreeOrder(order);
+      if (st.paid) throw new ApiError(409, 'Order is already paid');
     }
-
-    const expectedSig = crypto
-      .createHmac('sha256', secret)
-      .update(`${order.razorpayOrderId}|${razorpayPaymentId}`)
-      .digest('hex');
-
-    const expectedBuf = Buffer.from(expectedSig, 'utf8');
-    const givenBuf = Buffer.from(razorpaySignature, 'utf8');
-    if (expectedBuf.length !== givenBuf.length || !crypto.timingSafeEqual(expectedBuf, givenBuf)) {
-      throw new ApiError(400, 'Payment signature verification failed');
-    }
-
-    // Conditional update so two concurrent verify calls can't both succeed
-    const result = await prisma.order.updateMany({
-      where: { id, paymentStatus: { not: 'PAID' } },
-      data: {
-        paymentStatus: 'PAID',
-        status: 'PROCESSING',
-        razorpayPaymentId,
-        paidAt: new Date(),
-      },
-    });
-    if (result.count === 0) throw new ApiError(409, 'Order is already paid');
-    const updated = await prisma.order.findUnique({ where: { id } });
-    void notifyOrder(id, 'paid');
-    void logOrderEvent(id, 'PAYMENT_RECEIVED', 'Payment received for order');
-    // Online payment succeeded — remember a new delivery address for next time
-    if (updated) await saveAddressIfNew(updated.userId, updated.shippingAddress);
-
-    res.json({ success: true, message: 'Payment verified', data: updated, statusCode: 200 } as ApiResponse);
+    const session = await startCashfreeSession(order.id, req);
+    res.json({ success: true, data: { paymentSessionId: session.paymentSessionId, cashfreeMode: session.mode }, statusCode: 200 } as ApiResponse);
   } catch (error) {
-    if (error instanceof ApiError) {
-      res.status(error.statusCode).json({ success: false, message: error.message, statusCode: error.statusCode } as ApiResponse);
-    } else {
-      res.status(500).json({ success: false, message: 'Internal server error', statusCode: 500 } as ApiResponse);
+    const code = error instanceof ApiError ? error.statusCode : 500;
+    if (!(error instanceof ApiError)) console.error('[Cashfree] payOrder failed:', error);
+    res.status(code).json({ success: false, message: error instanceof ApiError ? error.message : 'Could not start payment. Please try again.', statusCode: code } as ApiResponse);
+  }
+};
+
+/** POST /orders/:id/verify — checks the payment with Cashfree (never trusts the browser) */
+export const verifyPayment = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.userId) throw new ApiError(401, 'Unauthorized');
+    const order = await prisma.order.findUnique({ where: { id: req.params.id } });
+    if (!order) throw new ApiError(404, 'Order not found');
+    if (order.userId !== req.userId) throw new ApiError(403, 'Forbidden');
+    if (order.paymentStatus !== 'PAID') await checkCashfreeOrder(order);
+    const updated = await prisma.order.findUnique({ where: { id: order.id } });
+    const paid = updated?.paymentStatus === 'PAID';
+    res.json({ success: true, message: paid ? 'Payment verified' : 'Payment not completed', data: { ...updated, paid }, statusCode: 200 } as ApiResponse);
+  } catch (error) {
+    const code = error instanceof ApiError ? error.statusCode : 500;
+    if (!(error instanceof ApiError)) console.error('[Cashfree] verify failed:', error);
+    res.status(code).json({ success: false, message: error instanceof ApiError ? error.message : 'Could not check payment. Please refresh in a moment.', statusCode: code } as ApiResponse);
+  }
+};
+
+/** POST /api/payments/cashfree/webhook — Cashfree tells us about payments (signed) */
+export const cashfreeWebhook = async (req: any, res: Response): Promise<void> => {
+  try {
+    const raw: string = req.rawBody || '';
+    if (!verifyCashfreeWebhook(raw, req.get('x-webhook-timestamp'), req.get('x-webhook-signature'))) {
+      res.status(401).json({ success: false, message: 'Invalid signature' });
+      return;
     }
+    const cfOrderId = req.body?.data?.order?.order_id;
+    if (cfOrderId) {
+      const order = await prisma.order.findUnique({ where: { cashfreeOrderId: String(cfOrderId) } });
+      // Re-check with Cashfree rather than trusting the payload's status
+      if (order && order.paymentStatus !== 'PAID') await checkCashfreeOrder(order);
+    }
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[Cashfree] webhook failed:', error);
+    res.status(500).json({ success: false });
   }
 };
 

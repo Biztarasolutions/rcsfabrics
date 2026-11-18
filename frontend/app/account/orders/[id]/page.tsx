@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { openCashfreeCheckout } from '@/lib/cashfree';
 import { orderApi } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
 import Image from 'next/image';
@@ -22,9 +23,43 @@ const TIMELINE_STEPS = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED'];
 const METHOD_LABEL: Record<string, string> = {
   UPI: '📲 UPI Transfer',
   COD: '💵 Cash on Delivery',
-  RAZORPAY: '💳 Razorpay',
+  RAZORPAY: '💳 Online payment',
+  CASHFREE: '💳 Online payment (Cashfree)',
   BANK_TRANSFER: '🏦 Bank Transfer',
 };
+
+/** Unpaid online order: open Cashfree again, then confirm with our server */
+function PayNowBlock({ order }: { order: any }) {
+  const queryClient = useQueryClient();
+  const [busy, setBusy] = React.useState(false);
+  const pay = async () => {
+    setBusy(true);
+    try {
+      const r = await orderApi.payOrder(order.id);
+      const { paymentSessionId, cashfreeMode } = r.data?.data || {};
+      const result = await openCashfreeCheckout(paymentSessionId, cashfreeMode);
+      if (result.redirecting) return;
+      const v = await orderApi.verifyPayment(order.id).catch(() => null);
+      if (v?.data?.data?.paid) toast.success('🎉 Payment successful! Your order is confirmed.');
+      else toast(result.closed ? 'Payment not completed.' : 'Payment is being confirmed — refresh in a moment.');
+      queryClient.invalidateQueries({ queryKey: ['order', order.id] });
+    } catch (e: any) {
+      toast.error(e?.message || 'Could not start payment. Please try again.');
+      queryClient.invalidateQueries({ queryKey: ['order', order.id] });
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 dark:border-amber-900/50 dark:bg-amber-950/20">
+      <p className="font-semibold text-gray-900 dark:text-white">Payment pending</p>
+      <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">Your order is saved. Complete the payment to confirm it.</p>
+      <button type="button" onClick={pay} disabled={busy} className="button-primary mt-4 w-full py-3 sm:w-auto sm:px-8">
+        {busy ? 'Opening payment…' : `Pay now · ₹${Number(order.total).toLocaleString('en-IN')}`}
+      </button>
+    </div>
+  );
+}
 
 function CancelBlock({ orderId }: { orderId: string }) {
   const queryClient = useQueryClient();
@@ -75,11 +110,25 @@ function CancelBlock({ orderId }: { orderId: string }) {
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
 
+  const queryClient = useQueryClient();
   const { data: order, isLoading, isError } = useQuery({
     queryKey: ['order', id],
     queryFn: () => orderApi.getOrderById(id).then(r => r.data.data ?? r.data),
     enabled: !!id,
   });
+
+  // Back from Cashfree's payment page (?payment=return): confirm the payment with our server
+  React.useEffect(() => {
+    if (!id || typeof window === 'undefined') return;
+    if (new URLSearchParams(window.location.search).get('payment') !== 'return') return;
+    orderApi.verifyPayment(id)
+      .then((v) => {
+        if (v?.data?.data?.paid) toast.success('🎉 Payment successful! Your order is confirmed.');
+        queryClient.invalidateQueries({ queryKey: ['order', id] });
+      })
+      .catch(() => {})
+      .finally(() => window.history.replaceState(null, '', window.location.pathname));
+  }, [id, queryClient]);
 
   if (isLoading) return (
     <div className="flex min-h-screen items-center justify-center">
@@ -132,6 +181,7 @@ export default function OrderDetailPage() {
         </div>
 
         <div className="space-y-4">
+          {order.paymentMethod === 'CASHFREE' && order.paymentStatus !== 'PAID' && order.status !== 'CANCELLED' && <PayNowBlock order={order} />}
           {/* Order timeline */}
           <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-dark-700 dark:bg-dark-800">
             <h2 className="mb-4 text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Order Status</h2>
@@ -333,10 +383,10 @@ export default function OrderDetailPage() {
                   <p className="font-mono text-sm text-green-800 dark:text-green-300">{order.utrReference}</p>
                 </div>
               )}
-              {order.razorpayPaymentId && (
+              {(order.cashfreePaymentId || order.razorpayPaymentId) && (
                 <div className="mt-2 rounded-lg bg-blue-50 p-2 dark:bg-blue-950/20">
                   <p className="text-xs text-gray-500">Payment ID</p>
-                  <p className="font-mono text-xs text-blue-800 dark:text-blue-300 break-all">{order.razorpayPaymentId}</p>
+                  <p className="font-mono text-xs text-blue-800 dark:text-blue-300 break-all">{order.cashfreePaymentId || order.razorpayPaymentId}</p>
                 </div>
               )}
               {order.trackingNumber && (

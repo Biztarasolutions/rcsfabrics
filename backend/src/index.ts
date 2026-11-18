@@ -1,4 +1,5 @@
 import express, { Express, Request, Response } from 'express';
+import { cashfreeWebhook } from '@/controllers/order.controller';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -75,7 +76,8 @@ app.use(
 app.use(driveProxyMiddleware);
 
 // Body Parser Middleware
-app.use(express.json({ limit: '50mb' }));
+// Keep the raw body too — Cashfree webhook signatures are computed over it
+app.use(express.json({ limit: '50mb', verify: (req: any, _res, buf) => { req.rawBody = buf.toString('utf8'); } }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Logging
@@ -105,6 +107,8 @@ app.get('/api/settings', async (_req: Request, res: Response) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/enquiries', enquiryRoutes);
 app.use('/api/products', productRoutes);
+// Cashfree payment notifications (signed by Cashfree, no login)
+app.post('/api/payments/cashfree/webhook', cashfreeWebhook);
 app.use('/api/orders', authenticateToken, orderRoutes);
 app.use('/api/users', authenticateToken, userRoutes);
 app.use('/api/cart', authenticateToken, cartRoutes);

@@ -17,7 +17,7 @@ export default function CookiePolicy() {
           body: (
             <ul>
               <li><strong>Essential storage:</strong> your login session, shopping cart, wishlist, recently viewed items and theme (light/dark) preference. These are needed for the store to work.</li>
-              <li><strong>Payments:</strong> when you pay online, Razorpay may set its own cookies or storage to process the payment securely and prevent fraud.</li>
+              <li><strong>Payments:</strong> when you pay online, Cashfree, our payment partner, may set its own cookies or storage to process the payment securely and prevent fraud.</li>
             </ul>
           ),
         },

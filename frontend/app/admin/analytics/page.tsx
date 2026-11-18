@@ -372,8 +372,8 @@ export default function AnalyticsPage() {
 
   const methodEntries = Object.entries(byMethod).sort((a, b) => b[1] - a[1]);
   const methodTotal = methodEntries.reduce((s, [, v]) => s + v, 0);
-  const METHOD_LABEL: Record<string, string> = { UPI: '📲 UPI', COD: '💵 COD', RAZORPAY: '💳 Razorpay', STRIPE: '💳 Stripe', BANK_TRANSFER: '🏦 Bank Transfer' };
-  const METHOD_COLOR: Record<string, string> = { UPI: 'bg-violet-500', COD: 'bg-amber-500', RAZORPAY: 'bg-blue-500', STRIPE: 'bg-indigo-500', BANK_TRANSFER: 'bg-teal-500' };
+  const METHOD_LABEL: Record<string, string> = { UPI: '📲 UPI', COD: '💵 COD', RAZORPAY: '💳 Razorpay', CASHFREE: '💳 Cashfree', STRIPE: '💳 Stripe', BANK_TRANSFER: '🏦 Bank Transfer' };
+  const METHOD_COLOR: Record<string, string> = { UPI: 'bg-violet-500', COD: 'bg-amber-500', RAZORPAY: 'bg-blue-500', CASHFREE: 'bg-emerald-500', STRIPE: 'bg-indigo-500', BANK_TRANSFER: 'bg-teal-500' };
 
   const revenueSparkline = daily.map(d => d.revenue);
   const ordersSparkline = daily.map(d => d.orders);

@@ -102,7 +102,9 @@ export const productApi = {
 
 export const orderApi = {
   create: (data: any) => api.post('orders', data),
-  verifyPayment: (id: string, data: any) => api.post(`orders/${id}/verify`, data),
+  verifyPayment: (id: string, data: any = {}) => api.post(`orders/${id}/verify`, data),
+  /** New Cashfree payment session for an unpaid order */
+  payOrder: (id: string) => api.post(`orders/${id}/pay`, {}),
   getUserOrders: (params?: any) => api.get('orders', { params }),
   getOrderById: (id: string) => api.get(`orders/${id}`),
   getById: (id: string) => api.get(`orders/${id}`),

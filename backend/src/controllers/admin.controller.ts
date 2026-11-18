@@ -1814,6 +1814,8 @@ export const getCustomerDetail = async (
             customerPhone: true,
             utrReference: true,
             razorpayPaymentId: true,
+            cashfreePaymentId: true,
+            cashfreeOrderId: true,
             createdAt: true,
             updatedAt: true,
             items: {

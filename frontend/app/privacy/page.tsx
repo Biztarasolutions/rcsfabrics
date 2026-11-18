@@ -25,7 +25,7 @@ export default function PrivacyPolicy() {
         },
         {
           heading: 'Payments',
-          body: <p>Online payments are processed by Razorpay. We do not see or store your full card, UPI PIN or bank login details. Razorpay’s own privacy policy applies to the payment step.</p>,
+          body: <p>Online payments are processed by Cashfree Payments. We do not see or store your full card, UPI PIN or bank login details. Cashfree’s own privacy policy applies to the payment step.</p>,
         },
         {
           heading: 'How we use your information',
@@ -41,7 +41,7 @@ export default function PrivacyPolicy() {
         },
         {
           heading: 'Sharing your information',
-          body: <p>We do not sell your personal data. We share only what is needed with service providers that help us run the store — for example courier partners (to deliver your order), Razorpay (payments), SMS/email providers (OTP and notifications) and our hosting providers — or where required by law.</p>,
+          body: <p>We do not sell your personal data. We share only what is needed with service providers that help us run the store — for example courier partners (to deliver your order), Cashfree (payments), SMS/email providers (OTP and notifications) and our hosting providers — or where required by law.</p>,
         },
         {
           heading: 'Data retention and security',

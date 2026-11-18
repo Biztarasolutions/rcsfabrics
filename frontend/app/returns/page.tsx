@@ -98,7 +98,7 @@ export default function ReturnPolicy() {
           heading: 'Refunds',
           body: (
             <ul>
-              <li>Online payments (UPI, card or netbanking via Razorpay) are refunded to the original payment method, usually within 5–7 working days of approval.</li>
+              <li>Online payments (UPI, card or net banking or wallet via Cashfree) are refunded to the original payment method, usually within 5–7 working days of approval.</li>
               <li>Cash on Delivery orders are refunded by UPI or bank transfer to an account you share with us.</li>
               <li>For wrong or damaged items, shipping charges are refunded too.</li>
             </ul>
