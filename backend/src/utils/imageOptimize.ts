@@ -33,3 +33,25 @@ export async function optimizeImage(
     return { buffer, filename, mimeType };
   }
 }
+
+/**
+ * Small "looks the same" fingerprint (16×16 average hash). Two copies of one
+ * photo give (nearly) the same fingerprint even if re-saved or resized.
+ */
+export async function photoFingerprint(buffer: Buffer): Promise<string | null> {
+  try {
+    const px = await sharp(buffer, { failOn: 'none' }).rotate().resize(16, 16, { fit: 'fill' }).grayscale().raw().toBuffer();
+    const avg = px.reduce((a, b) => a + b, 0) / px.length;
+    return Array.from(px, (v) => (v > avg ? '1' : '0')).join('');
+  } catch {
+    return null;
+  }
+}
+
+/** true when two fingerprints are the same photo (≤ 10 of 256 bits differ) */
+export const samePhoto = (a?: string | null, b?: string | null): boolean => {
+  if (!a || !b || a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i] && ++diff > 10) return false;
+  return true;
+};

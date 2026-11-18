@@ -1,7 +1,8 @@
+import { createHash } from 'crypto';
 import { PrismaClient } from '@prisma/client';
 import { getDriveImageStream, fetchFolderImageDetails, findFolderIdByName } from '../utils/googleDrive.util';
 import { uploadImageToSupabase } from '../utils/supabase.util';
-import { optimizeImage } from '../utils/imageOptimize';
+import { optimizeImage, photoFingerprint, samePhoto } from '../utils/imageOptimize';
 import { isRawFileName } from '../utils/rawPhoto';
 
 const prisma = new PrismaClient();
@@ -21,21 +22,25 @@ const uploadDriveImagesToSupabase = async (folderId: string): Promise<{ urls: st
       .sort((a: any, b: any) => a.name.localeCompare(b.name, undefined, { numeric: true }));
     const publicUrls: string[] = [];
     let rawUrl: string | null = null;
+    let rawHash: string | null = null;
+    const hashes: string[] = [];
 
     for (const file of files) {
       console.log(`  [Product Sync] Downloading: ${file.name} (${file.id})`);
       const streamRes = await getDriveImageStream(file.id);
       const raw = await streamToBuffer(streamRes.data);
+      const hash = (await photoFingerprint(raw)) || createHash('sha1').update(raw).digest('hex');
       const img = await optimizeImage(raw, file.name, file.mimeType || 'image/jpeg');
       const publicUrl = await uploadImageToSupabase(img.buffer, img.filename, img.mimeType);
       
       // A photo named "Raw" is the admin-only original — never a customer photo
-      if (isRawFileName(file.name)) rawUrl = publicUrl;
-      else publicUrls.push(publicUrl);
+      if (isRawFileName(file.name)) { rawUrl = publicUrl; rawHash = hash; }
+      else { publicUrls.push(publicUrl); hashes.push(hash); }
       console.log(`  [Product Sync] Uploaded: ${file.name} -> ${publicUrl}`);
     }
 
-    return { urls: publicUrls, rawUrl };
+    // never keep an exact copy of the Raw photo as a customer photo
+    return { urls: publicUrls.filter((_, i) => hashes[i] !== rawHash && !samePhoto(hashes[i], rawHash)), rawUrl };
   } catch (error: any) {
     console.error('  [Product Sync] Error syncing folder:', error.message);
     throw error;

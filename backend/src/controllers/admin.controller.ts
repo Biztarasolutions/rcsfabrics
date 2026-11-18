@@ -1,5 +1,6 @@
+import { createHash } from 'crypto';
 import { Response } from 'express';
-import { optimizeImage } from '@/utils/imageOptimize';
+import { optimizeImage, photoFingerprint, samePhoto } from '@/utils/imageOptimize';
 import { isRawFileName } from '@/utils/rawPhoto';
 import { customerCode } from '@/utils/customer';
 import { prisma } from '@/index';
@@ -40,28 +41,33 @@ const streamToBuffer = (stream: any): Promise<Buffer> => {
 
 export { isRawFileName };
 
-type SyncedFiles = { urls: string[]; rawUrl: string | null };
+type SyncedFiles = { urls: string[]; rawUrl: string | null; hashes: string[]; rawHash: string | null };
 
 /** Copies Drive photos to Supabase (shrunk). "Raw" is returned separately, never in `urls`. */
 const uploadDriveFilesToSupabase = async (files: DriveFileDetails[]): Promise<SyncedFiles> => {
   const urls: string[] = [];
+  const hashes: string[] = [];
   let rawUrl: string | null = null;
+  let rawHash: string | null = null;
   const ordered = [...files].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
   for (const file of ordered) {
     console.log(`[Supabase Upload] Downloading file: ${file.name} (${file.id})`);
     const streamRes = await getDriveImageStream(file.id);
     const raw = await streamToBuffer(streamRes.data);
+    const hash = (await photoFingerprint(raw)) || createHash('sha1').update(raw).digest('hex'); // to spot copies of the Raw photo
     const img = await optimizeImage(raw, file.name, file.mimeType || 'image/jpeg');
     const publicUrl = await uploadImageToSupabase(img.buffer, img.filename, img.mimeType);
     if (isRawFileName(file.name)) {
       rawUrl = publicUrl;
+      rawHash = hash;
       console.log(`[Supabase Upload] Raw (admin-only) photo: ${file.name} -> ${publicUrl}`);
     } else {
       urls.push(publicUrl);
+      hashes.push(hash);
       console.log(`[Supabase Upload] Uploaded successfully: ${file.name} -> ${publicUrl}`);
     }
   }
-  return { urls, rawUrl };
+  return { urls, rawUrl, hashes, rawHash };
 };
 
 /**
@@ -230,16 +236,21 @@ const syncImagesForProduct = async (
   const productCodes = collectProductCodesForSync(product, categoryName);
 
   const supabaseUrls: string[] = [];
+  const urlHash = new Map<string, string>();
   let rawUrl: string | null = null;
+  let rawHash: string | null = null;
   const uploadedFileIds = new Set<string>();
   const syncedFolderIds = new Set<string>();
+  const collect = (res: SyncedFiles) => {
+    supabaseUrls.push(...res.urls);
+    res.urls.forEach((u, i) => urlHash.set(u, res.hashes[i]));
+    if (res.rawUrl && !rawUrl) { rawUrl = res.rawUrl; rawHash = res.rawHash; }
+  };
 
   const syncFolderOnce = async (folderId: string) => {
     if (syncedFolderIds.has(folderId)) return;
     syncedFolderIds.add(folderId);
-    const res = await uploadAllImagesFromFolder(folderId);
-    supabaseUrls.push(...res.urls);
-    if (res.rawUrl && !rawUrl) rawUrl = res.rawUrl;
+    collect(await uploadAllImagesFromFolder(folderId));
   };
 
   // 1) Folders from saved URLs or name search — sync every image inside
@@ -286,15 +297,22 @@ const syncImagesForProduct = async (
     if (newFiles.length === 0) continue;
     newFiles.forEach((f) => uploadedFileIds.add(f.id));
     try {
-      const res = await uploadDriveFilesToSupabase(newFiles);
-      supabaseUrls.push(...res.urls);
-      if (res.rawUrl && !rawUrl) rawUrl = res.rawUrl;
+      collect(await uploadDriveFilesToSupabase(newFiles));
     } catch (err: any) {
       console.error(`[Sync] Failed uploading files for code "${productCode}":`, err.message || err);
     }
   }
 
-  const uniqueUrls = [...new Set(supabaseUrls)];
+  // Drop exact copies of the Raw photo, and duplicates of the same photo found in two places
+  const seenHashes = new Set<string>();
+  const uniqueUrls = [...new Set(supabaseUrls)].filter((u) => {
+    const h = urlHash.get(u);
+    if (!h) return true;
+    if (h === rawHash || samePhoto(h, rawHash)) { console.log(`[Sync] Skipped a copy of the Raw photo: ${u}`); return false; }
+    if (seenHashes.has(h)) return false; // same photo found in two places
+    seenHashes.add(h);
+    return true;
+  });
 
   if (uniqueUrls.length === 0) {
     const codesHint = productCodes.slice(0, 3).join(', ');
@@ -688,7 +706,7 @@ export const updateProduct = async (
       const folderId = extractFolderId(folderUrl);
       if (folderId) {
         const synced = await uploadAllImagesFromFolder(folderId);
-        finalImageUrls = synced.urls;
+        finalImageUrls = synced.urls.filter((_, i) => !samePhoto(synced.hashes[i], synced.rawHash) && synced.hashes[i] !== synced.rawHash);
         if (synced.rawUrl) {
           await prisma.productRawImage.upsert({
             where: { productId: id },
