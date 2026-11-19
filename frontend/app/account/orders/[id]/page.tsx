@@ -1,5 +1,6 @@
 'use client';
 import React, { useState } from 'react';
+import { deliverByLabel, showsDeliverBy } from '@/lib/delivery';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -246,6 +247,11 @@ export default function OrderDetailPage() {
                   })}
                 </div>
               </>
+            )}
+            {showsDeliverBy(order.status) && (
+              <p className="mt-4 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300">
+                🚚 Will be delivered on or before <strong>{deliverByLabel(order.createdAt)}</strong>
+              </p>
             )}
             <p className="mt-4 text-xs text-gray-500 dark:text-gray-400">
               Placed on {new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}

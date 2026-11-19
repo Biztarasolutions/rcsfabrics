@@ -1,5 +1,6 @@
 'use client';
 import React, { useState } from 'react';
+import { deliverByLabel, showsDeliverBy } from '@/lib/delivery';
 import Link from 'next/link';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { orderApi } from '@/lib/api';
@@ -160,6 +161,12 @@ function OrdersContent() {
                       {new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
                     </p>
                   </div>
+                  {showsDeliverBy(order.status) && (
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Delivery by</p>
+                      <p className="font-medium text-emerald-700 dark:text-emerald-400">{deliverByLabel(order.createdAt)}</p>
+                    </div>
+                  )}
                   <div>
                     <p className="text-xs text-gray-500 dark:text-gray-400">Total</p>
                     <p className="font-bold text-gray-900 dark:text-white">{formatPrice(order.total)}</p>

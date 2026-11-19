@@ -26,6 +26,12 @@ const PAYMENT_STATUS: Record<string, string> = {
 const dateIN = (d: Date): string =>
   new Date(d).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' });
 
+/** Promised delivery: on or before the order date + 10 days */
+const deliverBy = (d: Date): string => {
+  const x = new Date(d); x.setDate(x.getDate() + 10);
+  return x.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Kolkata' });
+};
+
 const loadOrder = (orderId: string) =>
   prisma.order.findUnique({
     where: { id: orderId },
@@ -109,6 +115,7 @@ export function buildOrderEmails(order: FullOrder, event: 'placed' | 'paid'): Ma
               ['Order number', esc(order.orderNumber)],
               ['Order date', esc(dateIN(order.createdAt))],
               ['Payment', paymentLine(order)],
+              ['Delivery', `On or before ${esc(deliverBy(order.createdAt))}`],
             ])}
             ${orderBody(order)}
             <div style="height:10px"></div>
@@ -216,12 +223,12 @@ export function buildStatusEmail(order: FullOrder, status: string, opts: { byCus
           ${detailsTable([
             ['Courier', 'India Post'],
             ['Tracking number', `<span style="font-family:Consolas,Menlo,monospace;font-size:15px;letter-spacing:.5px">${esc(order.trackingNumber)}</span>`],
-            ['Expected delivery', 'Within 8–10 days of your order date'],
+            ['Delivery', `On or before ${esc(deliverBy(order.createdAt))}`],
           ])}
           <div style="height:12px"></div>
           ${button(TRACK_URL, 'Track on India Post')}
           ${para(`On the India Post site, open <strong>Track &amp; Trace</strong> and enter the tracking number above.`, 'font-size:13px;color:#7a6e62;margin-top:6px')}`
-        : note('Delivery usually takes 8–10 days from your order date, depending on your location. Message us on WhatsApp any time for an update.');
+        : note(`Your order will be delivered on or before <strong>${esc(deliverBy(order.createdAt))}</strong>. Message us on WhatsApp any time for an update.`);
     }
     if (status === 'DELIVERED') {
       extra = note('<strong>Anything not right?</strong> If you received the wrong fabric or it arrived damaged, message us within <strong>48 hours of delivery</strong> with photos and we will replace it or refund you.');
@@ -255,6 +262,7 @@ export function buildStatusEmail(order: FullOrder, status: string, opts: { byCus
             ['Order date', esc(dateIN(order.createdAt))],
             ['Total', `<span style="color:#6b1219">${inr(order.total)}</span>`],
             ['Payment', paymentLine(order)],
+            ...(['PROCESSING', 'SHIPPED'].includes(status) ? [['Delivery', `On or before ${esc(deliverBy(order.createdAt))}`] as [string, string]] : []),
           ])}
           <div style="height:6px"></div>
           ${itemsTable(order.items)}

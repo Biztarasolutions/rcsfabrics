@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
+import { deliverBy } from '@/lib/delivery';
 import { loadCashfree, openCashfreeCheckout } from '@/lib/cashfree';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -127,8 +128,7 @@ const CONFETTI_COLORS = ['#16a34a', '#d4af37', '#3b82f6', '#f59e0b', '#ec4899', 
 function ThankYouScreen({ order }: { order: any }) {
   const stageRef = useRef<HTMLDivElement>(null);
 
-  const deliveryDate = new Date(order.createdAt || Date.now());
-  deliveryDate.setDate(deliveryDate.getDate() + 7);
+  const deliveryDate = deliverBy(order.createdAt);
 
   useEffect(() => {
     const stage = stageRef.current;
