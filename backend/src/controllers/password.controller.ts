@@ -5,6 +5,7 @@ import { hashPassword } from '@/utils/auth.util';
 import { ApiError } from '@/middleware/errorHandler';
 import { sendOTP, generateOTP, shouldExposeOtp } from '@/services/smsService';
 import { sendEmail } from '@/utils/email';
+import { brandEmail, codeBox, para } from '@/utils/emailLayout';
 
 const OTP_TTL_MS = 10 * 60 * 1000;
 const MAX_ATTEMPTS = 3;
@@ -54,14 +55,14 @@ export const forgotPassword = async (req: AuthRequest, res: Response): Promise<v
           await sendEmail({
             to: [user.email],
             subject: 'Reset your RCS Fabrics password',
-            html: `
-              <div style="font-family:sans-serif;padding:20px;max-width:600px;margin:0 auto;border:1px solid #e0e0e0;border-radius:8px">
-                <h2 style="text-align:center">Password reset code</h2>
-                <p>Hello ${String(user.firstName || '').replace(/[<>&"']/g, '') || 'there'},</p>
-                <p>Use this code to reset your password:</p>
-                <div style="font-size:32px;font-weight:bold;text-align:center;letter-spacing:5px;margin:30px 0">${code}</div>
-                <p style="color:#666;font-size:14px">Valid for 10 minutes. If you didn't ask for this, you can ignore this email.</p>
-              </div>`,
+            html: brandEmail({
+              preheader: `${code} is your password reset code. It is valid for 10 minutes.`,
+              eyebrow: 'Account security',
+              title: 'Reset your password',
+              body: `${para(`Hello ${String(user.firstName || '').replace(/[<>&"']/g, '') || 'there'}, we received a request to reset your RCS Fabrics password. Enter this code to choose a new one:`)}
+                ${codeBox(code)}
+                ${para("This code is valid for 10 minutes. If you didn't ask to reset your password, you can ignore this email — your password will stay the same.", 'font-size:13px;color:#7a6e62')}`,
+            }),
           });
         } catch (err) {
           console.error('[Forgot password] email failed:', err);

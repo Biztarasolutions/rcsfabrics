@@ -10,6 +10,7 @@ import { validateEmail } from '@/utils/string.util';
 import { ApiError } from '@/middleware/errorHandler';
 import { sendOTP, generateOTP, validateOTPFormat, shouldExposeOtp } from '@/services/smsService';
 import { sendEmail } from '@/utils/email';
+import { brandEmail, codeBox, para } from '@/utils/emailLayout';
 
 /**
  * Send OTP to phone number
@@ -214,14 +215,14 @@ const sendSignupEmail = async (email: string, code: string, name?: string) => {
   await sendEmail({
     to: [email],
     subject: `${code} is your RCS Fabrics verification code`,
-    html: `
-      <div style="font-family:sans-serif;padding:20px;max-width:600px;margin:0 auto;border:1px solid #e8dfcf;border-radius:8px">
-        <h2 style="color:#6b1219;text-align:center;margin-top:0">Verify your email</h2>
-        <p>Hello${safeName ? ' ' + safeName : ''},</p>
-        <p>Use this code to finish creating your RCS Fabrics account:</p>
-        <div style="font-size:32px;font-weight:bold;text-align:center;letter-spacing:6px;margin:28px 0;color:#2b2118">${code}</div>
-        <p style="color:#666;font-size:14px">This code is valid for 10 minutes. If you didn't try to sign up, you can ignore this email.</p>
-      </div>`,
+    html: brandEmail({
+      preheader: `${code} is your verification code. It is valid for 10 minutes.`,
+      eyebrow: 'Create your account',
+      title: 'Verify your email',
+      body: `${para(`Hello${safeName ? ' ' + safeName : ''}, welcome to RCS Fabrics! Enter this code to finish creating your account:`)}
+        ${codeBox(code)}
+        ${para('This code is valid for 10 minutes. If you did not try to sign up, you can safely ignore this email.', 'font-size:13px;color:#7a6e62')}`,
+    }),
   });
 };
 
@@ -623,18 +624,15 @@ export const sendLoginOTP = async (
       try {
         await sendEmail({
           to: [user.email],
-          subject: 'Your RCS Fabrics Login OTP',
-          html: `
-            <div style="font-family: sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px;">
-              <h2 style="color: #4f46e5; text-align: center;">RCS Fabrics Login OTP</h2>
-              <p>Hello ${user.firstName || 'User'},</p>
-              <p>Your OTP code to login to your account is:</p>
-              <div style="font-size: 32px; font-weight: bold; text-align: center; letter-spacing: 5px; margin: 30px 0; color: #1e1b4b;">
-                ${otp}
-              </div>
-              <p style="color: #666; font-size: 14px;">This code is valid for 10 minutes. Please do not share it with anyone.</p>
-            </div>
-          `
+          subject: `${otp} is your RCS Fabrics login code`,
+          html: brandEmail({
+            preheader: `${otp} is your login code. It is valid for 10 minutes.`,
+            eyebrow: 'Sign in',
+            title: 'Your login code',
+            body: `${para(`Hello ${String(user.firstName || '').replace(/[<>&"']/g, '') || 'there'}, use this code to sign in to your RCS Fabrics account:`)}
+              ${codeBox(otp)}
+              ${para('This code is valid for 10 minutes. Never share it with anyone — RCS Fabrics will never ask you for it.', 'font-size:13px;color:#7a6e62')}`,
+          }),
         });
       } catch (err) {
         console.error('Error sending login OTP email:', err);

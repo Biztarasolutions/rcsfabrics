@@ -3,6 +3,7 @@ import { prisma } from '@/index';
 import { ApiError } from '@/middleware/errorHandler';
 import { ApiResponse } from '@/types';
 import { sendEmail } from '@/utils/email';
+import { brandEmail, button, detailsTable, para, siteUrl } from '@/utils/emailLayout';
 
 const DEFAULT_NOTIFY = ['rish6.jain@gmail.com', 'mayankjain23102000@gmail.com'];
 const notifyEmails = (): string[] => {
@@ -116,14 +117,23 @@ export const createEnquiry = async (req: Request, res: Response): Promise<void> 
       await sendEmail({
         to: notifyEmails(),
         subject: subjectLine,
-        html: `
-          <h2>${escapeHtml(subjectLine)}</h2>
-          <p><strong>Name:</strong> ${escapeHtml(name)}<br/>
-          <strong>Email:</strong> ${escapeHtml(email)}<br/>
-          <strong>Phone:</strong> ${escapeHtml(phone || '-')}<br/>
-          ${company ? `<strong>Company:</strong> ${escapeHtml(company)}<br/>` : ''}</p>
-          <pre style="font-family:inherit;white-space:pre-wrap">${escapeHtml(details)}</pre>
-          <p style="color:#888">Enquiry ID: ${saved.id}</p>`,
+        html: brandEmail({
+          team: true,
+          preheader: `${name} · ${phone || email}`,
+          eyebrow: type === 'bulk' ? 'Bulk quote request' : 'Website message',
+          title: subjectLine.replace(/^New (bulk quote request|website message) — /, ''),
+          body: `${detailsTable([
+              ['Name', escapeHtml(name)],
+              ['Email', `<a href="mailto:${escapeHtml(email)}" style="color:#6b1219">${escapeHtml(email)}</a>`],
+              ['Phone', escapeHtml(phone || '—')],
+              ...(company ? [['Business', escapeHtml(company)] as [string, string]] : []),
+            ])}
+            <div style="height:18px"></div>
+            ${para(escapeHtml(details.replace(/^\[(Bulk order|Contact)\]\s*/, '')).replace(/\n/g, '<br/>'), 'font-size:14px;line-height:1.7;background:#faf6ee;border-radius:10px;padding:14px 16px')}
+            ${attachments.length ? para(`📎 ${attachments.length} reference photo(s) attached to this email.`, 'font-size:13px;color:#7a6e62') : ''}
+            ${phone ? button(`https://wa.me/${phone.replace(/\D/g, '').replace(/^(?=\d{10}$)/, '91')}`, 'Reply on WhatsApp') : ''}
+            ${para(`Enquiry ID: ${saved.id} · <a href="${siteUrl()}/admin" style="color:#7a6e62">Open admin</a>`, 'font-size:12px;color:#7a6e62;margin-top:12px')}`,
+        }),
         attachments,
       });
     } catch (mailErr) {

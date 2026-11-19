@@ -1,6 +1,7 @@
 // src/services/bulkOrderService.ts
 import { createClient } from '@supabase/supabase-js';
 import { sendEmail } from '@/utils/email';
+import { brandEmail, detailsTable, esc } from '@/utils/emailLayout';
 
 // Lazy Supabase client — constructing at module load with missing env crashes the server on boot.
 let supabaseClient: any = null;
@@ -38,14 +39,16 @@ export const insertBulkEnquiry = async (data: BulkEnquiry) => {
     await sendEmail({
       to: ['rish6.jain@gmail.com', 'mayankjain23102000@gmail.com'],
       subject: `New Bulk Enquiry from ${data.name}`,
-      html: `<p><strong>Name:</strong> ${data.name}</p>
-        <p><strong>Company:</strong> ${data.company ?? ''}</p>
-        <p><strong>Email:</strong> ${data.email}</p>
-        <p><strong>Phone:</strong> ${data.phone}</p>
-        <p><strong>Fabric:</strong> ${data.fabric}</p>
-        <p><strong>Quantity (m):</strong> ${data.quantity}</p>
-        <p><strong>Deadline:</strong> ${data.deadline ?? ''}</p>
-        <p><strong>Notes:</strong> ${data.notes ?? ''}</p>`,
+      html: brandEmail({
+        team: true,
+        preheader: `${data.name} · ${data.quantity} m ${data.fabric}`,
+        eyebrow: 'Bulk enquiry',
+        title: `${data.quantity} m ${data.fabric}`,
+        body: detailsTable([
+          ['Name', esc(data.name)], ['Business', esc(data.company ?? '—')], ['Email', esc(data.email)], ['Phone', esc(data.phone)],
+          ['Fabric', esc(data.fabric)], ['Quantity', `${esc(data.quantity)} m`], ['Needed by', esc(data.deadline ?? '—')], ['Notes', esc(data.notes ?? '—')],
+        ]),
+      }),
     });
   } catch (mailErr) {
     console.error('Failed to send bulk enquiry email:', mailErr);
