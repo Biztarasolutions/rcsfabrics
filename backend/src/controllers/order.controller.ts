@@ -472,13 +472,13 @@ export const cancelOrder = async (
     const order = await prisma.order.findUnique({ where: { id }, include: { items: true } });
     if (!order) throw new ApiError(404, 'Order not found');
     if (order.userId !== req.userId) throw new ApiError(403, 'Forbidden');
-    if (['SHIPPED', 'DELIVERED', 'CANCELLED'].includes(order.status)) {
+    if (['SHIPPED', 'DELIVERED', 'CANCELLED', 'RETURNED'].includes(order.status)) {
       throw new ApiError(400, 'Order cannot be cancelled after it has been shipped');
     }
     // Cancel first (only if not already cancelled/shipped) so stock is restored exactly once
     const updated = await prisma.$transaction(async (tx) => {
       const res = await tx.order.updateMany({
-        where: { id, status: { notIn: ['SHIPPED', 'DELIVERED', 'CANCELLED'] } },
+        where: { id, status: { notIn: ['SHIPPED', 'DELIVERED', 'CANCELLED', 'RETURNED'] } },
         data: { status: 'CANCELLED', cancelledBy: 'CUSTOMER' },
       });
       if (res.count === 0) throw new ApiError(400, 'Order cannot be cancelled');

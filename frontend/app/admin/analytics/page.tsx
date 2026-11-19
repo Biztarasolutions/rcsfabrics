@@ -205,7 +205,7 @@ function ProductInsightCard({
 }
 
 // ── Main page ────────────────────────────────────────────────────────────
-const STATUS_OPTIONS = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'];
+const STATUS_OPTIONS = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'RETURNED'];
 
 export default function AnalyticsPage() {
   const today = new Date();

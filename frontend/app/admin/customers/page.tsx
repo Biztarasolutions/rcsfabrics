@@ -16,6 +16,7 @@ const STATUS_COLORS: Record<string, string> = {
   SHIPPED: 'bg-purple-100 text-purple-700',
   DELIVERED: 'bg-green-100 text-green-700',
   CANCELLED: 'bg-red-100 text-red-700',
+  RETURNED: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
 };
 
 function parseAddress(raw: any) {

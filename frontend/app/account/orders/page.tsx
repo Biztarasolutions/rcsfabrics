@@ -15,6 +15,7 @@ const STATUS_CONFIG: Record<string, { label: string; icon: string; badge: string
   SHIPPED:    { label: 'On the Way',    icon: '🚛', badge: 'bg-purple-100 text-purple-800 border border-purple-300 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-700', dot: 'bg-purple-500', stepDone: 'bg-purple-50 border-purple-400 dark:bg-purple-950/30', stepActive: 'ring-purple-300' },
   DELIVERED:  { label: 'Delivered',     icon: '✓',  badge: 'bg-green-100 text-green-800 border border-green-300 dark:bg-green-900/40 dark:text-green-300 dark:border-green-700',     dot: 'bg-green-500',  stepDone: 'bg-green-50 border-green-500 dark:bg-green-950/30',  stepActive: 'ring-green-300' },
   CANCELLED:  { label: 'Cancelled',     icon: '✕',  badge: 'bg-red-100 text-red-800 border border-red-300 dark:bg-red-900/40 dark:text-red-300 dark:border-red-700',                 dot: 'bg-red-400',    stepDone: 'bg-red-50 border-red-400 dark:bg-red-950/30',        stepActive: 'ring-red-300' },
+  RETURNED:   { label: 'Returned',      icon: '↩',  badge: 'bg-orange-100 text-orange-800 border border-orange-300 dark:bg-orange-900/40 dark:text-orange-300 dark:border-orange-700', dot: 'bg-orange-500', stepDone: 'bg-orange-50 border-orange-400 dark:bg-orange-950/30', stepActive: 'ring-orange-300' },
 };
 
 const TIMELINE_STEPS = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED'];
@@ -67,6 +68,15 @@ function OrderTimeline({ status }: { status: string }) {
       <div>
         <p className="font-semibold text-red-700 dark:text-red-400">Order Cancelled</p>
         <p className="text-xs text-gray-400">This order has been cancelled</p>
+      </div>
+    </div>
+  );
+  if (status === 'RETURNED') return (
+    <div className="flex items-center gap-3 px-5 py-4 text-sm">
+      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-100 text-base text-orange-700 dark:bg-orange-950/30">↩</div>
+      <div>
+        <p className="font-semibold text-orange-700 dark:text-orange-400">Order Returned</p>
+        <p className="text-xs text-gray-400">This order has been returned to RCS Fabrics</p>
       </div>
     </div>
   );
@@ -200,7 +210,7 @@ function OrdersContent() {
               {/* Footer */}
               <div className="flex items-center justify-between border-t border-gray-100 px-5 py-3 dark:border-dark-700">
                 <div>
-                  {!['SHIPPED', 'DELIVERED', 'CANCELLED'].includes(order.status) && (
+                  {!['SHIPPED', 'DELIVERED', 'CANCELLED', 'RETURNED'].includes(order.status) && (
                     <CancelOrderButton orderId={order.id} />
                   )}
                 </div>
