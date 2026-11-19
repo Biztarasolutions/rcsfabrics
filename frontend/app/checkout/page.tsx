@@ -14,15 +14,46 @@ import { useQuery } from '@tanstack/react-query';
 
 const STEPS = ['Cart Review', 'Shipping Address', 'Payment'];
 
-function OrderSummary({ items, subtotal, shipping, discount, total, coupon, setCoupon, couponData, onApplyCoupon, onRemoveCoupon }: {
+// Countries for the delivery phone. `digits` = length of the local number.
+const COUNTRIES = [
+  { name: 'India', dial: '+91', digits: 10 },
+  { name: 'Nepal', dial: '+977', digits: 10 },
+  { name: 'Bhutan', dial: '+975', digits: 8 },
+  { name: 'Bangladesh', dial: '+880', digits: 10 },
+  { name: 'United Arab Emirates', dial: '+971', digits: 9 },
+  { name: 'United States', dial: '+1', digits: 10 },
+  { name: 'United Kingdom', dial: '+44', digits: 10 },
+];
+const countryOf = (name?: string) => COUNTRIES.find((c) => c.name === name) || COUNTRIES[0];
+
+/** Turn any stored phone ("+91 98765 43210", "098765...") into just the local digits. */
+function localDigits(raw: string | undefined | null, country: string) {
+  const c = countryOf(country);
+  let d = String(raw || '').replace(/\D/g, '');
+  const code = c.dial.replace('+', '');
+  if (d.length > c.digits && d.startsWith(code)) d = d.slice(code.length);
+  if (d.length > c.digits && d.startsWith('0')) d = d.replace(/^0+/, '');
+  return d.slice(0, c.digits);
+}
+
+function phoneError(digits: string, country: string) {
+  const c = countryOf(country);
+  if (!digits) return 'Phone number is required for delivery';
+  if (digits.length !== c.digits) return `Enter a ${c.digits}-digit phone number`;
+  if (c.name === 'India' && !/^[6-9]/.test(digits)) return 'Indian mobile numbers start with 6, 7, 8 or 9';
+  return '';
+}
+
+function OrderSummary({ items, subtotal, shipping, discount, total, coupon, setCoupon, couponData, onApplyCoupon, onRemoveCoupon, hideItemsOnMobile }: {
+  hideItemsOnMobile?: boolean;
   items: any[]; subtotal: number; shipping: number; discount: number; total: number;
   coupon: string; setCoupon: (v: string) => void; couponData: any;
   onApplyCoupon: () => void; onRemoveCoupon: () => void;
 }) {
   return (
-    <div className="sticky top-24 rounded-2xl border border-gray-200 bg-gray-50 p-6 dark:border-dark-700 dark:bg-dark-800">
+    <div className="rounded-2xl lg:sticky lg:top-24 border border-gray-200 bg-gray-50 p-6 dark:border-dark-700 dark:bg-dark-800">
       <h3 className="font-display text-xl font-bold text-gray-900 dark:text-white">Order Summary</h3>
-      <div className="mt-4 max-h-60 space-y-3 overflow-y-auto scrollbar-hide">
+      <div className={`mt-4 max-h-60 space-y-3 overflow-y-auto scrollbar-hide ${hideItemsOnMobile ? 'hidden lg:block' : ''}`}>
         {items.map((item) => (
           <div key={item.id} className="flex items-center gap-3">
             <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-white dark:bg-dark-700">
@@ -223,6 +254,7 @@ export default function CheckoutPage() {
   const [coupon, setCoupon] = useState('');
   const [couponData, setCouponData] = useState<any>(null);
   const [placing, setPlacing] = useState(false);
+  const [phoneTouched, setPhoneTouched] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'online' | 'cod'>('online');
   const [placedOrder, setPlacedOrder] = useState<any>(null);
 
@@ -254,7 +286,7 @@ export default function CheckoutPage() {
       if (addrs.length > 0) {
         setSelectedAddressIdx(0);
         const a = addrs[0];
-        setAddress({ firstName: a.firstName || '', lastName: a.lastName || '', phone: a.phone || '', street: a.street || a.addressLine1 || '', city: a.city || '', state: a.state || '', postalCode: a.postalCode || a.zipCode || '', country: 'India' });
+        setAddress({ firstName: a.firstName || '', lastName: a.lastName || '', phone: localDigits(a.phone || user?.phone, countryOf(a.country).name), street: a.street || a.addressLine1 || '', city: a.city || '', state: a.state || '', postalCode: a.postalCode || a.zipCode || '', country: countryOf(a.country).name });
         setShowNewForm(false);
       } else {
         setShowNewForm(true);
@@ -269,6 +301,7 @@ export default function CheckoutPage() {
     }
   }, [settings, onlineEnabled, codEnabled]);
 
+  const phoneErr = phoneError(address.phone, address.country);
   const subtotal = totalPrice();
   const shipping = subtotal >= 2000 ? 0 : 150;
   // Use the backend-calculated discount (already respects maxDiscount cap).
@@ -321,6 +354,7 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (phoneErr) { toast.error(phoneErr); setStep(1); setPhoneTouched(true); return; }
     setPlacing(true);
     try {
       const orderPayload: any = {
@@ -329,7 +363,7 @@ export default function CheckoutPage() {
           quantity: item.quantity,
           price: item.product.discountPrice || item.product.basePrice,
         })),
-        shippingAddress: address,
+        shippingAddress: { ...address, phone: `${countryOf(address.country).dial} ${address.phone}` },
         shippingCost: shipping,
         tax: 0,
         paymentMethod: paymentMethod === 'online' ? 'CASHFREE' : 'COD',
@@ -480,7 +514,7 @@ export default function CheckoutPage() {
                         onClick={() => {
                           setSelectedAddressIdx(idx);
                           setShowNewForm(false);
-                          setAddress({ firstName: a.firstName || '', lastName: a.lastName || '', phone: a.phone || '', street: a.street || a.addressLine1 || '', city: a.city || '', state: a.state || '', postalCode: a.postalCode || a.zipCode || '', country: 'India' });
+                          setAddress({ firstName: a.firstName || '', lastName: a.lastName || '', phone: localDigits(a.phone || user?.phone, countryOf(a.country).name), street: a.street || a.addressLine1 || '', city: a.city || '', state: a.state || '', postalCode: a.postalCode || a.zipCode || '', country: countryOf(a.country).name });
                         }}
                         className={`w-full rounded-xl border-2 p-4 text-left transition-colors ${selectedAddressIdx === idx && !showNewForm ? 'border-primary-500 bg-primary-50/30 dark:border-primary-500/50 dark:bg-primary-950/10' : 'border-gray-200 dark:border-dark-700'}`}>
                         <p className="font-semibold text-gray-900 dark:text-white text-sm">{a.firstName} {a.lastName}</p>
@@ -489,7 +523,7 @@ export default function CheckoutPage() {
                       </button>
                     ))}
                     <button type="button"
-                      onClick={() => { setSelectedAddressIdx(null); setShowNewForm(true); setAddress({ firstName: user?.firstName || '', lastName: user?.lastName || '', phone: user?.phone || '', street: '', city: '', state: '', postalCode: '', country: 'India' }); }}
+                      onClick={() => { setSelectedAddressIdx(null); setShowNewForm(true); setAddress({ firstName: user?.firstName || '', lastName: user?.lastName || '', phone: localDigits(user?.phone, 'India'), street: '', city: '', state: '', postalCode: '', country: 'India' }); }}
                       className={`w-full rounded-xl border-2 border-dashed p-4 text-sm font-medium transition-colors ${showNewForm ? 'border-primary-500 bg-primary-50/30 text-primary-700 dark:border-primary-500/50 dark:bg-primary-950/10 dark:text-primary-400' : 'border-gray-200 text-gray-500 hover:border-gray-300 dark:border-dark-700'}`}>
                       + Add New Address
                     </button>
@@ -502,7 +536,6 @@ export default function CheckoutPage() {
                     {[
                       { name: 'firstName', label: 'First Name', placeholder: 'Priya' },
                       { name: 'lastName', label: 'Last Name', placeholder: 'Sharma' },
-                      { name: 'phone', label: 'Phone', placeholder: '+91 98765 43210', full: true },
                       { name: 'street', label: 'Street Address', placeholder: '123, Main Street', full: true },
                       { name: 'city', label: 'City', placeholder: 'Mumbai' },
                       { name: 'state', label: 'State', placeholder: 'Maharashtra' },
@@ -518,9 +551,37 @@ export default function CheckoutPage() {
                   </div>
                 )}
 
+                {/* Delivery phone — required, with country code */}
+                <div className="mt-5">
+                  <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Phone number for delivery <span className="text-red-500">*</span>
+                  </label>
+                  <div className="flex gap-2">
+                    <select aria-label="Country" value={address.country}
+                      onChange={(e) => setAddress({ ...address, country: e.target.value, phone: address.phone.slice(0, countryOf(e.target.value).digits) })}
+                      className="input-field w-auto max-w-[45%] shrink-0 pr-8">
+                      {COUNTRIES.map((c) => <option key={c.name} value={c.name}>{c.name} ({c.dial})</option>)}
+                    </select>
+                    <div className="flex flex-1 items-center rounded-xl border border-gray-300 bg-white focus-within:border-primary-500 dark:border-dark-600 dark:bg-dark-800">
+                      <span className="pl-3 text-sm font-semibold text-gray-500">{countryOf(address.country).dial}</span>
+                      <input type="tel" inputMode="numeric" autoComplete="tel-national"
+                        value={address.phone} maxLength={countryOf(address.country).digits}
+                        placeholder={address.country === 'India' ? '98765 43210'.replace(' ', '') : `${countryOf(address.country).digits}-digit number`}
+                        onChange={(e) => setAddress({ ...address, phone: e.target.value.replace(/\D/g, '').slice(0, countryOf(address.country).digits) })}
+                        onBlur={() => setPhoneTouched(true)}
+                        className="w-full min-w-0 bg-transparent px-2 py-3 text-sm outline-none dark:text-white"/>
+                    </div>
+                  </div>
+                  {phoneTouched && phoneErr ? (
+                    <p className="mt-1.5 text-xs font-medium text-red-600">{phoneErr}</p>
+                  ) : (
+                    <p className="mt-1.5 text-xs text-gray-500">The courier will call this number if needed.</p>
+                  )}
+                </div>
+
                 <div className="mt-6 flex gap-3">
                   <button onClick={() => setStep(0)} className="button-secondary flex-1 py-3">← Back</button>
-                  <button onClick={() => setStep(2)}
+                  <button onClick={() => { if (phoneErr) { setPhoneTouched(true); toast.error(phoneErr); return; } setStep(2); }}
                     disabled={!address.firstName || !address.street || !address.city}
                     className="button-primary flex-1 py-3 disabled:opacity-60">Continue to Payment →</button>
                 </div>
@@ -565,11 +626,12 @@ export default function CheckoutPage() {
               </motion.div>
             )}
           </div>
-          <div>
+          <div className="order-first lg:order-none">
             <OrderSummary
               items={items} subtotal={subtotal} shipping={shipping} discount={discount} total={total}
               coupon={coupon} setCoupon={setCoupon} couponData={couponData}
               onApplyCoupon={handleCoupon} onRemoveCoupon={handleRemoveCoupon}
+              hideItemsOnMobile={step === 0}
             />
           </div>
         </div>
