@@ -29,6 +29,8 @@ import {
 import { uploadImageToSupabase } from '@/utils/supabase.util';
 import { invalidateProductCaches } from '@/middleware/cache';
 import { notifyOrderStatus } from '@/services/orderNotifications';
+import { sampleEmails } from '@/services/emailSamples';
+import { sendEmail } from '@/utils/email';
 
 // Reusable function to convert a stream to a buffer
 const streamToBuffer = (stream: any): Promise<Buffer> => {
@@ -2267,5 +2269,31 @@ export const previewProduct = async (req: AuthRequest, res: Response): Promise<v
   } catch (error) {
     const code = error instanceof ApiError ? error.statusCode : 500;
     res.status(code).json({ success: false, message: error instanceof ApiError ? error.message : 'Could not load preview', statusCode: code } as ApiResponse);
+  }
+};
+
+/** POST /admin/email-samples — super admin only: send every email template, with sample data, to their own inbox */
+export const sendEmailSamples = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (req.user?.role !== 'SUPER_ADMIN') throw new ApiError(403, 'Only the super admin can send test emails');
+    const me = await prisma.user.findUnique({ where: { id: req.user.id }, select: { email: true } });
+    if (!me?.email) throw new ApiError(400, 'Your account has no email address');
+    const mails = sampleEmails(me.email);
+    let sent = 0;
+    for (const [i, m] of mails.entries()) {
+      try {
+        await sendEmail({ to: [me.email], subject: `[Sample ${i + 1}/${mails.length}] ${m.subject}`, html: m.html });
+        sent++;
+      } catch (err) {
+        console.error('[Email samples] failed:', err);
+      }
+    }
+    res.json({ success: true, message: `Sent ${sent} of ${mails.length} sample emails to ${me.email}`, data: { sent, total: mails.length, to: me.email }, statusCode: 200 } as ApiResponse);
+  } catch (error) {
+    if (error instanceof ApiError) {
+      res.status(error.statusCode).json({ success: false, message: error.message, statusCode: error.statusCode } as ApiResponse);
+    } else {
+      res.status(500).json({ success: false, message: 'Internal server error', statusCode: 500 } as ApiResponse);
+    }
   }
 };

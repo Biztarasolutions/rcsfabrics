@@ -32,7 +32,7 @@ const loadOrder = (orderId: string) =>
     where: { id: orderId },
     include: { items: true, user: { select: { email: true, firstName: true, lastName: true, phone: true } } },
   });
-type FullOrder = NonNullable<Awaited<ReturnType<typeof loadOrder>>>;
+export type FullOrder = NonNullable<Awaited<ReturnType<typeof loadOrder>>>;
 
 function addressHtml(order: FullOrder): string {
   let a: any = {};
@@ -73,12 +73,24 @@ export async function notifyOrder(orderId: string, event: 'placed' | 'paid'): Pr
   try {
     const order = await loadOrder(orderId);
     if (!order) return;
+    const results = await Promise.allSettled(buildOrderEmails(order, event).map((m) => sendEmail(m)));
+    results.forEach((r) => { if (r.status === 'rejected') console.error('[Order email] failed:', r.reason); });
+  } catch (err) {
+    console.error('[Order email] could not prepare notification:', err);
+  }
+}
+
+type Mail = { to: string[]; subject: string; html: string };
+
+/** Customer + team emails for a new / paid order (pure: no sending) */
+export function buildOrderEmails(order: FullOrder, event: 'placed' | 'paid'): Mail[] {
+  {
     const first = order.user?.firstName ? esc(order.user.firstName) : '';
-    const jobs: Promise<unknown>[] = [];
+    const jobs: Mail[] = [];
 
     if (order.user?.email) {
       const title = event === 'paid' ? 'Payment received — thank you!' : 'Thank you for your order!';
-      jobs.push(sendEmail({
+      jobs.push(({
         to: [order.user.email],
         subject: event === 'paid' ? `Payment received — order ${order.orderNumber}` : `Order confirmed — ${order.orderNumber}`,
         html: brandEmail({
@@ -105,7 +117,7 @@ export async function notifyOrder(orderId: string, event: 'placed' | 'paid'): Pr
     }
 
     const customer = [order.user?.firstName, order.user?.lastName].filter(Boolean).join(' ') || 'Customer';
-    jobs.push(sendEmail({
+    jobs.push(({
       to: teamEmails(),
       subject: event === 'paid'
         ? `💰 Paid order ${order.orderNumber} — ${inr(order.total)}`
@@ -129,10 +141,7 @@ export async function notifyOrder(orderId: string, event: 'placed' | 'paid'): Pr
       }),
     }));
 
-    const results = await Promise.allSettled(jobs);
-    results.forEach((r) => { if (r.status === 'rejected') console.error('[Order email] failed:', r.reason); });
-  } catch (err) {
-    console.error('[Order email] could not prepare notification:', err);
+    return jobs;
   }
 }
 
@@ -170,10 +179,21 @@ const STATUS_EMAIL: Record<string, { subject: (n: string) => string; eyebrow: st
  */
 export async function notifyOrderStatus(orderId: string, status: string, opts: { byCustomer?: boolean } = {}): Promise<void> {
   try {
-    const tpl = STATUS_EMAIL[status];
-    if (!tpl) return;
+    if (!STATUS_EMAIL[status]) return;
     const order = await loadOrder(orderId);
     if (!order?.user?.email) return;
+    const mail = buildStatusEmail(order, status, opts);
+    if (mail) await sendEmail(mail);
+  } catch (err) {
+    console.error('[Order status email] failed:', err);
+  }
+}
+
+/** Customer email for a status change (pure: no sending) */
+export function buildStatusEmail(order: FullOrder, status: string, opts: { byCustomer?: boolean } = {}): Mail | null {
+  {
+    const tpl = STATUS_EMAIL[status];
+    if (!tpl || !order.user?.email) return null;
     const first = order.user.firstName ? esc(order.user.firstName) : '';
     const paidOnline = order.paymentStatus === 'PAID' || order.paymentStatus === 'REFUNDED';
 
@@ -196,7 +216,7 @@ export async function notifyOrderStatus(orderId: string, status: string, opts: {
         : '<strong>Refund:</strong> if an amount is due, we will contact you for your UPI or bank details.');
     }
 
-    await sendEmail({
+    return {
       to: [order.user.email],
       subject: tpl.subject(order.orderNumber),
       html: brandEmail({
@@ -219,9 +239,7 @@ export async function notifyOrderStatus(orderId: string, status: string, opts: {
           <div style="height:10px"></div>
           ${button(orderLink(order), 'View your order')}`,
       }),
-    });
-  } catch (err) {
-    console.error('[Order status email] failed:', err);
+    };
   }
 }
 
