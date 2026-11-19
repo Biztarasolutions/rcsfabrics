@@ -132,7 +132,6 @@ export const adminApi = {
   updateOrderStatus: (id: string, status: string) => api.put(`admin/orders/${id}`, { status }),
   getCustomers: (params?: any) => api.get('admin/customers', { params }),
   getMyRole: () => api.get('admin/me'),
-  sendEmailSamples: () => api.post('admin/email-samples'),
   getProductPhotos: (id: string) => api.get(`admin/products/${id}/photos`),
   previewProduct: (slug: string) => api.get(`admin/products/preview/${slug}`),
   getHistory: (params?: { page?: number; limit?: number; entity?: string; q?: string; from?: string; to?: string }) => api.get('admin/history', { params }),

@@ -33,7 +33,6 @@ import {
   getAnalytics,
   migrateProductCodes,
   getMyRole,
-  sendEmailSamples,
   setUserRole,
   getHistory,
   getProductPhotos,
@@ -53,7 +52,6 @@ const superAdmin = allowRoles(['SUPER_ADMIN']);
 router.use(trackAdminActivity);
 
 router.get('/me', getMyRole);
-router.post('/email-samples', sendEmailSamples);
 router.get('/history', managers, getHistory);
 
 // Product photos (Raw + customer photos) and customer-view preview — any staff
