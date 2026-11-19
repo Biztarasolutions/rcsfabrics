@@ -19,7 +19,7 @@ function TrackingField({ order, onSave, saving, compact }: { order: any; onSave:
   const [editing, setEditing] = React.useState(!order.trackingNumber);
   const [value, setValue] = React.useState(order.trackingNumber || '');
   React.useEffect(() => { setValue(order.trackingNumber || ''); setEditing(!order.trackingNumber); }, [order.trackingNumber]);
-  const locked = ['CANCELLED', 'RETURNED'].includes(order.status) || (order.status === 'PENDING' && order.paymentStatus !== 'PAID');
+  const locked = ['CANCELLED', 'RETURNED'].includes(order.status) || (order.status === 'PENDING' && order.paymentMethod === 'CASHFREE' && order.paymentStatus !== 'PAID');
   if (locked && !order.trackingNumber) return <span className="text-xs text-gray-400">—</span>;
   if (!editing) {
     return (
@@ -239,7 +239,7 @@ export default function AdminOrdersPage() {
                     <select value={order.status} onChange={(e) => markStatus(order.id, e.target.value, order.status)}
                       disabled={updateStatusMutation.isPending}
                       className={`rounded-lg border px-2 py-1 text-xs font-semibold cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500/20 ${STATUS_COLORS[order.status]}`}>
-                      {!MARK_OPTIONS.includes(order.status) && <option value={order.status} disabled>{STATUS_LABEL[order.status] || order.status}</option>}
+                      {!MARK_OPTIONS.includes(order.status) && <option value={order.status} disabled>{order.status === 'PENDING' && order.paymentMethod !== 'CASHFREE' ? 'New' : STATUS_LABEL[order.status] || order.status}</option>}
                       {MARK_OPTIONS.map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
                     </select>
                   </td>
