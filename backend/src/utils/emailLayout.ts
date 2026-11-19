@@ -11,7 +11,7 @@ export const BRAND = {
   cream: '#faf6ee',
   phone: '+91 98630 26598',
   whatsapp: 'https://wa.me/919863026598',
-  email: 'biztarasolutions@gmail.com',
+  email: 'support@rcsfabrics.com',
   city: 'Dimapur, Nagaland',
 };
 

@@ -5,7 +5,7 @@ import {
   brandEmail, button, detailsTable, esc, inr, itemsTable, note, para, progress, sectionTitle, siteUrl, totalsTable,
 } from '@/utils/emailLayout';
 
-const DEFAULT_NOTIFY = ['rish6.jain@gmail.com', 'mayankjain23102000@gmail.com'];
+const DEFAULT_NOTIFY = ['support@rcsfabrics.com'];
 const teamEmails = (): string[] => {
   const list = (process.env.ORDER_NOTIFY_EMAILS || process.env.ENQUIRY_NOTIFY_EMAILS || '')
     .split(',')
@@ -183,7 +183,13 @@ export async function notifyOrderStatus(orderId: string, status: string, opts: {
     const order = await loadOrder(orderId);
     if (!order?.user?.email) return;
     const mail = buildStatusEmail(order, status, opts);
-    if (mail) await sendEmail(mail);
+    if (!mail) return;
+    // Customer gets the update; support gets a copy for the record
+    const results = await Promise.allSettled([
+      sendEmail(mail),
+      sendEmail({ ...mail, to: teamEmails(), subject: `[${STATUS_EMAIL[status].eyebrow}] ${order.orderNumber} — copy of customer email to ${order.user.email}` }),
+    ]);
+    results.forEach((r) => { if (r.status === 'rejected') console.error('[Order status email] failed:', r.reason); });
   } catch (err) {
     console.error('[Order status email] failed:', err);
   }

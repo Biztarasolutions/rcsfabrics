@@ -5,7 +5,7 @@ import { ApiResponse } from '@/types';
 import { sendEmail } from '@/utils/email';
 import { brandEmail, button, detailsTable, para, siteUrl } from '@/utils/emailLayout';
 
-const DEFAULT_NOTIFY = ['rish6.jain@gmail.com', 'mayankjain23102000@gmail.com'];
+const DEFAULT_NOTIFY = ['support@rcsfabrics.com'];
 const notifyEmails = (): string[] => {
   const list = (process.env.ENQUIRY_NOTIFY_EMAILS || '')
     .split(',')

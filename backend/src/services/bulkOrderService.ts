@@ -37,7 +37,7 @@ export const insertBulkEnquiry = async (data: BulkEnquiry) => {
   // Send email notification to admin recipients
   try {
     await sendEmail({
-      to: ['rish6.jain@gmail.com', 'mayankjain23102000@gmail.com'],
+      to: ['support@rcsfabrics.com'],
       subject: `New Bulk Enquiry from ${data.name}`,
       html: brandEmail({
         team: true,
