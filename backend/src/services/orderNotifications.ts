@@ -149,6 +149,8 @@ export function buildOrderEmails(order: FullOrder, event: 'placed' | 'paid'): Ma
   }
 }
 
+export const TRACK_URL = 'https://www.indiapost.gov.in/';
+
 const STATUS_EMAIL: Record<string, { subject: (n: string) => string; eyebrow: string; title: string; text: string; step: number | null }> = {
   PROCESSING: {
     subject: (n) => `Your order ${n} is being prepared`,
@@ -209,9 +211,17 @@ export function buildStatusEmail(order: FullOrder, status: string, opts: { byCus
 
     let extra = '';
     if (status === 'SHIPPED') {
-      extra = note(order.trackingNumber
-        ? `<strong>Tracking number:</strong> ${esc(order.trackingNumber)}<br/>Use it on the courier's website to follow your parcel.`
-        : 'Delivery usually takes 8–10 days from your order date, depending on your location. Message us on WhatsApp any time for an update.');
+      extra = order.trackingNumber
+        ? `${sectionTitle('Track your parcel')}
+          ${detailsTable([
+            ['Courier', 'India Post'],
+            ['Tracking number', `<span style="font-family:Consolas,Menlo,monospace;font-size:15px;letter-spacing:.5px">${esc(order.trackingNumber)}</span>`],
+            ['Expected delivery', 'Within 8–10 days of your order date'],
+          ])}
+          <div style="height:12px"></div>
+          ${button(TRACK_URL, 'Track on India Post')}
+          ${para(`On the India Post site, open <strong>Track &amp; Trace</strong> and enter the tracking number above.`, 'font-size:13px;color:#7a6e62;margin-top:6px')}`
+        : note('Delivery usually takes 8–10 days from your order date, depending on your location. Message us on WhatsApp any time for an update.');
     }
     if (status === 'DELIVERED') {
       extra = note('<strong>Anything not right?</strong> If you received the wrong fabric or it arrived damaged, message us within <strong>48 hours of delivery</strong> with photos and we will replace it or refund you.');
@@ -317,8 +327,33 @@ export async function releaseUnpaidOrders(): Promise<number> {
   return released;
 }
 
+/** Shipped orders are marked Delivered automatically 15 days after the order was placed. */
+export const AUTO_DELIVER_DAYS = 15;
+export async function autoDeliverOrders(): Promise<number> {
+  const cutoff = new Date(Date.now() - AUTO_DELIVER_DAYS * 24 * 60 * 60 * 1000);
+  const due = await prisma.order.findMany({
+    where: { status: 'SHIPPED', createdAt: { lt: cutoff } },
+    select: { id: true, orderNumber: true },
+    take: 100,
+  });
+  for (const o of due) {
+    const res = await prisma.order.updateMany({
+      where: { id: o.id, status: 'SHIPPED' },
+      data: { status: 'DELIVERED', deliveredAt: new Date() },
+    });
+    if (res.count) {
+      console.log(`[Auto-deliver] ${o.orderNumber} marked delivered`);
+      await notifyOrderStatus(o.id, 'DELIVERED');
+    }
+  }
+  return due.length;
+}
+
 export function startUnpaidOrderSweeper(): void {
-  const run = () => { releaseUnpaidOrders().catch((e) => console.error('[Unpaid orders] sweep failed:', e)); };
+  const run = () => {
+    releaseUnpaidOrders().catch((e) => console.error('[Unpaid orders] sweep failed:', e));
+    autoDeliverOrders().catch((e) => console.error('[Auto-deliver] sweep failed:', e));
+  };
   setTimeout(run, 60 * 1000);
   setInterval(run, 5 * 60 * 1000).unref();
 }

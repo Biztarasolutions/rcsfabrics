@@ -9,6 +9,39 @@ import Image from 'next/image';
 import { BLUR_PLACEHOLDER, supabaseImg } from '@/lib/image';
 
 const STATUS_OPTIONS = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'RETURNED'];
+// Statuses an admin can set by hand. Shipped happens when tracking is added; Delivered
+// happens automatically 15 days after the order date.
+const MARK_OPTIONS = ['CANCELLED', 'PROCESSING', 'SHIPPED', 'DELIVERED'];
+const STATUS_LABEL: Record<string, string> = { PENDING: 'Awaiting payment', PROCESSING: 'Processing', SHIPPED: 'Shipped', DELIVERED: 'Delivered', CANCELLED: 'Cancelled', RETURNED: 'Returned' };
+
+/** Tracking number box: saving it marks the order Shipped and emails the customer */
+function TrackingField({ order, onSave, saving, compact }: { order: any; onSave: (v: string) => void; saving: boolean; compact?: boolean }) {
+  const [editing, setEditing] = React.useState(!order.trackingNumber);
+  const [value, setValue] = React.useState(order.trackingNumber || '');
+  React.useEffect(() => { setValue(order.trackingNumber || ''); setEditing(!order.trackingNumber); }, [order.trackingNumber]);
+  const locked = ['CANCELLED', 'RETURNED'].includes(order.status) || (order.status === 'PENDING' && order.paymentStatus !== 'PAID');
+  if (locked && !order.trackingNumber) return <span className="text-xs text-gray-400">—</span>;
+  if (!editing) {
+    return (
+      <div className="flex items-center gap-1.5">
+        <span className="font-mono text-xs font-semibold text-gray-900 dark:text-white">{order.trackingNumber}</span>
+        <button type="button" onClick={() => setEditing(true)} className="text-xs font-medium text-primary-700 hover:underline dark:text-primary-400">Edit</button>
+      </div>
+    );
+  }
+  const submit = () => { const v = value.trim(); if (v) onSave(v); };
+  return (
+    <form onSubmit={(e) => { e.preventDefault(); submit(); }} className={`flex items-center gap-1.5 ${compact ? '' : 'w-full'}`}>
+      <input value={value} onChange={(e) => setValue(e.target.value)} placeholder="India Post tracking no."
+        aria-label="Tracking number"
+        className={`rounded-lg border border-gray-200 px-2 py-1.5 font-mono text-xs uppercase focus:border-primary-500 focus:outline-none dark:border-dark-600 dark:bg-dark-800 dark:text-white ${compact ? 'w-40' : 'min-w-0 flex-1'}`}/>
+      <button type="submit" disabled={saving || !value.trim()}
+        className="shrink-0 rounded-lg bg-primary-700 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-primary-800 disabled:opacity-40">
+        {order.trackingNumber ? 'Save' : 'Ship'}
+      </button>
+    </form>
+  );
+}
 const STATUS_COLORS: Record<string, string> = {
   PENDING: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
   PROCESSING: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
@@ -64,6 +97,24 @@ export default function AdminOrdersPage() {
     },
     onError: (err: any) => toast.error(err.message || 'Failed to update status'),
   });
+
+  const trackingMutation = useMutation({
+    mutationFn: ({ orderId, trackingNumber }: { orderId: string; trackingNumber: string }) =>
+      adminApi.setOrderTracking(orderId, trackingNumber),
+    onSuccess: (res: any, { orderId, trackingNumber }) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      const newStatus = res?.data?.data?.status;
+      toast.success(newStatus === 'SHIPPED' ? 'Tracking saved — order marked Shipped and customer emailed' : 'Tracking number saved');
+      if (selectedOrder?.id === orderId) setSelectedOrder((o: any) => o ? { ...o, trackingNumber, status: newStatus || o.status } : o);
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.message || err.message || 'Could not save tracking'),
+  });
+
+  const markStatus = (orderId: string, status: string, current: string) => {
+    if (status === current) return;
+    if (status === 'CANCELLED' && !window.confirm('Cancel this order? The customer will be emailed and stock returned.')) return;
+    updateStatusMutation.mutate({ orderId, status });
+  };
 
   const lastUpdated = dataUpdatedAt ? new Date(dataUpdatedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—';
 
@@ -126,13 +177,14 @@ export default function AdminOrdersPage() {
                 <th className="px-5 py-4">Items</th>
                 <th className="px-5 py-4">Total</th>
                 <th className="px-5 py-4">Payment</th>
+                <th className="px-5 py-4">Tracking</th>
                 <th className="px-5 py-4">Status</th>
                 <th className="px-5 py-4 text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 dark:divide-dark-700">
               {isLoading ? (
-                <tr><td colSpan={8} className="py-20 text-center text-gray-500">Loading orders...</td></tr>
+                <tr><td colSpan={9} className="py-20 text-center text-gray-500">Loading orders...</td></tr>
               ) : ordersData.orders?.map((order: any) => (
                 <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-dark-700/30 transition-colors">
                   <td className="px-5 py-3.5">
@@ -180,10 +232,15 @@ export default function AdminOrdersPage() {
                     </div>
                   </td>
                   <td className="px-5 py-3.5">
-                    <select value={order.status} onChange={(e) => updateStatusMutation.mutate({ orderId: order.id, status: e.target.value })}
+                    <TrackingField order={order} compact saving={trackingMutation.isPending}
+                      onSave={(v) => trackingMutation.mutate({ orderId: order.id, trackingNumber: v })}/>
+                  </td>
+                  <td className="px-5 py-3.5">
+                    <select value={order.status} onChange={(e) => markStatus(order.id, e.target.value, order.status)}
                       disabled={updateStatusMutation.isPending}
                       className={`rounded-lg border px-2 py-1 text-xs font-semibold cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500/20 ${STATUS_COLORS[order.status]}`}>
-                      {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+                      {!MARK_OPTIONS.includes(order.status) && <option value={order.status} disabled>{STATUS_LABEL[order.status] || order.status}</option>}
+                      {MARK_OPTIONS.map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
                     </select>
                   </td>
                   <td className="px-5 py-3.5 text-right">
@@ -419,25 +476,26 @@ export default function AdminOrdersPage() {
                 })()}
 
                 {/* ── Tracking ── */}
-                {selectedOrder.trackingNumber && (
-                  <div className="rounded-xl bg-blue-50 border border-blue-200 p-3 dark:bg-blue-950/20 dark:border-blue-900/40">
-                    <p className="text-xs font-semibold text-blue-700 dark:text-blue-400">Tracking Number</p>
-                    <p className="mt-1 font-mono text-sm text-blue-900 dark:text-blue-300">{selectedOrder.trackingNumber}</p>
-                  </div>
-                )}
+                <div className="rounded-xl border border-gray-200 p-3 dark:border-dark-600">
+                  <p className="mb-2 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">India Post tracking</p>
+                  <TrackingField order={selectedOrder} saving={trackingMutation.isPending}
+                    onSave={(v) => trackingMutation.mutate({ orderId: selectedOrder.id, trackingNumber: v })}/>
+                  <p className="mt-2 text-xs text-gray-500">Adding a tracking number marks the order Shipped and emails the customer the tracking details.</p>
+                </div>
 
                 {/* ── Update Status ── */}
                 <div>
                   <p className="mb-2 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Update Status</p>
                   <div className="grid grid-cols-2 gap-2">
-                    {STATUS_OPTIONS.map((s) => (
-                      <button key={s} onClick={() => updateStatusMutation.mutate({ orderId: selectedOrder.id, status: s })}
+                    {MARK_OPTIONS.map((s) => (
+                      <button key={s} onClick={() => markStatus(selectedOrder.id, s, selectedOrder.status)}
                         disabled={updateStatusMutation.isPending}
                         className={`rounded-xl border py-2.5 text-xs font-semibold transition-all disabled:opacity-50 ${selectedOrder.status === s ? 'border-primary-500 bg-primary-600 text-white' : 'border-gray-200 text-gray-600 hover:border-primary-400 dark:border-dark-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-dark-700'}`}>
-                        {s}
+                        {STATUS_LABEL[s]}
                       </button>
                     ))}
                   </div>
+                  <p className="mt-2 text-xs text-gray-500">Shipped orders are marked Delivered automatically 15 days after the order date.</p>
                 </div>
 
               </div>

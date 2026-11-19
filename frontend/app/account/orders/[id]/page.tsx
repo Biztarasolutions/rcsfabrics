@@ -399,8 +399,12 @@ export default function OrderDetailPage() {
               )}
               {order.trackingNumber && (
                 <div className="mt-3 border-t border-gray-100 pt-3 dark:border-dark-700">
-                  <p className="text-xs text-gray-500">Tracking Number</p>
+                  <p className="text-xs text-gray-500">India Post tracking number</p>
                   <p className="font-mono text-sm font-semibold text-gray-900 dark:text-white">{order.trackingNumber}</p>
+                  <a href="https://www.indiapost.gov.in/" target="_blank" rel="noopener noreferrer"
+                    className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-primary-700 hover:underline dark:text-primary-400">
+                    Track on India Post →
+                  </a>
                 </div>
               )}
             </div>

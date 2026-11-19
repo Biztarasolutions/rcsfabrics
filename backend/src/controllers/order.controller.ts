@@ -182,6 +182,9 @@ export const createOrder = async (
           couponCode: appliedCoupon?.code,
           total,
           paymentMethod: (paymentMethod as any) || undefined,
+          // Cash on Delivery / UPI orders go straight to "Processing"; online orders stay
+          // Pending until the payment is confirmed (then they move to Processing).
+          status: paymentMethod === 'CASHFREE' ? 'PENDING' : 'PROCESSING',
           utrReference: utrReference || undefined,
         },
         include: { items: { include: { product: true } } },

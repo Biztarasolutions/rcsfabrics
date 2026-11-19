@@ -1129,11 +1129,19 @@ export const updateOrderStatus = async (
     }
 
     const { id } = req.params;
-    const { status, paymentStatus } = req.body;
+    const { paymentStatus } = req.body;
+    let status: string | undefined = req.body.status;
+    // Adding a tracking number ships the order
+    const rawTracking = req.body.trackingNumber;
+    const trackingNumber = typeof rawTracking === 'string' ? rawTracking.trim().slice(0, 120) : undefined;
 
     // Fetch current order before updating so we can conditionally restore inventory.
     const existing = await prisma.order.findUnique({ where: { id }, include: { items: true } });
     if (!existing) throw new ApiError(404, 'Order not found');
+    if (trackingNumber && !status && ['PENDING', 'PROCESSING'].includes(existing.status)) status = 'SHIPPED';
+    if (trackingNumber && ['CANCELLED', 'RETURNED'].includes(existing.status)) {
+      throw new ApiError(400, 'This order is cancelled — tracking cannot be added');
+    }
 
     // Restore stock when transitioning INTO cancelled (not if already cancelled).
     if (status === 'CANCELLED' && existing.status !== 'CANCELLED') {
@@ -1162,8 +1170,10 @@ export const updateOrderStatus = async (
     const order = await prisma.order.update({
       where: { id },
       data: {
-        status,
+        status: status as any,
         paymentStatus,
+        ...(trackingNumber !== undefined && { trackingNumber: trackingNumber || null }),
+        ...(status === 'DELIVERED' && existing.status !== 'DELIVERED' && { deliveredAt: new Date() }),
         ...(status === 'CANCELLED' && { cancelledBy: cancelledByValue }),
       },
       include: {
