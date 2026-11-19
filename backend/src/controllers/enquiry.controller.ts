@@ -2,16 +2,16 @@ import { Request, Response } from 'express';
 import { prisma } from '@/index';
 import { ApiError } from '@/middleware/errorHandler';
 import { ApiResponse } from '@/types';
-import { sendEmail } from '@/utils/email';
+import { sendEmail, MAILBOX } from '@/utils/email';
 import { brandEmail, button, detailsTable, para, siteUrl } from '@/utils/emailLayout';
 
-const DEFAULT_NOTIFY = ['support@rcsfabrics.com'];
-const notifyEmails = (): string[] => {
-  const list = (process.env.ENQUIRY_NOTIFY_EMAILS || '')
+// Bulk quotes go to the enquiry mailbox; contact-form messages go to support.
+const notifyEmails = (bulk: boolean): string[] => {
+  const list = ((bulk ? process.env.ENQUIRY_NOTIFY_EMAILS : process.env.SUPPORT_NOTIFY_EMAILS) || '')
     .split(',')
     .map((e) => e.trim())
     .filter(Boolean);
-  return list.length ? list : DEFAULT_NOTIFY;
+  return list.length ? list : [bulk ? MAILBOX.enquiry() : MAILBOX.support()];
 };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -115,7 +115,9 @@ export const createEnquiry = async (req: Request, res: Response): Promise<void> 
     // Email is best-effort: the enquiry is already saved for the admin.
     try {
       await sendEmail({
-        to: notifyEmails(),
+        mailbox: type === 'bulk' ? 'enquiry' : 'support',
+        to: notifyEmails(type === 'bulk'),
+        replyTo: email, // hitting Reply answers the customer
         subject: subjectLine,
         html: brandEmail({
           team: true,

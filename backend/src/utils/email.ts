@@ -7,8 +7,19 @@
 //   BREVO_API_KEY       API key from Brevo → SMTP & API → API keys (starts with "xkeysib-")
 //   EMAIL_FROM          a sender email verified in Brevo → Senders
 //   EMAIL_FROM_NAME     optional display name (default "RCS Fabrics")
-//   EMAIL_REPLY_TO      optional reply-to address
+//   EMAIL_REPLY_TO      optional reply-to address (used when an email has no mailbox)
+//   EMAIL_ORDERS / EMAIL_SUPPORT / EMAIL_ENQUIRY   override the three shop mailboxes
+//
+// Each email can name a mailbox (orders, support, enquiry). It is sent from that
+// address (falls back to EMAIL_FROM if Brevo has not verified it) and replies go there.
 import nodemailer from 'nodemailer';
+
+export type Mailbox = 'orders' | 'support' | 'enquiry';
+export const MAILBOX: Record<Mailbox, () => string> = {
+  orders: () => process.env.EMAIL_ORDERS || 'orders@rcsfabrics.com',
+  support: () => process.env.EMAIL_SUPPORT || 'support@rcsfabrics.com',
+  enquiry: () => process.env.EMAIL_ENQUIRY || 'enquiry@rcsfabrics.com',
+};
 
 export interface EmailOptions {
   to: string[]; // list of recipient emails
@@ -16,6 +27,10 @@ export interface EmailOptions {
   html: string;
   /** Optional files, base64-encoded */
   attachments?: { name: string; content: string }[];
+  /** Which shop mailbox this email is from; replies go there too */
+  mailbox?: Mailbox;
+  /** Overrides where replies go (e.g. the customer, on internal enquiry alerts) */
+  replyTo?: string;
 }
 
 const BREVO_URL = 'https://api.brevo.com/v3/smtp/email';
@@ -39,11 +54,29 @@ const htmlToText = (html: string): string =>
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 
-async function sendViaBrevo(options: EmailOptions) {
-  const apiKey = process.env.BREVO_API_KEY as string;
-  const sender = fromEmail();
-  if (!sender) throw new Error('EMAIL_FROM is not set (use a sender verified in Brevo)');
+// Mailbox senders Brevo refused (not verified yet) — skip them until restart
+const unverified = new Set<string>();
 
+async function sendViaBrevo(options: EmailOptions): Promise<any> {
+  const box = options.mailbox ? MAILBOX[options.mailbox]() : '';
+  const useBox = !!box && !unverified.has(box);
+  const sender = useBox ? box : fromEmail();
+  if (!sender) throw new Error('EMAIL_FROM is not set (use a sender verified in Brevo)');
+  try {
+    return await brevoRequest(options, sender, options.replyTo || box || process.env.EMAIL_REPLY_TO || '');
+  } catch (err: any) {
+    // Mailbox address not verified in Brevo yet: send from the default sender instead
+    if (useBox && fromEmail() && /\b400\b/.test(String(err?.message)) && /sender/i.test(String(err?.message))) {
+      console.warn(`[Email] ${box} is not a verified Brevo sender yet — using ${fromEmail()} (replies still go to ${box})`);
+      unverified.add(box);
+      return brevoRequest(options, fromEmail(), options.replyTo || box);
+    }
+    throw err;
+  }
+}
+
+async function brevoRequest(options: EmailOptions, sender: string, replyTo: string) {
+  const apiKey = process.env.BREVO_API_KEY as string;
   const body: Record<string, unknown> = {
     sender: { email: sender, name: fromName() },
     to: options.to.filter(Boolean).map((email) => ({ email })),
@@ -51,7 +84,7 @@ async function sendViaBrevo(options: EmailOptions) {
     htmlContent: options.html,
     textContent: htmlToText(options.html),
   };
-  if (process.env.EMAIL_REPLY_TO) body.replyTo = { email: process.env.EMAIL_REPLY_TO };
+  if (replyTo) body.replyTo = { email: replyTo };
   if (options.attachments?.length) body.attachment = options.attachments;
 
   const ctrl = new AbortController();
@@ -107,7 +140,7 @@ export const sendEmail = async (options: EmailOptions) => {
     if (process.env.BREVO_API_KEY) return await sendViaBrevo(options);
     const info = await getSmtp().sendMail({
       from: `"${fromName()}" <${fromEmail()}>`,
-      replyTo: process.env.EMAIL_REPLY_TO || undefined,
+      replyTo: options.replyTo || (options.mailbox && MAILBOX[options.mailbox]()) || process.env.EMAIL_REPLY_TO || undefined,
       to: options.to,
       subject: options.subject,
       html: options.html,

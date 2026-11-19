@@ -213,6 +213,7 @@ const SIGNUP_VERIFIED_WINDOW_MS = 30 * 60 * 1000; // finish the form within 30 m
 const sendSignupEmail = async (email: string, code: string, name?: string) => {
   const safeName = String(name || '').replace(/[<>&"']/g, '');
   await sendEmail({
+    mailbox: 'support',
     to: [email],
     subject: `${code} is your RCS Fabrics verification code`,
     html: brandEmail({
@@ -623,6 +624,7 @@ export const sendLoginOTP = async (
     if (user.email) {
       try {
         await sendEmail({
+          mailbox: 'support',
           to: [user.email],
           subject: `${otp} is your RCS Fabrics login code`,
           html: brandEmail({

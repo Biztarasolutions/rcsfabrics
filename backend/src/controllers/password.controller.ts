@@ -53,6 +53,7 @@ export const forgotPassword = async (req: AuthRequest, res: Response): Promise<v
       if (user.email) {
         try {
           await sendEmail({
+            mailbox: 'support',
             to: [user.email],
             subject: 'Reset your RCS Fabrics password',
             html: brandEmail({

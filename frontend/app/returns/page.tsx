@@ -11,6 +11,7 @@ export const metadata: Metadata = {
 export default function ReturnPolicy() {
   return (
     <PolicyPage
+      helpEmail={BUSINESS.ordersEmail}
       title="Returns, Cancellation & Refund Policy"
       intro={
         <p>

@@ -130,16 +130,17 @@ export const note = (html: string): string => `
  * Wrap content in the branded shell: logo header, white card, help footer.
  * `team: true` uses a compact footer for internal notifications.
  */
-export function brandEmail(opts: { preheader: string; eyebrow?: string; title: string; body: string; team?: boolean }): string {
+export function brandEmail(opts: { preheader: string; eyebrow?: string; title: string; body: string; team?: boolean; contactEmail?: string; helpTitle?: string }): string {
   const site = siteUrl();
+  const contact = opts.contactEmail || BRAND.email;
   const footer = opts.team
     ? `<p style="margin:0;${FONT};font-size:12px;color:${BRAND.muted}">Internal notification from the ${BRAND.name} website · <a href="${site}/admin" style="color:${BRAND.maroon}">Open admin</a></p>`
     : `
-      <p style="margin:0 0 8px;${FONT};font-size:14px;font-weight:600;color:${BRAND.ink}">Need help with your order?</p>
+      <p style="margin:0 0 8px;${FONT};font-size:14px;font-weight:600;color:${BRAND.ink}">${esc(opts.helpTitle || 'Need help?')}</p>
       <p style="margin:0 0 16px;${FONT};font-size:13px;line-height:1.6;color:${BRAND.muted}">
         <a href="${BRAND.whatsapp}" style="color:${BRAND.maroon};font-weight:600;text-decoration:none">WhatsApp us</a> &nbsp;·&nbsp;
         Call ${BRAND.phone} &nbsp;·&nbsp;
-        <a href="mailto:${BRAND.email}" style="color:${BRAND.maroon};text-decoration:none">${BRAND.email}</a><br/>
+        <a href="mailto:${contact}" style="color:${BRAND.maroon};text-decoration:none">${contact}</a><br/>
         We reply Monday to Saturday, 9am–6pm.
       </p>
       <p style="margin:0;${FONT};font-size:12px;color:${BRAND.muted}">${BRAND.name} · ${BRAND.city} · Since 1958 &nbsp;|&nbsp; <a href="${site}" style="color:${BRAND.muted}">rcsfabrics.com</a></p>`;

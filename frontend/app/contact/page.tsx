@@ -83,7 +83,6 @@ export default function ContactPage() {
             {[
               { key: 'wa', title: 'WhatsApp', info: BUSINESS.phone, sub: 'Fastest reply — chat with Mayank', href: waLink(), cta: 'Chat on WhatsApp', primary: true },
               { key: 'call', title: 'Call us', info: BUSINESS.phone, sub: 'Mayank Jain · Mon–Sat, 9am–6pm', href: telLink(), cta: 'Call now', primary: false },
-              { key: 'mail', title: 'Email us', info: BUSINESS.email, sub: 'We reply within 24 hours', href: `mailto:${BUSINESS.email}?subject=${encodeURIComponent('Query for RCS Fabrics')}`, cta: 'Send an email', primary: false },
             ].map((c) => (
               <div key={c.key} className={`rounded-2xl border p-5 ${c.primary ? 'border-[#25D366]/40 bg-[#25D366]/5' : 'border-gray-200 dark:border-dark-700'}`}>
                 <p className="font-semibold text-gray-900 dark:text-white">{c.title}</p>
@@ -96,6 +95,24 @@ export default function ContactPage() {
                 </a>
               </div>
             ))}
+
+            {/* Email — one address per kind of question */}
+            <div className="rounded-2xl border border-gray-200 p-5 dark:border-dark-700">
+              <p className="font-semibold text-gray-900 dark:text-white">Email us</p>
+              <p className="text-sm text-gray-500">We reply within 24 hours</p>
+              <dl className="mt-3 divide-y divide-gray-100 text-sm dark:divide-dark-700">
+                {[
+                  { label: 'Help & support', email: BUSINESS.email, subject: 'Query for RCS Fabrics' },
+                  { label: 'About an order', email: BUSINESS.ordersEmail, subject: 'Question about my order' },
+                  { label: 'Bulk & wholesale', email: BUSINESS.enquiryEmail, subject: 'Bulk fabric enquiry' },
+                ].map((m) => (
+                  <div key={m.email} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-0.5 py-2">
+                    <dt className="text-gray-500">{m.label}</dt>
+                    <dd><a href={`mailto:${m.email}?subject=${encodeURIComponent(m.subject)}`} className="break-all font-medium text-primary-700 hover:underline dark:text-primary-400">{m.email}</a></dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
           </div>
 
           {/* Right — forms */}

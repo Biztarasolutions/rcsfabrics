@@ -9,6 +9,7 @@ export const metadata: Metadata = {
 export default function ShippingPolicy() {
   return (
     <PolicyPage
+      helpEmail={BUSINESS.ordersEmail}
       title="Shipping Policy"
       intro={<p>This policy explains how {BUSINESS.legalName} ({BUSINESS.brand}) ships orders placed on this website.</p>}
       sections={[

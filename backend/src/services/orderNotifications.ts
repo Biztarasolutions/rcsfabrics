@@ -1,17 +1,16 @@
 import { prisma } from '@/index';
 import { getCashfreePaymentStatus } from '@/utils/cashfree';
-import { sendEmail } from '@/utils/email';
+import { sendEmail, MAILBOX } from '@/utils/email';
 import {
   brandEmail, button, detailsTable, esc, inr, itemsTable, note, para, progress, sectionTitle, siteUrl, totalsTable,
 } from '@/utils/emailLayout';
 
-const DEFAULT_NOTIFY = ['support@rcsfabrics.com'];
 const teamEmails = (): string[] => {
-  const list = (process.env.ORDER_NOTIFY_EMAILS || process.env.ENQUIRY_NOTIFY_EMAILS || '')
+  const list = (process.env.ORDER_NOTIFY_EMAILS || '')
     .split(',')
     .map((e) => e.trim())
     .filter(Boolean);
-  return list.length ? list : DEFAULT_NOTIFY;
+  return list.length ? list : [MAILBOX.orders()];
 };
 
 const PAYMENT_LABEL: Record<string, string> = {
@@ -80,7 +79,8 @@ export async function notifyOrder(orderId: string, event: 'placed' | 'paid'): Pr
   }
 }
 
-type Mail = { to: string[]; subject: string; html: string };
+type Mail = { to: string[]; subject: string; html: string; mailbox: 'orders'; replyTo?: string };
+const ORDER_HELP = { contactEmail: MAILBOX.orders(), helpTitle: 'Questions about your order?' };
 
 /** Customer + team emails for a new / paid order (pure: no sending) */
 export function buildOrderEmails(order: FullOrder, event: 'placed' | 'paid'): Mail[] {
@@ -91,9 +91,11 @@ export function buildOrderEmails(order: FullOrder, event: 'placed' | 'paid'): Ma
     if (order.user?.email) {
       const title = event === 'paid' ? 'Payment received — thank you!' : 'Thank you for your order!';
       jobs.push(({
+        mailbox: 'orders',
         to: [order.user.email],
         subject: event === 'paid' ? `Payment received — order ${order.orderNumber}` : `Order confirmed — ${order.orderNumber}`,
         html: brandEmail({
+          ...ORDER_HELP,
           preheader: `Order ${order.orderNumber} · ${inr(order.total)} · we'll email you when it ships.`,
           eyebrow: `Order ${order.orderNumber}`,
           title,
@@ -118,6 +120,8 @@ export function buildOrderEmails(order: FullOrder, event: 'placed' | 'paid'): Ma
 
     const customer = [order.user?.firstName, order.user?.lastName].filter(Boolean).join(' ') || 'Customer';
     jobs.push(({
+      mailbox: 'orders',
+      replyTo: order.user?.email || undefined,
       to: teamEmails(),
       subject: event === 'paid'
         ? `💰 Paid order ${order.orderNumber} — ${inr(order.total)}`
@@ -187,7 +191,7 @@ export async function notifyOrderStatus(orderId: string, status: string, opts: {
     // Customer gets the update; support gets a copy for the record
     const results = await Promise.allSettled([
       sendEmail(mail),
-      sendEmail({ ...mail, to: teamEmails(), subject: `[${STATUS_EMAIL[status].eyebrow}] ${order.orderNumber} — copy of customer email to ${order.user.email}` }),
+      sendEmail({ ...mail, replyTo: order.user.email, to: teamEmails(), subject: `[${STATUS_EMAIL[status].eyebrow}] ${order.orderNumber} — copy of customer email to ${order.user.email}` }),
     ]);
     results.forEach((r) => { if (r.status === 'rejected') console.error('[Order status email] failed:', r.reason); });
   } catch (err) {
@@ -223,9 +227,11 @@ export function buildStatusEmail(order: FullOrder, status: string, opts: { byCus
     }
 
     return {
+      mailbox: 'orders',
       to: [order.user.email],
       subject: tpl.subject(order.orderNumber),
       html: brandEmail({
+        ...ORDER_HELP,
         preheader: `Order ${order.orderNumber} — ${tpl.title.toLowerCase()}.`,
         eyebrow: `Order ${order.orderNumber} · ${tpl.eyebrow}`,
         title: tpl.title,

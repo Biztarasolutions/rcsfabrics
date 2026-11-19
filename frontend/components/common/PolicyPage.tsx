@@ -23,12 +23,15 @@ export default function PolicyPage({
   intro,
   sections,
   highlights,
+  helpEmail = BUSINESS.email,
 }: {
   title: string;
   intro: React.ReactNode;
   sections: PolicySection[];
   /** Optional key facts shown as cards under the title */
   highlights?: PolicyHighlight[];
+  /** Email shown in the help card (orders@ on order-related policies) */
+  helpEmail?: string;
 }) {
 
   return (
@@ -108,9 +111,9 @@ export default function PolicyPage({
                 className="inline-flex items-center rounded-xl border border-gray-300 bg-white px-5 py-3 text-sm font-semibold text-gray-800 hover:border-primary-700 dark:border-dark-600 dark:bg-dark-800 dark:text-gray-200">
                 Call us
               </a>
-              <a href={`mailto:${BUSINESS.email}`}
+              <a href={`mailto:${helpEmail}`}
                 className="inline-flex items-center break-all rounded-xl border border-gray-300 bg-white px-5 py-3 text-sm font-semibold text-gray-800 hover:border-primary-700 dark:border-dark-600 dark:bg-dark-800 dark:text-gray-200">
-                {BUSINESS.email}
+                {helpEmail}
               </a>
             </div>
           </div>

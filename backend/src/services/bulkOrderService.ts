@@ -1,6 +1,6 @@
 // src/services/bulkOrderService.ts
 import { createClient } from '@supabase/supabase-js';
-import { sendEmail } from '@/utils/email';
+import { sendEmail, MAILBOX } from '@/utils/email';
 import { brandEmail, detailsTable, esc } from '@/utils/emailLayout';
 
 // Lazy Supabase client — constructing at module load with missing env crashes the server on boot.
@@ -37,7 +37,8 @@ export const insertBulkEnquiry = async (data: BulkEnquiry) => {
   // Send email notification to admin recipients
   try {
     await sendEmail({
-      to: ['support@rcsfabrics.com'],
+      mailbox: 'enquiry',
+      to: [MAILBOX.enquiry()],
       subject: `New Bulk Enquiry from ${data.name}`,
       html: brandEmail({
         team: true,

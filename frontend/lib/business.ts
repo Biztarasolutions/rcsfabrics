@@ -7,7 +7,9 @@ export const BUSINESS = {
   gstin: '13ACAPJ9647E1ZS', // Nagaland
   city: 'Dimapur, Nagaland',
   phone: '+91 98630 26598',
-  email: 'support@rcsfabrics.com',
+  email: 'support@rcsfabrics.com', // general help & support
+  ordersEmail: 'orders@rcsfabrics.com', // anything about an order
+  enquiryEmail: 'enquiry@rcsfabrics.com', // bulk / wholesale enquiries
   whatsapp: 'https://wa.me/919863026598',
   lastUpdated: '16 November 2026', // shown on policy pages — update when you change a policy
 };
