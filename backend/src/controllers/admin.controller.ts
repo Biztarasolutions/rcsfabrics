@@ -1423,7 +1423,7 @@ export const adjustStock = async (req: AuthRequest, res: Response): Promise<void
 const DEFAULT_SETTINGS = [
   { key: 'payment_upi_enabled', value: 'true', label: 'UPI Payment' },
   { key: 'payment_cod_enabled', value: 'true', label: 'Cash on Delivery' },
-  { key: 'payment_razorpay_enabled', value: 'true', label: 'Razorpay (Cards/Net Banking)' },
+  { key: 'payment_online_enabled', value: 'true', label: 'Online payment (Cashfree)' },
   { key: 'upi_id', value: 'MAB0450543A0000066@Yesbank', label: 'UPI ID' },
   { key: 'upi_name', value: 'Rajasthan Cloth Store', label: 'UPI Display Name' },
 ];
@@ -1462,11 +1462,11 @@ export const updateSetting = async (req: AuthRequest, res: Response): Promise<vo
 // Public endpoint — no auth required
 export const getPublicSettings = async (_req: any, res: Response): Promise<void> => {
   try {
-    const settings = await prisma.setting.findMany({ where: { key: { in: ['payment_upi_enabled', 'payment_cod_enabled', 'payment_razorpay_enabled', 'upi_id', 'upi_name'] } } });
+    const settings = await prisma.setting.findMany({ where: { key: { in: ['payment_upi_enabled', 'payment_cod_enabled', 'payment_online_enabled', 'upi_id', 'upi_name'] } } });
     const map: Record<string, string> = {};
     settings.forEach(s => { map[s.key] = s.value; });
     // Return safe defaults if DB not seeded yet
-    res.json({ success: true, data: { payment_upi_enabled: 'true', payment_cod_enabled: 'true', payment_razorpay_enabled: 'true', upi_id: 'MAB0450543A0000066@Yesbank', upi_name: 'Rajasthan Cloth Store', ...map } });
+    res.json({ success: true, data: { payment_upi_enabled: 'true', payment_cod_enabled: 'true', payment_online_enabled: 'true', upi_id: 'MAB0450543A0000066@Yesbank', upi_name: 'Rajasthan Cloth Store', ...map } });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Internal server error' });
   }
@@ -1813,7 +1813,6 @@ export const getCustomerDetail = async (
             shippingAddress: true,
             customerPhone: true,
             utrReference: true,
-            razorpayPaymentId: true,
             cashfreePaymentId: true,
             cashfreeOrderId: true,
             createdAt: true,

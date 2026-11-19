@@ -23,7 +23,6 @@ const TIMELINE_STEPS = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED'];
 const METHOD_LABEL: Record<string, string> = {
   UPI: '📲 UPI Transfer',
   COD: '💵 Cash on Delivery',
-  RAZORPAY: '💳 Online payment',
   CASHFREE: '💳 Online payment (Cashfree)',
   BANK_TRANSFER: '🏦 Bank Transfer',
 };
@@ -383,10 +382,10 @@ export default function OrderDetailPage() {
                   <p className="font-mono text-sm text-green-800 dark:text-green-300">{order.utrReference}</p>
                 </div>
               )}
-              {(order.cashfreePaymentId || order.razorpayPaymentId) && (
+              {order.cashfreePaymentId && (
                 <div className="mt-2 rounded-lg bg-blue-50 p-2 dark:bg-blue-950/20">
                   <p className="text-xs text-gray-500">Payment ID</p>
-                  <p className="font-mono text-xs text-blue-800 dark:text-blue-300 break-all">{order.cashfreePaymentId || order.razorpayPaymentId}</p>
+                  <p className="font-mono text-xs text-blue-800 dark:text-blue-300 break-all">{order.cashfreePaymentId}</p>
                 </div>
               )}
               {order.trackingNumber && (

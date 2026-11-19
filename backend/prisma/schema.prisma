@@ -237,8 +237,6 @@ model Order {
   deliveredAt       DateTime?
   notes             String?
   paidAt            DateTime?
-  razorpayOrderId   String?        @db.VarChar(255)
-  razorpayPaymentId String?        @db.VarChar(255)
   cashfreeOrderId   String?        @unique @db.VarChar(255) // latest Cashfree order for this order
   cashfreePaymentId String?        @db.VarChar(255)
   trackingNumber    String?        @db.VarChar(255)
@@ -455,7 +453,6 @@ enum PaymentStatus {
 
 enum PaymentMethod {
   STRIPE
-  RAZORPAY
   CASHFREE
   BANK_TRANSFER
   COD

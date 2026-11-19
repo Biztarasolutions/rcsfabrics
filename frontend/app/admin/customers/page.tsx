@@ -177,9 +177,9 @@ function CustomerDrawer({ customer, onClose }: { customer: any; onClose: () => v
                               <span className="font-bold text-gray-900 dark:text-white">Total: {formatPrice(order.total)}</span>
                             </div>
                             {/* Payment ref */}
-                            {(order.utrReference || order.cashfreePaymentId || order.razorpayPaymentId) && (
+                            {(order.utrReference || order.cashfreePaymentId) && (
                               <p className="text-[10px] font-mono text-gray-400">
-                                Ref: {order.utrReference || order.cashfreePaymentId || order.razorpayPaymentId}
+                                Ref: {order.utrReference || order.cashfreePaymentId}
                               </p>
                             )}
                             {/* Shipping address */}

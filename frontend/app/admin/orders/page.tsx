@@ -25,7 +25,6 @@ const PAYMENT_COLORS: Record<string, string> = {
 const METHOD_LABEL: Record<string, string> = {
   UPI: '📲 UPI',
   COD: '💵 COD',
-  RAZORPAY: '💳 Razorpay',
   CASHFREE: '💳 Cashfree',
   STRIPE: '💳 Stripe',
   BANK_TRANSFER: '🏦 Bank Transfer',
@@ -258,7 +257,7 @@ export default function AdminOrdersPage() {
                 </div>
 
                 {/* ── Payment References ── */}
-                {(selectedOrder.utrReference || selectedOrder.cashfreePaymentId || selectedOrder.cashfreeOrderId || selectedOrder.razorpayPaymentId || selectedOrder.razorpayOrderId) && (
+                {(selectedOrder.utrReference || selectedOrder.cashfreePaymentId || selectedOrder.cashfreeOrderId) && (
                   <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 dark:border-blue-900/30 dark:bg-blue-950/20 space-y-2">
                     <p className="text-xs font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400">Payment Reference</p>
                     {selectedOrder.utrReference && (
@@ -277,12 +276,6 @@ export default function AdminOrdersPage() {
                       <div>
                         <p className="text-xs text-blue-600 dark:text-blue-400">Cashfree Order ID</p>
                         <p className="font-mono text-xs text-blue-900 dark:text-blue-200 break-all">{selectedOrder.cashfreeOrderId}</p>
-                      </div>
-                    )}
-                    {selectedOrder.razorpayPaymentId && (
-                      <div>
-                        <p className="text-xs text-blue-600 dark:text-blue-400">Razorpay Payment ID</p>
-                        <p className="font-mono text-xs text-blue-900 dark:text-blue-200 break-all">{selectedOrder.razorpayPaymentId}</p>
                       </div>
                     )}
                   </div>

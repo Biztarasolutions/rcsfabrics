@@ -535,7 +535,7 @@ function AccountPage() {
                                   <div className="space-y-1.5">
                                     <div className="flex justify-between text-sm text-gray-600 dark:text-gray-300">
                                       <span>Method</span>
-                                      <span className="font-medium">{order.paymentMethod === 'CASHFREE' || order.paymentMethod === 'RAZORPAY' ? 'Online payment' : order.paymentMethod === 'BANK_TRANSFER' ? 'Bank Transfer' : order.paymentMethod || '—'}</span>
+                                      <span className="font-medium">{order.paymentMethod === 'CASHFREE' ? 'Online payment' : order.paymentMethod === 'BANK_TRANSFER' ? 'Bank Transfer' : order.paymentMethod || '—'}</span>
                                     </div>
                                     <div className="flex justify-between text-sm text-gray-600 dark:text-gray-300">
                                       <span>Status</span>

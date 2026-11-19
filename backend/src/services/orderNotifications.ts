@@ -23,7 +23,6 @@ const inr = (n: number): string => {
 const PAYMENT_LABEL: Record<string, string> = {
   COD: 'Cash on Delivery',
   UPI: 'UPI',
-  RAZORPAY: 'Online payment',
   CASHFREE: 'Online payment (Cashfree)',
   BANK_TRANSFER: 'Bank transfer',
 };
@@ -100,7 +99,7 @@ export async function notifyOrder(orderId: string, event: 'placed' | 'paid'): Pr
 }
 
 /**
- * Online orders (Cashfree; older Razorpay ones too) that were never paid hold stock.
+ * Online (Cashfree) orders that were never paid hold stock.
  * Cancel them after UNPAID_ORDER_TIMEOUT_MINUTES (default 30) and put the stock back.
  * Manual UPI orders with a UTR reference are left for the admin to verify.
  */
@@ -111,10 +110,8 @@ export async function releaseUnpaidOrders(): Promise<number> {
     where: {
       status: 'PENDING',
       paymentStatus: 'PENDING',
-      OR: [
-        { paymentMethod: 'CASHFREE' as any, cashfreeOrderId: { not: null } },
-        { paymentMethod: { in: ['RAZORPAY', 'UPI'] }, razorpayOrderId: { not: null } },
-      ],
+      paymentMethod: 'CASHFREE',
+      cashfreeOrderId: { not: null },
       utrReference: null,
       createdAt: { lt: cutoff },
     },

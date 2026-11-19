@@ -237,7 +237,7 @@ export default function CheckoutPage() {
 
   const codEnabled = settings?.payment_cod_enabled !== 'false';
   // Online = Cashfree (UPI, cards, net banking, wallets). Existing on/off switches still apply.
-  const onlineEnabled = settings?.payment_razorpay_enabled !== 'false' || settings?.payment_upi_enabled !== 'false';
+  const onlineEnabled = settings?.payment_online_enabled !== 'false';
 
   // Load the Cashfree checkout script early so the payment pop-up opens instantly
   useEffect(() => {
