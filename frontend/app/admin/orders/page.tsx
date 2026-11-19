@@ -480,7 +480,6 @@ export default function AdminOrdersPage() {
                   <p className="mb-2 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">India Post tracking</p>
                   <TrackingField order={selectedOrder} saving={trackingMutation.isPending}
                     onSave={(v) => trackingMutation.mutate({ orderId: selectedOrder.id, trackingNumber: v })}/>
-                  <p className="mt-2 text-xs text-gray-500">Adding a tracking number marks the order Shipped and emails the customer the tracking details.</p>
                 </div>
 
                 {/* ── Update Status ── */}
