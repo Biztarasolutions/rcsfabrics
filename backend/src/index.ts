@@ -28,8 +28,17 @@ export const prisma = new PrismaClient();
 
 // Security Middleware
 app.use(helmet());
+// Sites allowed to call this API: FRONTEND_URL (comma-separated) plus the shop's domains
+const allowedOrigins = new Set(
+  [
+    ...(process.env.FRONTEND_URL || 'http://localhost:3000').split(','),
+    'https://rcsfabrics.com',
+    'https://www.rcsfabrics.com',
+    'https://rcsfabrics.netlify.app',
+  ].map((o) => o.trim().replace(/\/$/, '')).filter(Boolean)
+);
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: (origin, cb) => cb(null, !origin || allowedOrigins.has(origin) || /^http:\/\/localhost:\d+$/.test(origin)),
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
