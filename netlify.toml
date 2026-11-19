@@ -17,7 +17,7 @@
 
 [build.environment]
   NEXT_PUBLIC_IMAGE_CDN = "netlify"
-  NEXT_PUBLIC_APP_URL = "https://rcsfabrics.com"
+  NEXT_PUBLIC_APP_URL = "https://rcsfabric.com"
 
 # NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY (for admin image
 # uploads) are set in the Netlify dashboard, not here.

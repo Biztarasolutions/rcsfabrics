@@ -32,8 +32,8 @@ app.use(helmet());
 const allowedOrigins = new Set(
   [
     ...(process.env.FRONTEND_URL || 'http://localhost:3000').split(','),
-    'https://rcsfabrics.com',
-    'https://www.rcsfabrics.com',
+    'https://rcsfabric.com',
+    'https://www.rcsfabric.com',
     'https://rcsfabrics.netlify.app',
   ].map((o) => o.trim().replace(/\/$/, '')).filter(Boolean)
 );

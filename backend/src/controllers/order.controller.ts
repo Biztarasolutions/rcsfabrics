@@ -301,7 +301,7 @@ const startCashfreeSession = async (orderId: string, req: AuthRequest) => {
     include: { user: { select: { id: true, firstName: true, lastName: true, email: true, phone: true } } },
   });
   if (!order) throw new ApiError(404, 'Order not found');
-  const site = (process.env.FRONTEND_URL || 'https://rcsfabrics.com').split(',')[0].trim().replace(/\/$/, '');
+  const site = (process.env.FRONTEND_URL || 'https://rcsfabric.com').split(',')[0].trim().replace(/\/$/, '');
   const api = `${req.protocol}://${req.get('host')}`;
   const cfOrderId = `${order.orderNumber}-${Date.now().toString(36)}`.slice(0, 45);
   const session = await createCashfreeOrder({
