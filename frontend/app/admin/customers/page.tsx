@@ -19,25 +19,45 @@ const STATUS_COLORS: Record<string, string> = {
   RETURNED: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
 };
 
+// Order-status filter for the customer list
+const ORDER_FILTERS: { key: string; label: string; statuses: string[] | null }[] = [
+  { key: 'ALL', label: 'All orders', statuses: null },
+  { key: 'DELIVERED', label: 'Delivered', statuses: ['DELIVERED'] },
+  { key: 'OPEN', label: 'In progress', statuses: ['PENDING', 'PROCESSING', 'SHIPPED'] },
+  { key: 'CANCELLED', label: 'Cancelled', statuses: ['CANCELLED'] },
+  { key: 'RETURNED', label: 'Returned', statuses: ['RETURNED'] },
+];
+
+function statsFor(c: any, statuses: string[] | null) {
+  if (!statuses) return { count: c.orders || 0, value: c.spent || 0 };
+  const by = c.byStatus || {};
+  return statuses.reduce((t, s) => ({ count: t.count + (by[s]?.count || 0), value: t.value + (by[s]?.value || 0) }), { count: 0, value: 0 });
+}
+
 function parseAddress(raw: any) {
   if (!raw) return null;
   if (typeof raw === 'object') return raw;
   try { return JSON.parse(raw); } catch { return null; }
 }
 
-function CustomerDrawer({ customer, onClose }: { customer: any; onClose: () => void }) {
+function CustomerDrawer({ customer, onClose, initialFilter = 'ALL' }: { customer: any; onClose: () => void; initialFilter?: string }) {
+  const [filter, setFilter] = useState(initialFilter);
   // Full history from the customer-detail endpoint — returns ALL orders including cancelled.
   const { data: detail, isLoading } = useQuery({
     queryKey: ['admin-customer-detail', customer.id],
     queryFn: () => adminApi.getCustomerDetail(customer.id).then(r => r.data.data),
   });
 
-  const orders = useMemo(
+  const allOrders = useMemo(
     () => ((detail?.orders ?? []) as any[])
       .slice()
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
     [detail]
   );
+
+  const fStatuses = (ORDER_FILTERS.find((f) => f.key === filter) || ORDER_FILTERS[0]).statuses;
+  const orders = fStatuses ? allOrders.filter((o: any) => fStatuses.includes(o.status)) : allOrders;
+  const countFor = (st: string[] | null) => (st ? allOrders.filter((o: any) => st.includes(o.status)).length : allOrders.length);
 
   const totalSpent = orders.reduce((s: number, o: any) => s + Number(o.total || 0), 0);
   const orderCount = orders.length;
@@ -103,13 +123,21 @@ function CustomerDrawer({ customer, onClose }: { customer: any; onClose: () => v
                 <p className="mb-3 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                   Order History ({orderCount})
                 </p>
+                <div className="mb-4 flex flex-wrap gap-1.5">
+                  {ORDER_FILTERS.map((f) => (
+                    <button key={f.key} type="button" onClick={() => setFilter(f.key)}
+                      className={`rounded-full border px-3 py-1 text-xs font-medium ${filter === f.key ? 'border-gray-900 bg-gray-900 text-white dark:border-white dark:bg-white dark:text-gray-900' : 'border-gray-200 text-gray-600 dark:border-dark-600 dark:text-gray-300'}`}>
+                      {f.label} ({countFor(f.statuses)})
+                    </button>
+                  ))}
+                </div>
 
                 {isLoading ? (
                   <div className="flex items-center justify-center py-10">
                     <div className="h-7 w-7 animate-spin rounded-full border-4 border-primary-600 border-t-transparent"/>
                   </div>
                 ) : orderCount === 0 ? (
-                  <p className="rounded-xl border border-dashed border-gray-200 py-8 text-center text-sm text-gray-400 dark:border-dark-600">No orders yet</p>
+                  <p className="rounded-xl border border-dashed border-gray-200 py-8 text-center text-sm text-gray-400 dark:border-dark-600">{allOrders.length ? 'No orders with this status' : 'No orders yet'}</p>
                 ) : (
                   <div className="space-y-4">
                     {orders.map((order: any) => {
@@ -221,6 +249,7 @@ export default function AdminCustomersPage() {
   const userId = useAuthStore((s) => s.user?.id);
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('spent');
+  const [orderFilter, setOrderFilter] = useState('ALL');
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
 
@@ -261,19 +290,30 @@ export default function AdminCustomersPage() {
     ? allUsers.filter((c: any) => (c.role || 'CUSTOMER') === roleFilter || (roleFilter === 'ADMIN' && c.role === 'SUPER_ADMIN'))
     : allUsers;
 
-  let filtered = customers.filter((c: any) =>
+  const orderFilterDef = ORDER_FILTERS.find((f) => f.key === orderFilter) || ORDER_FILTERS[0];
+  const view = (customers as any[])
+    .map((c: any) => {
+      const st = statsFor(c, orderFilterDef.statuses);
+      return { ...c, fOrders: st.count, fSpent: st.value };
+    })
+    // with a status filter on, show only people who have such orders
+    .filter((c: any) => !orderFilterDef.statuses || c.fOrders > 0);
+
+  let filtered = view.filter((c: any) =>
     c.name.toLowerCase().includes(search.toLowerCase()) ||
     c.email.toLowerCase().includes(search.toLowerCase()) ||
     String(c.customerId || '').toLowerCase().includes(search.toLowerCase()) ||
     String(c.phone || '').includes(search)
   );
-  if (sort === 'spent') filtered = [...filtered].sort((a: any, b: any) => b.spent - a.spent);
-  if (sort === 'orders') filtered = [...filtered].sort((a: any, b: any) => b.orders - a.orders);
+  if (sort === 'spent') filtered = [...filtered].sort((a: any, b: any) => b.fSpent - a.fSpent);
+  if (sort === 'orders') filtered = [...filtered].sort((a: any, b: any) => b.fOrders - a.fOrders);
   if (sort === 'newest') filtered = [...filtered].sort((a: any, b: any) => new Date(b.joined).getTime() - new Date(a.joined).getTime());
 
-  const totalCustomers = customers.length;
-  const totalRevenue = customers.reduce((s: number, c: any) => s + (c.spent || 0), 0);
-  const avgOrderValue = totalRevenue / (customers.reduce((s: number, c: any) => s + (c.orders || 0), 0) || 1);
+  const totalCustomers = view.length;
+  const totalRevenue = view.reduce((s: number, c: any) => s + (c.fSpent || 0), 0);
+  const totalOrders = view.reduce((s: number, c: any) => s + (c.fOrders || 0), 0);
+  const avgOrderValue = totalRevenue / (totalOrders || 1);
+  const fLabel = orderFilterDef.statuses ? orderFilterDef.label : '';
 
   return (
     <div className="space-y-6">
@@ -299,7 +339,7 @@ export default function AdminCustomersPage() {
       <div className="grid gap-4 sm:grid-cols-3">
         {[
           { label: isSuper && roleFilter !== 'CUSTOMER' ? 'Accounts' : 'Total Customers', value: totalCustomers, icon: '👥' },
-          { label: 'Total Revenue', value: formatPrice(totalRevenue), icon: '💰' },
+          { label: fLabel ? `${fLabel} value · ${totalOrders} orders` : 'Total Revenue', value: formatPrice(totalRevenue), icon: '💰' },
           { label: 'Avg Order Value', value: formatPrice(Math.round(avgOrderValue)), icon: '📊' },
         ].map((s) => (
           <div key={s.label} className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-dark-700 dark:bg-dark-800">
@@ -312,14 +352,25 @@ export default function AdminCustomersPage() {
         ))}
       </div>
 
+      {/* Order status filter */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">Orders:</span>
+        {ORDER_FILTERS.map((f) => (
+          <button key={f.key} type="button" onClick={() => setOrderFilter(f.key)}
+            className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${orderFilter === f.key ? 'border-gray-900 bg-gray-900 text-white dark:border-white dark:bg-white dark:text-gray-900' : 'border-gray-200 bg-white text-gray-700 hover:border-gray-400 dark:border-dark-600 dark:bg-dark-800 dark:text-gray-300'}`}>
+            {f.label}
+          </button>
+        ))}
+      </div>
+
       {/* Filters */}
-      <div className="flex gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row">
         <div className="relative flex-1">
           <svg className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name, email, phone or Customer ID..."
             className="input-field pl-9 py-2.5"/>
         </div>
-        <select value={sort} onChange={(e) => setSort(e.target.value)} className="input-field w-44 py-2.5">
+        <select value={sort} onChange={(e) => setSort(e.target.value)} className="input-field py-2.5 sm:w-44">
           <option value="spent">Sort: Top Spenders</option>
           <option value="orders">Sort: Most Orders</option>
           <option value="newest">Sort: Newest First</option>
@@ -334,8 +385,8 @@ export default function AdminCustomersPage() {
               <tr className="text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                 <th className="px-5 py-4">Customer</th>
                 <th className="px-5 py-4 hidden sm:table-cell">Phone</th>
-                <th className="px-5 py-4">Orders</th>
-                <th className="px-5 py-4">Total Spent</th>
+                <th className="px-5 py-4">{fLabel ? `${fLabel} orders` : 'Orders'}</th>
+                <th className="px-5 py-4">{fLabel ? `${fLabel} value` : 'Total Spent'}</th>
                 <th className="px-5 py-4 hidden md:table-cell">Joined</th>
                 <th className="px-5 py-4 hidden lg:table-cell">Last Order</th>
                 {isSuper && <th className="px-5 py-4">Role</th>}
@@ -362,8 +413,11 @@ export default function AdminCustomersPage() {
                     </div>
                   </td>
                   <td className="px-5 py-4 hidden sm:table-cell text-gray-600 dark:text-gray-400 text-xs">{customer.phone}</td>
-                  <td className="px-5 py-4 font-semibold text-gray-900 dark:text-white">{customer.orders}</td>
-                  <td className="px-5 py-4 font-bold text-primary-700 dark:text-primary-400">{formatPrice(customer.spent)}</td>
+                  <td className="px-5 py-4 font-semibold text-gray-900 dark:text-white">
+                    {customer.fOrders}
+                    {fLabel && <span className="block text-[10px] font-normal text-gray-400">of {customer.orders} total</span>}
+                  </td>
+                  <td className="px-5 py-4 font-bold text-primary-700 dark:text-primary-400">{formatPrice(customer.fSpent)}</td>
                   <td className="px-5 py-4 hidden md:table-cell text-xs text-gray-500 dark:text-gray-400">
                     {new Date(customer.joined).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                   </td>
@@ -421,6 +475,7 @@ export default function AdminCustomersPage() {
           <CustomerDrawer
             customer={selectedCustomer}
             onClose={() => setSelectedCustomer(null)}
+            initialFilter={orderFilter}
           />
         )}
       </AnimatePresence>

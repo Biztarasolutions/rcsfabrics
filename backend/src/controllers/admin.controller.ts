@@ -1869,9 +1869,8 @@ export const getCustomers = async (
           select: { orders: true },
         },
         orders: {
-          select: { total: true, createdAt: true },
+          select: { total: true, createdAt: true, status: true },
           orderBy: { createdAt: 'desc' },
-          take: 100,
         },
       },
       orderBy: { createdAt: 'desc' },
@@ -1889,6 +1888,14 @@ export const getCustomers = async (
         spent: c.orders.reduce((s, o) => s + (o.total || 0), 0),
         joined: c.createdAt,
         lastSeen: c.orders[0]?.createdAt || c.createdAt,
+        // Orders and value split by status, so the admin can filter (e.g. only delivered)
+        byStatus: c.orders.reduce((acc, o) => {
+          const k = o.status as string;
+          acc[k] = acc[k] || { count: 0, value: 0 };
+          acc[k].count += 1;
+          acc[k].value += o.total || 0;
+          return acc;
+        }, {} as Record<string, { count: number; value: number }>),
         status: c.isActive ? 'Active' : 'Inactive',
       }))
       // an admin never sees staff, even if a super-admin email is stored as CUSTOMER
