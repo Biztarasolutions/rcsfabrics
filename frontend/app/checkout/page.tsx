@@ -25,12 +25,14 @@ function OrderSummary({ items, subtotal, shipping, discount, total, coupon, setC
       <div className="mt-4 max-h-60 space-y-3 overflow-y-auto scrollbar-hide">
         {items.map((item) => (
           <div key={item.id} className="flex items-center gap-3">
-            <Image src={supabaseImg(item.product.images?.[0]?.url || '', 160, 70, 'cover') || BLUR_PLACEHOLDER} alt={productDisplayName(item.product)} width={48} height={48} className="rounded-lg object-cover"/>
+            <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-white dark:bg-dark-700">
+              <Image src={supabaseImg(item.product.images?.[0]?.url || '', 160, 70, 'cover') || BLUR_PLACEHOLDER} alt={productDisplayName(item.product)} fill sizes="56px" className="object-cover"/>
+            </div>
             <div className="flex-1 min-w-0">
               <p className="truncate text-sm font-medium text-gray-900 dark:text-white">{productDisplayName(item.product)}</p>
               <p className="text-xs text-gray-500">{item.quantity}m</p>
             </div>
-            <p className="text-sm font-semibold">{formatPrice((item.product.discountPrice || item.product.basePrice) * item.quantity)}</p>
+            <p className="shrink-0 text-sm font-semibold">{formatPrice((item.product.discountPrice || item.product.basePrice) * item.quantity)}</p>
           </div>
         ))}
       </div>
@@ -426,12 +428,14 @@ export default function CheckoutPage() {
                 <div className="mt-4 space-y-4">
                   {items.map((item) => (
                     <div key={item.id} className="flex items-center gap-4 rounded-xl border border-gray-100 p-4 dark:border-dark-700">
-                      <Image src={supabaseImg(item.product.images?.[0]?.url || '', 160, 70, 'cover') || BLUR_PLACEHOLDER} alt={productDisplayName(item.product)} width={64} height={64} className="rounded-xl object-cover"/>
-                      <div className="flex-1">
-                        <p className="font-semibold text-gray-900 dark:text-white">{productDisplayName(item.product)}</p>
+                      <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-gray-50 dark:bg-dark-700 sm:h-24 sm:w-24">
+                        <Image src={supabaseImg(item.product.images?.[0]?.url || '', 200, 70, 'cover') || BLUR_PLACEHOLDER} alt={productDisplayName(item.product)} fill sizes="96px" className="object-cover"/>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="line-clamp-2 font-semibold text-gray-900 dark:text-white">{productDisplayName(item.product)}</p>
                         <p className="text-sm text-gray-500">{item.quantity}m · {formatPrice(item.product.discountPrice || item.product.basePrice)}/m</p>
                       </div>
-                      <p className="font-bold text-primary-700 dark:text-primary-400">
+                      <p className="shrink-0 font-bold text-primary-700 dark:text-primary-400">
                         {formatPrice((item.product.discountPrice || item.product.basePrice) * item.quantity)}
                       </p>
                     </div>
