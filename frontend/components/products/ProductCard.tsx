@@ -6,6 +6,7 @@ import { Product } from '@/types';
 import { formatPrice, calculateDiscount, productDisplayName } from '@/lib/utils';
 import { useCartStore, useWishlistStore } from '@/lib/store';
 import toast from 'react-hot-toast';
+import { cartAddedToast } from '@/lib/cartToast';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useQueryClient } from '@tanstack/react-query';
@@ -30,7 +31,7 @@ const ProductCard = React.memo(function ProductCard({ product, priority = false 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     addItem({ id: product.id, productId: product.id, product, quantity: 0.5 });
-    toast.success(`${productDisplayName(product)} added to cart!`);
+    cartAddedToast(`${productDisplayName(product)} (0.5m) added to cart`);
   };
 
   const handleWishlist = (e: React.MouseEvent) => {
