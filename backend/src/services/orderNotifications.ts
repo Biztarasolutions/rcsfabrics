@@ -165,3 +165,86 @@ export function startUnpaidOrderSweeper(): void {
   setTimeout(run, 60 * 1000);
   setInterval(run, 5 * 60 * 1000).unref();
 }
+
+const siteUrl = (): string =>
+  ((process.env.FRONTEND_URL || '').split(',').map((s) => s.trim()).find((u) => u.startsWith('https://')) || 'https://rcsfabrics.com')
+    .replace(/\/$/, '');
+
+const STATUS_EMAIL: Record<string, { subject: (n: string) => string; title: string; text: string }> = {
+  PROCESSING: {
+    subject: (n) => `Your order ${n} is being prepared`,
+    title: 'We are preparing your order',
+    text: 'Your fabric is being cut to length, checked and packed. We will email you again as soon as it ships.',
+  },
+  SHIPPED: {
+    subject: (n) => `Your order ${n} has been shipped 🚚`,
+    title: 'Your order is on the way',
+    text: 'Your parcel has left our shop in Dimapur and is on its way to you.',
+  },
+  DELIVERED: {
+    subject: (n) => `Your order ${n} has been delivered`,
+    title: 'Your order has been delivered',
+    text: 'We hope you love your fabric! If anything is wrong or damaged, please message us within 48 hours of delivery with photos and we will put it right.',
+  },
+  CANCELLED: {
+    subject: (n) => `Your order ${n} has been cancelled`,
+    title: 'Your order has been cancelled',
+    text: 'Your order has been cancelled.',
+  },
+  RETURNED: {
+    subject: (n) => `Your order ${n} has been returned`,
+    title: 'Your order has been returned',
+    text: 'Your order has been returned to RCS Fabrics.',
+  },
+};
+
+/**
+ * Email the customer when their order status changes (preparing, shipped, delivered,
+ * cancelled, returned). Never throws.
+ */
+export async function notifyOrderStatus(orderId: string, status: string, opts: { byCustomer?: boolean } = {}): Promise<void> {
+  try {
+    const tpl = STATUS_EMAIL[status];
+    if (!tpl) return;
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { items: true, user: { select: { email: true, firstName: true } } },
+    });
+    if (!order?.user?.email) return;
+
+    const paidOnline = order.paymentStatus === 'PAID' || order.paymentStatus === 'REFUNDED';
+    let extra = '';
+    if (status === 'SHIPPED' && order.trackingNumber) {
+      extra = `<p style="font-size:14px"><strong>Tracking number:</strong> ${esc(order.trackingNumber)}</p>`;
+    }
+    if (status === 'CANCELLED') {
+      extra = `<p style="font-size:14px">${opts.byCustomer ? 'As you requested, we have cancelled this order.' : 'If you did not expect this, please contact us.'}${
+        paidOnline ? ' Your payment will be refunded to the original payment method within 5–7 working days.' : ''}</p>`;
+    }
+    if (status === 'RETURNED') {
+      extra = `<p style="font-size:14px">${paidOnline ? 'Any refund due will be sent to your original payment method within 5–7 working days.' : 'If a refund is due, we will contact you for your UPI or bank details.'}</p>`;
+    }
+
+    const items = order.items
+      .map((i) => `<tr><td style="padding:4px 0">${esc(i.productName)}</td><td style="padding:4px 0;text-align:right">${i.quantity} m</td></tr>`)
+      .join('');
+    const link = `${siteUrl()}/account/orders/${order.id}`;
+
+    await sendEmail({
+      to: [order.user.email],
+      subject: tpl.subject(order.orderNumber),
+      html: `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;color:#222">
+        <p style="font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#a07c3b">RCS Fabrics</p>
+        <h2 style="margin:4px 0 12px">${tpl.title}</h2>
+        <p style="font-size:15px">Hi${order.user.firstName ? ` ${esc(order.user.firstName)}` : ''}, ${tpl.text}</p>
+        ${extra}
+        <p style="font-size:14px"><strong>Order:</strong> ${esc(order.orderNumber)} · <strong>Total:</strong> ${inr(order.total)}</p>
+        <table style="width:100%;border-collapse:collapse;font-size:14px;border-top:1px solid #eee">${items}</table>
+        <p style="margin:24px 0"><a href="${link}" style="background:#7a5a2f;color:#fff;padding:12px 20px;border-radius:10px;text-decoration:none;font-weight:bold">View your order</a></p>
+        <p style="font-size:13px;color:#666">Questions? WhatsApp or call +91 98630 26598, or email biztarasolutions@gmail.com.</p>
+      </div>`,
+    });
+  } catch (err) {
+    console.error('[Order status email] failed:', err);
+  }
+}

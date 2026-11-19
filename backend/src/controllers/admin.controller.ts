@@ -28,6 +28,7 @@ import {
 } from '@/utils/googleDrive.util';
 import { uploadImageToSupabase } from '@/utils/supabase.util';
 import { invalidateProductCaches } from '@/middleware/cache';
+import { notifyOrderStatus } from '@/services/orderNotifications';
 
 // Reusable function to convert a stream to a buffer
 const streamToBuffer = (stream: any): Promise<Buffer> => {
@@ -1169,6 +1170,9 @@ export const updateOrderStatus = async (
         items: true,
       },
     });
+
+    // Email the customer when the status actually changes
+    if (status && status !== existing.status) void notifyOrderStatus(id, status);
 
     res.json({
       success: true,

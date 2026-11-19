@@ -6,7 +6,7 @@ import { AuthRequest, ApiResponse } from '@/types';
 import { generateOrderNumber, calculateOrderTotal } from '@/utils/order.util';
 import { parsePagination, createPaginationMeta } from '@/utils/pagination.util';
 import { ApiError } from '@/middleware/errorHandler';
-import { notifyOrder } from '@/services/orderNotifications';
+import { notifyOrder, notifyOrderStatus } from '@/services/orderNotifications';
 import { saveAddressIfNew } from '@/services/addressService';
 
 // Online payments go through Cashfree (see utils/cashfree.ts).
@@ -488,6 +488,7 @@ export const cancelOrder = async (
       return tx.order.findUnique({ where: { id } });
     });
     void logOrderEvent(id, 'ORDER_CANCELLED', 'Order cancelled by customer');
+    void notifyOrderStatus(id, 'CANCELLED', { byCustomer: true });
     res.json({ success: true, message: 'Order cancelled', data: updated, statusCode: 200 } as ApiResponse);
   } catch (error) {
     if (error instanceof ApiError) {
