@@ -58,7 +58,7 @@ export default function Footer() {
               <BrandLogo height={64} variant="dark" />
             </Link>
             <p className="mt-5 text-sm leading-relaxed text-gray-400">
-              A family fabric business from Dimapur, Nagaland, since 1970 — now online. Quality fabrics sold by the metre.
+              A family fabric business from Dimapur, Nagaland, since 1958 — now online. Quality fabrics sold by the metre.
             </p>
 
             {/* Contact — WhatsApp first */}

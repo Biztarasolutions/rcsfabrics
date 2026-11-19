@@ -142,7 +142,7 @@ export function brandEmail(opts: { preheader: string; eyebrow?: string; title: s
         <a href="mailto:${BRAND.email}" style="color:${BRAND.maroon};text-decoration:none">${BRAND.email}</a><br/>
         We reply Monday to Saturday, 9am–6pm.
       </p>
-      <p style="margin:0;${FONT};font-size:12px;color:${BRAND.muted}">${BRAND.name} · ${BRAND.city} · Since 1970 &nbsp;|&nbsp; <a href="${site}" style="color:${BRAND.muted}">rcsfabrics.com</a></p>`;
+      <p style="margin:0;${FONT};font-size:12px;color:${BRAND.muted}">${BRAND.name} · ${BRAND.city} · Since 1958 &nbsp;|&nbsp; <a href="${site}" style="color:${BRAND.muted}">rcsfabrics.com</a></p>`;
 
   return `<!doctype html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light only"><title>${esc(opts.title)}</title></head>

@@ -5,7 +5,7 @@ import { waLink } from '@/lib/business';
 // Concrete promises the shop actually keeps — no generic claims.
 const PROMISES = [
   {
-    title: 'A family business since 1970',
+    title: 'A family business since 1958',
     text: 'Three generations of the Kashliwal family in Dimapur, choosing every fabric we sell.',
     href: '/about',
     link: 'Our story',

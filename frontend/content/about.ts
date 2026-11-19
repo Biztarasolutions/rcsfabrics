@@ -27,13 +27,13 @@ export interface TimelineEntry {
 
 export const ABOUT = {
   meta: {
-    title: 'About Us — A Family Fabric Legacy Since 1970',
+    title: 'About Us — A Family Fabric Legacy Since 1958',
     description:
-      'RCS Fabrics is a family-owned fabric business from Dimapur, Nagaland, founded in 1970 and now carried forward by the third generation of the Kashliwal family.',
+      'RCS Fabrics is a family-owned fabric business from Dimapur, Nagaland, founded in 1958 and now carried forward by the third generation of the Kashliwal family.',
   },
 
   hero: {
-    eyebrow: 'Since 1970 · Dimapur, Nagaland · India',
+    eyebrow: 'Since 1958 · Dimapur, Nagaland · India',
     title: 'A Legacy Woven Through Generations.',
     subtitle: 'Three generations. Decades of fabric expertise. One family passion.',
     image: 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=1800&q=75',
@@ -44,7 +44,7 @@ export const ABOUT = {
     eyebrow: 'Our Story',
     title: 'Three Generations of Fabric Expertise',
     paragraphs: [
-      'RCS Fabrics is a family-owned fabric business with roots dating back to 1970 in Dimapur, Nagaland, India.',
+      'RCS Fabrics is a family-owned fabric business with roots dating back to 1958 in Dimapur, Nagaland, India.',
       'Our journey began with our grandfather, Late Kundanmal Kashliwal, who established our family’s offline fabric store with a modest collection and a simple vision: to provide customers with quality fabrics and trustworthy service.',
       'The business was later carried forward by our father, Rajesh Kashliwal, alongside our mother, Rashmi Kashliwal. Together, they expanded the business, introduced a wider variety of fabrics, and brought imported and premium-quality collections to their customers. Through their dedication, customer relationships and understanding of fabrics, they took the family business to the next level.',
       'Today, the third generation — Rishabh and Mayank Kashliwal — is taking this legacy forward. Mayank is leading the expansion of our traditional offline fabric business into the online world, bringing our family’s carefully selected collections to a much wider audience. Rishabh, with an engineering background, is building and managing the technology and digital infrastructure that supports this vision.',
@@ -69,10 +69,10 @@ export const ABOUT = {
         photo: '',
         photoAlt: 'Late Kundanmal Kashliwal',
         paragraphs: [
-          'Our grandfather, Late Kundanmal Kashliwal, founded our family fabric business in Dimapur, Nagaland, in 1970.',
+          'Our grandfather, Late Kundanmal Kashliwal, founded our family fabric business in Dimapur, Nagaland, in 1958.',
           'He began with a modest collection and a simple vision: to provide customers with quality fabrics and trustworthy service. The values he started with — quality, honesty and trust — remain the foundation of everything we do.',
         ],
-        focus: ['Founded in 1970', 'Dimapur, Nagaland', 'Quality & trust'],
+        focus: ['Founded in 1958', 'Dimapur, Nagaland', 'Quality & trust'],
       },
       {
         name: 'Rajesh & Rashmi Kashliwal',
@@ -127,10 +127,10 @@ export const ABOUT = {
 
   journey: {
     eyebrow: 'Our Journey',
-    title: 'A Family Legacy Since 1970',
+    title: 'A Family Legacy Since 1958',
     entries: [
       {
-        when: '1970',
+        when: '1958',
         title: 'The Beginning',
         text: 'Our grandfather, Late Kundanmal Kashliwal, establishes the family fabric business in Dimapur, Nagaland, starting with a modest collection and a commitment to quality and trust.',
         photo: '',
@@ -172,7 +172,7 @@ export const ABOUT = {
   closing: {
     title: 'Rooted in Tradition. Inspired by the Future.',
     paragraphs: [
-      'For us, RCS Fabrics is more than an online store. It is the continuation of a family journey that began in 1970.',
+      'For us, RCS Fabrics is more than an online store. It is the continuation of a family journey that began in 1958.',
       'From our grandfather’s first fabric collection to the expanded collections of the next generation, and now to our digital presence, the passion for fabrics continues.',
       'We invite you to become a part of our story.',
     ],
