@@ -269,7 +269,8 @@ export default function CheckoutPage() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const codEnabled = settings?.payment_cod_enabled !== 'false';
+  // Cash on Delivery is switched off — every order is paid online.
+  const codEnabled = false;
   // Online = Cashfree (UPI, cards, net banking, wallets). Existing on/off switches still apply.
   const onlineEnabled = settings?.payment_online_enabled !== 'false';
 
@@ -594,6 +595,11 @@ export default function CheckoutPage() {
                 <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-dark-700 dark:bg-dark-800">
                   <h2 className="font-display text-xl font-bold text-gray-900 dark:text-white">Payment</h2>
                   <div className="mt-5 space-y-3">
+                    {paymentOptions.length === 0 && (
+                      <p className="rounded-xl bg-amber-50 p-4 text-sm text-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
+                        Online payment is temporarily unavailable. Please try again in a little while, or message us on WhatsApp to place your order.
+                      </p>
+                    )}
                     {paymentOptions.map((method) => (
                       <label key={method.id}
                         className={`flex cursor-pointer items-center gap-4 rounded-xl border-2 p-4 transition-colors ${paymentMethod === method.id ? 'border-primary-500 bg-primary-50/30 dark:border-primary-500/50 dark:bg-primary-950/10' : 'border-gray-200 dark:border-dark-700'}`}>
@@ -614,7 +620,7 @@ export default function CheckoutPage() {
                   <button onClick={() => setStep(1)} className="button-secondary flex-1 py-3">← Back</button>
                   <button
                     onClick={handleMainButton}
-                    disabled={placing}
+                    disabled={placing || paymentOptions.length === 0}
                     className="button-luxury flex-1 py-3 font-semibold disabled:opacity-60">
                     {placing
                       ? '⏳ Processing...'

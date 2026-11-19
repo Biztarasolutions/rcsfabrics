@@ -25,11 +25,11 @@ export default function TermsOfService() {
         },
         {
           heading: 'Orders',
-          body: <p>Your order is confirmed once payment is received (or once a Cash on Delivery order is accepted). We may cancel an order and refund you in full if an item is out of stock, a price was shown in error, or we suspect fraud.</p>,
+          body: <p>Your order is confirmed once payment is received. We may cancel an order and refund you in full if an item is out of stock, a price was shown in error, or we suspect fraud.</p>,
         },
         {
           heading: 'Payment',
-          body: <p>We accept the payment methods shown at checkout, which may include online payment through Cashfree (UPI, cards, net banking, wallets) and Cash on Delivery. Coupons are subject to their own conditions and cannot be combined unless stated.</p>,
+          body: <p>We accept the payment methods shown at checkout, which is online payment through Cashfree (UPI, cards, net banking and wallets). We do not offer Cash on Delivery. Coupons are subject to their own conditions and cannot be combined unless stated.</p>,
         },
         {
           heading: 'Shipping, returns and refunds',

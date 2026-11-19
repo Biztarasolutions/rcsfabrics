@@ -48,12 +48,13 @@ export const createOrder = async (
     // Online payments (card, UPI, net banking, wallets) all go through Cashfree.
     // "UPI" with a UTR reference is the manual bank-UPI transfer and stays as UPI.
     const requested = String(req.body.paymentMethod || '').toUpperCase();
+    if (requested === 'COD') throw new ApiError(400, 'Cash on Delivery is not available. Please pay online.');
     const paymentMethod =
       requested === 'COD' || requested === 'BANK_TRANSFER' ? requested
       : requested === 'UPI' && utrReference ? 'UPI'
       : requested ? 'CASHFREE' : undefined;
     if (paymentMethod === 'CASHFREE' && !cashfreeConfigured()) {
-      throw new ApiError(503, 'Online payment is temporarily unavailable. Please choose Cash on Delivery or try again later.');
+      throw new ApiError(503, 'Online payment is temporarily unavailable. Please try again in a little while.');
     }
 
     if (!Array.isArray(items) || items.length === 0) {
