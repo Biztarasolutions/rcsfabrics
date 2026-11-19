@@ -272,7 +272,7 @@ export default function CheckoutPage() {
   const subtotal = totalPrice();
   const shipping = subtotal >= 2000 ? 0 : 150;
   // Use the backend-calculated discount (already respects maxDiscount cap).
-  const discount = couponData?.discount ?? 0;
+  const discount = Math.min(couponData?.discount ?? 0, subtotal);
   const total = subtotal + shipping - discount;
 
   const handleCoupon = async () => {
@@ -287,6 +287,26 @@ export default function CheckoutPage() {
       toast.error(error.response?.data?.message || error.message || 'Invalid coupon code');
     }
   };
+
+  // Cart changed after a coupon was applied (items added/removed, quantity changed):
+  // re-check the coupon against the new subtotal so the saving stays correct.
+  const appliedCode = couponData?.code as string | undefined;
+  useEffect(() => {
+    if (!appliedCode || !hydrated) return;
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      try {
+        const res = await orderApi.validateCoupon(appliedCode, subtotal);
+        const data = res.data?.data ?? res.data;
+        if (!cancelled) setCouponData((prev: any) => (prev && prev.code === appliedCode ? data : prev));
+      } catch (error: any) {
+        if (cancelled) return;
+        setCouponData(null);
+        toast.error(`Coupon ${appliedCode} removed: ${error.response?.data?.message || 'no longer valid for this cart'}`);
+      }
+    }, 400);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [subtotal, appliedCode, hydrated]);
 
   const handleRemoveCoupon = () => {
     setCouponData(null);
