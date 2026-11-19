@@ -34,7 +34,7 @@ export default function HomePage() {
             {[
               { label: 'Free Shipping', sub: 'Orders above ₹2,000' },
               { label: 'Damage cover', sub: 'Wrong or damaged? Tell us in 48 h' },
-              { label: 'Fast Delivery', sub: '2–5 business days' },
+              { label: 'Delivery', sub: '8–10 days across India' },
               { label: 'Quality Checked', sub: 'Inspected before dispatch' },
             ].map((b) => (
               <div key={b.label} className="flex items-center gap-3 py-2">

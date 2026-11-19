@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import PhoneInput from '@/components/common/PhoneInput';
 import BrandLogo from '@/components/common/BrandLogo';
 import { motion } from 'framer-motion';
 import { useAuthStore } from '@/lib/store';
@@ -246,8 +247,8 @@ export default function AuthPage() {
       return;
     }
 
-    if (!validatePhone(registerForm.phone)) {
-      toast.error('Please enter a valid phone number (e.g., +1234567890)');
+    if (!validationState.phone) {
+      toast.error('Please enter a valid 10-digit mobile number');
       return;
     }
 
@@ -330,7 +331,7 @@ export default function AuthPage() {
         firstName: registerForm.firstName,
         lastName: registerForm.lastName,
         email: registerForm.email,
-        phone: registerForm.phone,
+        phone: registerForm.phone.replace(/\s+/g, ''),
         password: registerForm.password,
       });
 
@@ -688,26 +689,17 @@ export default function AuthPage() {
                   <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Phone Number
                   </label>
-                  {registerForm.phone && (
-                    <span className={validationState.phone ? 'text-xs text-green-600 dark:text-green-400' : 'text-xs text-red-600 dark:text-red-400'}>
-                      {validationState.phone ? '✓ Valid' : '✗ Invalid format'}
-                    </span>
+                  {registerForm.phone && validationState.phone && (
+                    <span className="text-xs text-green-600 dark:text-green-400">✓ Valid</span>
                   )}
                 </div>
-                <input
-                  name="phone"
-                  type="tel"
+                <PhoneInput
                   value={registerForm.phone}
-                  onChange={handleRegisterChange}
                   required
-                  placeholder="+1 (555) 123-4567"
-                  className={`input-field transition-all ${
-                    registerForm.phone
-                      ? validationState.phone
-                        ? 'border-green-500 dark:border-green-400'
-                        : 'border-red-500 dark:border-red-400'
-                      : ''
-                  }`}
+                  onChange={(full, valid) => {
+                    setRegisterForm((f) => ({ ...f, phone: full }));
+                    updateValidationState('phone', valid);
+                  }}
                 />
                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                   For delivery updates. We'll send the verification code to your email.

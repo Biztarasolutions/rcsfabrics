@@ -28,7 +28,7 @@ export default function ShippingPolicy() {
           body: (
             <p>
               Orders are usually dispatched within 1–2 business days after payment is confirmed (or after confirmation for
-              Cash on Delivery). Delivery normally takes 2–5 business days after dispatch depending on your location.
+              Cash on Delivery). Delivery normally takes <strong>8–10 days</strong> from the date of your order, depending on your location.
               Remote areas, public holidays and courier delays can add time.
             </p>
           ),

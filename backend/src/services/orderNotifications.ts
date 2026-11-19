@@ -211,7 +211,7 @@ export function buildStatusEmail(order: FullOrder, status: string, opts: { byCus
     if (status === 'SHIPPED') {
       extra = note(order.trackingNumber
         ? `<strong>Tracking number:</strong> ${esc(order.trackingNumber)}<br/>Use it on the courier's website to follow your parcel.`
-        : 'Delivery usually takes 3–7 working days depending on your location. Message us on WhatsApp any time for an update.');
+        : 'Delivery usually takes 8–10 days from your order date, depending on your location. Message us on WhatsApp any time for an update.');
     }
     if (status === 'DELIVERED') {
       extra = note('<strong>Anything not right?</strong> If you received the wrong fabric or it arrived damaged, message us within <strong>48 hours of delivery</strong> with photos and we will replace it or refund you.');
