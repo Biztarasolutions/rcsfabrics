@@ -233,7 +233,7 @@ export const getProductBySlug = async (
       include: {
         images: true,
         category: {
-          select: { name: true, slug: true },
+          select: { name: true, slug: true, description: true },
         },
         reviews: {
           include: {

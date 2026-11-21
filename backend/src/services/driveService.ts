@@ -85,6 +85,9 @@ export const syncImagesForProduct = async (productId: string, productName: strin
       });
     }
 
+    // Photo order on the site: Fabric-1 (flat-lay), Fabric-2 (roll), customer photos, then Fabric-3 (design poster)
+    allPublicUrls.sort((a, b) => photoRank(a) - photoRank(b));
+
     if (allPublicUrls.length > 0) {
       await prisma.$transaction([
         prisma.productImage.deleteMany({ where: { productId } }),
@@ -108,3 +111,13 @@ export const syncImagesForProduct = async (productId: string, productName: strin
     return 0;
   }
 };
+
+/** Sort key for a synced photo URL (file name after the upload timestamp) */
+export function photoRank(url: string): number {
+  const file = decodeURIComponent(String(url).split('?')[0].split('/').pop() || '').replace(/^\d{10,}-/, '').toLowerCase();
+  const n = Number((file.match(/(\d+)/) || [])[1] || 0);
+  if (/^customer/.test(file)) return 300 + n;
+  const fab = file.match(/^fabric[\s_-]*(\d+)/);
+  if (fab) return Number(fab[1]) >= 3 ? 400 + Number(fab[1]) : 100 + Number(fab[1]);
+  return 500 + n;
+}

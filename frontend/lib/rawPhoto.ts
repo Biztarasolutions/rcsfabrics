@@ -16,3 +16,17 @@ export const isRawImageUrl = (url?: string | null): boolean => {
 /** Customer photos only */
 export const customerImages = <T extends { url?: string }>(images?: T[] | null): T[] =>
   (images || []).filter((i) => !isRawImageUrl(i?.url));
+
+/** True for a customer's own photo ("Customer-1.jpg" in the Drive folder) */
+export const isCustomerPhoto = (url?: string | null): boolean =>
+  /^customer/i.test(decodeURIComponent(String(url || '').split('?')[0].split('/').pop() || '').replace(/^\d{10,}-/, ''));
+
+/** Same order as the sync: Fabric-1, Fabric-2, customer photos, Fabric-3, then anything else */
+export const photoRank = (url?: string | null): number => {
+  const file = decodeURIComponent(String(url || '').split('?')[0].split('/').pop() || '').replace(/^\d{10,}-/, '').toLowerCase();
+  const n = Number((file.match(/(\d+)/) || [])[1] || 0);
+  if (/^customer/.test(file)) return 300 + n;
+  const fab = file.match(/^fabric[\s_-]*(\d+)/);
+  if (fab) return Number(fab[1]) >= 3 ? 400 + Number(fab[1]) : 100 + Number(fab[1]);
+  return 500 + n;
+};
