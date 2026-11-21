@@ -5,7 +5,7 @@ export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
-  const staticPages: MetadataRoute.Sitemap = ['', '/fabrics', '/about', '/contact', '/shipping', '/returns', '/privacy', '/terms', '/cookies']
+  const staticPages: MetadataRoute.Sitemap = ['', '/fabrics', '/fabric-estimator', '/about', '/contact', '/shipping', '/returns', '/privacy', '/terms', '/cookies']
     .map((path) => ({ url: `${SITE_URL}${path}`, lastModified: now, changeFrequency: path === '' || path === '/fabrics' ? 'daily' : 'monthly', priority: path === '' ? 1 : path === '/fabrics' ? 0.9 : 0.4 }));
 
   const res = await fetchApi<{ data?: { products?: any[] } }>('products?limit=1000', 8000);

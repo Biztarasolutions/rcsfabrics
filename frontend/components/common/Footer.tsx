@@ -12,6 +12,7 @@ const FOOTER_SECTIONS = [
     links: [
       { label: 'All Fabrics', href: '/fabrics' },
       { label: 'New Arrivals', href: '/fabrics?sort=newest' },
+      { label: 'Fabric Estimator', href: '/fabric-estimator' },
     ],
   },
   {

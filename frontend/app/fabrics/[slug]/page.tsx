@@ -156,6 +156,11 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
   const [addToCartVisible, setAddToCartVisible] = useState(true);
   const [activeImg, setActiveImg] = useState(0);
   const [qty, setQty] = useState(1);
+  // Coming back from the fabric estimator with ?qty=2.5 pre-selects that length
+  useEffect(() => {
+    const q = Number(new URLSearchParams(window.location.search).get('qty'));
+    if (q > 0) setQty(Math.round(q * 2) / 2);
+  }, []);
   const [zoomed, setZoomed] = useState(false);
   const [lightbox, setLightbox] = useState(false);
   useEffect(() => {
@@ -507,6 +512,11 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
                   <p className="mt-3 text-center text-sm text-gray-600 dark:text-gray-400">
                     {qty} m × {formatPrice(price)} = <span className="font-semibold text-gray-900 dark:text-white">{formatPrice(totalPrice)}</span>
                   </p>
+                  <Link href={`/fabric-estimator?fabric=${encodeURIComponent(PRODUCT.slug)}&name=${encodeURIComponent(productBaseName(PRODUCT))}&width=${PRODUCT.width || ''}`}
+                    className="mt-3 flex items-center justify-center gap-2 rounded-xl border border-dashed border-[#d9cdb8] bg-[#fffdf9] px-4 py-3 text-sm text-gray-700 transition hover:border-[#a07c3b] dark:border-dark-600 dark:bg-dark-900 dark:text-gray-300">
+                    <svg className="h-5 w-5 shrink-0 text-[#a07c3b]" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M3 17.25V6.75A.75.75 0 013.75 6h16.5a.75.75 0 01.75.75v10.5a.75.75 0 01-.75.75H3.75A.75.75 0 013 17.25zM7 6v4m4-4v6m4-6v4m4-4v6"/></svg>
+                    <span>Not sure how much to buy? <span className="font-semibold text-primary-700 underline underline-offset-4 dark:text-primary-400">Use the fabric estimator</span></span>
+                  </Link>
                 </div>
               )}
 
