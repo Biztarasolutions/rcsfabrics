@@ -305,6 +305,13 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
     return `${BUSINESS.whatsapp}?text=${encodeURIComponent(text)}`;
   })();
 
+  // "Need it urgently?" opens WhatsApp with an urgent-delivery request for this fabric
+  const urgentWhatsappHref = (() => {
+    const url = `${SITE_URL}/fabrics/${PRODUCT.slug}`;
+    const text = `Hi! I want to buy this fabric and need it urgently.\n\n${productDisplayName(PRODUCT)}\n${url}`;
+    return `${BUSINESS.whatsapp}?text=${encodeURIComponent(text)}`;
+  })();
+
   const inCart = storesHydrated && cartItems.some((i) => i.productId === PRODUCT.id);
 
   const handleAddToCart = () => {
@@ -547,7 +554,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
 
               {/* Promise */}
               <ul className="mt-7 divide-y divide-[#e6dccb] rounded-2xl border border-[#e6dccb] bg-[#faf6ee] text-sm dark:divide-dark-700 dark:border-dark-700 dark:bg-dark-900">
-                <li className="flex items-start gap-3 px-4 py-3.5"><Icon d={I_TRUCK}/><span className="text-gray-700 dark:text-gray-300">Delivered by <strong className="text-gray-900 dark:text-white">{deliverByLabel(new Date())}</strong> if ordered today.<br/><span className="text-gray-500 dark:text-gray-400">Need it urgently? <a href={whatsappHref} target="_blank" rel="noopener noreferrer" className="font-medium text-[#128C4B] underline underline-offset-4 dark:text-[#4ade80]">Message us on WhatsApp</a></span></span></li>
+                <li className="flex items-start gap-3 px-4 py-3.5"><Icon d={I_TRUCK}/><span className="text-gray-700 dark:text-gray-300">Delivered by <strong className="text-gray-900 dark:text-white">{deliverByLabel(new Date())}</strong> if ordered today.<br/><span className="text-gray-500 dark:text-gray-400">Need it urgently? <a href={urgentWhatsappHref} target="_blank" rel="noopener noreferrer" className="font-medium text-[#128C4B] underline underline-offset-4 dark:text-[#4ade80]">Message us on WhatsApp</a></span></span></li>
                 <li className="flex items-center gap-3 px-4 py-3.5"><Icon d={I_SCISSORS}/><span className="text-gray-700 dark:text-gray-300">Cut fresh to your length</span></li>
                 <li className="flex items-center gap-3 px-4 py-3.5"><Icon d={I_SHIELD}/><span className="text-gray-700 dark:text-gray-300">Wrong or damaged? Tell us within 48 h — <Link href="/returns" className="underline underline-offset-4">we&apos;ll put it right</Link></span></li>
               </ul>
