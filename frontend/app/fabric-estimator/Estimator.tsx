@@ -78,6 +78,8 @@ export default function Estimator() {
     cartAddedToast(qty < metres
       ? `Only ${stock} m in stock — added ${qty} m of ${productDisplayName(fabric)} to your bag`
       : `${qty} m of ${productDisplayName(fabric)} added to your bag`);
+    // Take them back to the fabric, with the same length selected
+    router.push(`/fabrics/${fromSlug}?qty=${qty}`);
   };
 
   const [a, setA] = useState<Answers>({ width: widthKeyFor(fromWidth), bigPrint: false });
