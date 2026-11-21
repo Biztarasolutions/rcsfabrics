@@ -91,6 +91,10 @@ imageUrl    String?
   gender      String    @default("women")
   bestFor     String[]  @default([])
   properties  String[]  @default([])
+  // Fabric details shown on every fabric page of this type
+  shortLine   String?
+  material    String?
+  washCare    String?
 
   @@index([slug])
   @@index([isActive])

@@ -361,6 +361,13 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
   const discountPct = PRODUCT.discountPrice ? Math.round(((PRODUCT.basePrice - PRODUCT.discountPrice) / PRODUCT.basePrice) * 100) : 0;
   const widthCm = PRODUCT.width ? Math.round(PRODUCT.width * 2.54) : 0;
   const otherColours = availableVariants.filter((v: any) => v.id !== PRODUCT.id);
+  // Fabric-type details (from the category: short line, material, feel, best for, wash care)
+  const cat: any = PRODUCT.category;
+  const bestFor: string[] = PRODUCT.bestFor?.length ? PRODUCT.bestFor : (cat?.bestFor || []);
+  const feel: string[] = PRODUCT.properties?.length ? PRODUCT.properties : (cat?.properties || []);
+  const washCare: string[] = cat?.washCare
+    ? String(cat.washCare).split(/(?<=\.)\s+|;\s*/).map((x: string) => x.trim().replace(/^./, (c: string) => c.toUpperCase())).filter(Boolean)
+    : ['Wash separately the first time, in cold water.', 'Gentle hand wash or dry clean; do not bleach.', 'Dry in the shade and iron on low to medium heat.'];
   const alsoLike = (Array.isArray(sameType) ? sameType : [])
     .filter((v: any) => v.id !== PRODUCT.id && !availableVariants.some((g: any) => g.id === v.id))
     .slice(0, 5);
@@ -478,7 +485,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
               </div>
 
               <h1 className="mt-3 font-display text-[2.1rem] leading-tight text-gray-900 dark:text-white sm:text-5xl">{productBaseName(PRODUCT)}</h1>
-              <p className="mt-1 text-base text-gray-600 dark:text-gray-300">{PRODUCT.category?.name} fabric in {PRODUCT.color?.toLowerCase()}</p>
+              <p className="mt-1 text-base text-gray-600 dark:text-gray-300">{cat?.shortLine || `${PRODUCT.category?.name} fabric in ${PRODUCT.color?.toLowerCase()}`}</p>
 
               {(PRODUCT.ratingCount || 0) > 0 && (
                 <button type="button" onClick={scrollToReviews} className="mt-3 flex items-center gap-2 text-sm text-gray-600 hover:text-primary-700 dark:text-gray-400">
@@ -596,16 +603,17 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
                     const named = base.toLowerCase().includes(cat.toLowerCase());
                     return `${base}${named ? '' : ` ${cat.toLowerCase()}`} in ${PRODUCT.color?.toLowerCase()}. Sold by the metre and cut fresh to the length you order.`;
                   })()}</p>
-                  {(PRODUCT.bestFor?.length || 0) > 0 && (
-                    <p className="mt-3"><span className="font-semibold text-gray-900 dark:text-white">Best for:</span> {PRODUCT.bestFor!.join(', ')}</p>
+                  {bestFor.length > 0 && (
+                    <p className="mt-3"><span className="font-semibold text-gray-900 dark:text-white">Best for:</span> {bestFor.join(', ')}</p>
                   )}
-                  {(PRODUCT.properties?.length || 0) > 0 && (
-                    <p className="mt-1"><span className="font-semibold text-gray-900 dark:text-white">Feel:</span> {PRODUCT.properties!.join(', ')}</p>
+                  {feel.length > 0 && (
+                    <p className="mt-1"><span className="font-semibold text-gray-900 dark:text-white">Feel &amp; finish:</span> {feel.join(', ')}</p>
                   )}
                 </Section>
                 <Section title="Fabric details">
                   <dl className="grid grid-cols-[8rem_1fr] gap-y-2.5 text-sm">
                     <dt className="text-gray-500">Fabric</dt><dd>{PRODUCT.category?.name}</dd>
+                    {cat?.material && (<><dt className="text-gray-500">Material</dt><dd>{cat.material}</dd></>)}
                     {PRODUCT.width ? (<><dt className="text-gray-500">Width</dt><dd>{PRODUCT.width} inches | {widthCm} cm</dd></>) : null}
                     <dt className="text-gray-500">Pattern</dt><dd>{PRODUCT.pattern}</dd>
                     <dt className="text-gray-500">Stretch</dt><dd>{PRODUCT.stretchability}</dd>
@@ -620,9 +628,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
                 </Section>
                 <Section title="Wash care">
                   <ul className="list-disc space-y-1.5 pl-5">
-                    <li>Wash separately the first time, in cold water.</li>
-                    <li>Gentle hand wash or dry clean; do not bleach.</li>
-                    <li>Dry in the shade and iron on low to medium heat.</li>
+                    {washCare.map((line) => <li key={line}>{line}</li>)}
                   </ul>
                 </Section>
               </div>

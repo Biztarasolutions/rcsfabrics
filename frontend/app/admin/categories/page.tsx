@@ -16,6 +16,9 @@ export default function AdminCategoriesPage() {
     name: '',
     slug: '',
     description: '',
+    shortLine: '',
+    material: '',
+    washCare: '',
     isActive: true,
     gender: 'women',
     bestFor: '',
@@ -71,6 +74,9 @@ export default function AdminCategoriesPage() {
       name: '',
       slug: '',
       description: '',
+      shortLine: '',
+      material: '',
+      washCare: '',
       isActive: true,
       gender: 'women',
       bestFor: '',
@@ -86,6 +92,9 @@ export default function AdminCategoriesPage() {
       name: c.name,
       slug: c.slug || '',
       description: c.description || '',
+      shortLine: c.shortLine || '',
+      material: c.material || '',
+      washCare: c.washCare || '',
       isActive: c.isActive,
       gender: c.gender || 'women',
       bestFor: Array.isArray(c.bestFor) ? c.bestFor.join(', ') : '',
@@ -102,6 +111,9 @@ export default function AdminCategoriesPage() {
       name: form.name,
       slug: generatedSlug,
       description: form.description,
+      shortLine: form.shortLine.trim() || null,
+      material: form.material.trim() || null,
+      washCare: form.washCare.trim() || null,
       isActive: form.isActive,
       gender: form.gender,
       bestFor: form.bestFor ? form.bestFor.split(',').map((s: string) => s.trim()).filter(Boolean) : [],
@@ -229,6 +241,19 @@ export default function AdminCategoriesPage() {
                 <div>
                   <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">Description</label>
                   <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="input-field h-20 resize-none py-2" placeholder="Describe the category fabric properties..."/>
+                  <p className="mt-1 text-xs text-gray-500">Shown on every fabric page of this type (unless a fabric has its own description).</p>
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">Short line (under the fabric name)</label>
+                  <input value={form.shortLine} onChange={(e) => setForm({ ...form, shortLine: e.target.value })} className="input-field" placeholder="e.g. Crisp, smooth and easy to stitch"/>
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">Material</label>
+                  <input value={form.material} onChange={(e) => setForm({ ...form, material: e.target.value })} className="input-field" placeholder="e.g. Cotton / poly-cotton blend"/>
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400">Wash care</label>
+                  <textarea value={form.washCare} onChange={(e) => setForm({ ...form, washCare: e.target.value })} className="input-field h-20 resize-none py-2" placeholder="e.g. Wash separately the first time in cold water…"/>
                 </div>
 
                 <div>
