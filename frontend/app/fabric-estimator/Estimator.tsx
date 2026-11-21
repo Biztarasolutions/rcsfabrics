@@ -2,7 +2,13 @@
 
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
+import { productApi } from '@/lib/api';
+import { useCartStore } from '@/lib/store';
+import { cartAddedToast } from '@/lib/cartToast';
+import { productDisplayName } from '@/lib/utils';
 import {
   ADULT_SIZES, Answers, estimate, GARMENTS, KID_AGES, SLEEVES, Who, widthKeyFor,
 } from '@/lib/estimator';
@@ -49,6 +55,30 @@ export default function Estimator() {
   const fromSlug = params.get('fabric') || '';
   const fromName = params.get('name') || '';
   const fromWidth = Number(params.get('width')) || 0;
+
+  const router = useRouter();
+  const { addItem, updateQty, items: cartItems } = useCartStore();
+  // The fabric the customer came from, so the result can add it to the bag directly
+  const { data: fabric } = useQuery({
+    queryKey: ['product', fromSlug],
+    queryFn: () => productApi.getBySlug(fromSlug).then((res) => res.data.data),
+    enabled: !!fromSlug,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const addToBag = (metres: number) => {
+    if (!fabric) { router.push(`/fabrics/${fromSlug}?qty=${metres}`); return; }
+    const stock = Number(fabric.totalStock) || 0;
+    if (stock <= 0) { toast.error('Sorry, this fabric is out of stock right now.'); return; }
+    const qty = Math.min(metres, Math.floor(stock * 2) / 2);
+    // Set the bag to exactly the estimated length (don't stack on top of an earlier amount)
+    const line = cartItems.find((i) => i.productId === fabric.id);
+    if (line) updateQty(line.id, qty);
+    else addItem({ id: fabric.id, productId: fabric.id, product: fabric, quantity: qty });
+    cartAddedToast(qty < metres
+      ? `Only ${stock} m in stock — added ${qty} m of ${productDisplayName(fabric)} to your bag`
+      : `${qty} m of ${productDisplayName(fabric)} added to your bag`);
+  };
 
   const [a, setA] = useState<Answers>({ width: widthKeyFor(fromWidth), bigPrint: false });
   const [step, setStep] = useState<StepKey>('who');
@@ -161,9 +191,9 @@ export default function Estimator() {
 
               <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-center">
                 {fromSlug ? (
-                  <Link href={`/fabrics/${fromSlug}?qty=${result.high}`} className="button-primary justify-center px-8 py-3.5">
-                    Add {result.high} m of {fromName || 'this fabric'} →
-                  </Link>
+                  <button type="button" onClick={() => addToBag(result.high)} className="button-primary justify-center px-8 py-3.5">
+                    Add {result.high} m of {fromName || 'this fabric'} to bag
+                  </button>
                 ) : (
                   <Link href="/fabrics" className="button-primary justify-center px-8 py-3.5">Shop fabrics →</Link>
                 )}
