@@ -57,8 +57,8 @@ const ProductCard = React.memo(function ProductCard({ product, priority = false 
         onMouseLeave={() => setHovered(false)}
         className="group relative flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all duration-300 sm:hover:-translate-y-1 sm:hover:shadow-product dark:border-dark-700 dark:bg-dark-800"
       >
-        {/* Image — fixed 4:5 container, centered cover crop for uniform grid */}
-        <div className="relative overflow-hidden bg-gray-50 dark:bg-dark-700" style={{ aspectRatio: '4/5' }}>
+        {/* Image — 4:3 box close to the photos' own 3:2 shape, so little is cropped */}
+        <div className="relative overflow-hidden bg-gray-50 dark:bg-dark-700" style={{ aspectRatio: '4/3' }}>
           {/* Pulse skeleton shown until image loads */}
           {!imgLoaded && <div className="absolute inset-0 animate-pulse bg-gray-100 dark:bg-dark-700"/>}
           {mainImage ? (

@@ -395,9 +395,9 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
                 onScroll={(e) => { const el = e.currentTarget; const i = Math.round(el.scrollLeft / el.clientWidth); if (i !== activeImg) setActiveImg(i); }}>
                 {(images.length ? images : [{ id: 'none', url: '' }]).map((img: any, i: number) => (
                   <button key={img.id} type="button" onClick={() => { setActiveImg(i); img.url && setLightbox(true); }}
-                    className="relative w-full shrink-0 snap-center bg-[#f4efe7] dark:bg-dark-800" style={{ aspectRatio: '4 / 5' }} aria-label={`Photo ${i + 1} — tap to enlarge`}>
+                    className="relative w-full shrink-0 snap-center bg-[#f4efe7] dark:bg-dark-800" style={{ aspectRatio: '3 / 2' }} aria-label={`Photo ${i + 1} — tap to enlarge`}>
                     <Image src={supabaseImg(img.url || '', 900) || BLUR_PLACEHOLDER} alt={`${productDisplayName(PRODUCT)} — photo ${i + 1}`}
-                      fill priority={i === 0} sizes="100vw" placeholder="blur" blurDataURL={BLUR_PLACEHOLDER} className="object-cover object-center"/>
+                      fill priority={i === 0} sizes="100vw" placeholder="blur" blurDataURL={BLUR_PLACEHOLDER} className="object-contain object-center"/>
                     {isCustomerPhoto(img.url) && <span className="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-gray-800">Made by a customer</span>}
                   </button>
                 ))}
@@ -417,19 +417,19 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
                 <div className="flex w-20 shrink-0 flex-col gap-3">
                   {images.map((img: any, i: number) => (
                     <button key={img.id} type="button" onClick={() => setActiveImg(i)} aria-label={`Show photo ${i + 1}`}
-                      style={{ aspectRatio: '4 / 5' }}
+                      style={{ aspectRatio: '3 / 2' }}
                       className={`relative w-full overflow-hidden rounded-lg transition ${i === activeImg ? 'ring-2 ring-primary-700 ring-offset-2 dark:ring-offset-dark-950' : 'opacity-70 hover:opacity-100'}`}>
                       <Image src={supabaseImg(img.url, 200)} alt="" fill sizes="80px" placeholder="blur" blurDataURL={BLUR_PLACEHOLDER} className="object-cover object-center"/>
                     </button>
                   ))}
                 </div>
               )}
-              <div className="relative flex-1 cursor-zoom-in overflow-hidden rounded-2xl bg-[#f4efe7] dark:bg-dark-800" style={{ aspectRatio: '4 / 5' }}
+              <div className="relative flex-1 cursor-zoom-in overflow-hidden rounded-2xl bg-[#f4efe7] dark:bg-dark-800" style={{ aspectRatio: '3 / 2' }}
                 onMouseEnter={() => setZoomed(true)} onMouseLeave={() => setZoomed(false)}
                 onClick={() => images?.[activeImg]?.url && setLightbox(true)}>
                 <Image src={supabaseImg(images?.[activeImg]?.url || '', 1200) || BLUR_PLACEHOLDER} alt={productDisplayName(PRODUCT)}
                   fill priority sizes="(max-width: 1024px) 100vw, 55vw" placeholder="blur" blurDataURL={BLUR_PLACEHOLDER}
-                  className={`object-cover object-center transition-transform duration-700 ${zoomed ? 'scale-110' : 'scale-100'}`}/>
+                  className="object-contain object-center"/>
                 {isCustomerPhoto(images?.[activeImg]?.url) && <span className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-gray-800">Made by a customer</span>}
                 <button onClick={(e) => { e.stopPropagation(); handleShare(); }} aria-label="Share this fabric"
                   className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-sm hover:bg-white">
@@ -624,10 +624,10 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
             <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
               {otherColours.map((v: any) => (
                 <button key={v.id} type="button" onClick={() => { selectVariant(v); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="group text-left">
-                  <div className="relative overflow-hidden rounded-xl bg-[#f4efe7] dark:bg-dark-800" style={{ aspectRatio: '4 / 5' }}>
+                  <div className="relative overflow-hidden rounded-xl bg-[#f4efe7] dark:bg-dark-800" style={{ aspectRatio: '4 / 3' }}>
                     {customerImages(v.images)?.[0]?.url && (
                       <Image src={supabaseImg(customerImages(v.images)[0].url || '', 400)} alt={productDisplayName(v)} fill sizes="200px"
-                        placeholder="blur" blurDataURL={BLUR_PLACEHOLDER} className="object-cover object-center transition-transform duration-500 group-hover:scale-105"/>
+                        placeholder="blur" blurDataURL={BLUR_PLACEHOLDER} className="object-cover object-center transition-transform duration-500 group-hover:scale-[1.02]"/>
                     )}
                   </div>
                   <p className="mt-2 text-sm font-medium text-gray-900 dark:text-white">{productBaseName(v)}</p>
@@ -645,10 +645,10 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
             <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
               {alsoLike.map((v: any) => (
                 <Link key={v.id} href={`/fabrics/${v.slug}`} className="group">
-                  <div className="relative overflow-hidden rounded-xl bg-[#f4efe7] dark:bg-dark-800" style={{ aspectRatio: '4 / 5' }}>
+                  <div className="relative overflow-hidden rounded-xl bg-[#f4efe7] dark:bg-dark-800" style={{ aspectRatio: '4 / 3' }}>
                     {customerImages(v.images)?.[0]?.url && (
                       <Image src={supabaseImg(customerImages(v.images)[0].url || '', 400)} alt={productDisplayName(v)} fill sizes="200px"
-                        placeholder="blur" blurDataURL={BLUR_PLACEHOLDER} className="object-cover object-center transition-transform duration-500 group-hover:scale-105"/>
+                        placeholder="blur" blurDataURL={BLUR_PLACEHOLDER} className="object-cover object-center transition-transform duration-500 group-hover:scale-[1.02]"/>
                     )}
                   </div>
                   <p className="mt-2 text-sm font-medium text-gray-900 dark:text-white">{productBaseName(v)}</p>
@@ -712,9 +712,9 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
             <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
               {recentlyViewed.filter((p) => p.id !== PRODUCT.id).slice(0, 5).map((p) => (
                 <Link key={p.id} href={`/fabrics/${p.slug}`} className="group">
-                  <div className="relative overflow-hidden rounded-xl bg-[#f4efe7] dark:bg-dark-800" style={{ aspectRatio: '4 / 5' }}>
+                  <div className="relative overflow-hidden rounded-xl bg-[#f4efe7] dark:bg-dark-800" style={{ aspectRatio: '4 / 3' }}>
                     {p.image && <Image src={supabaseImg(p.image, 400)} alt={p.name} fill sizes="200px" placeholder="blur" blurDataURL={BLUR_PLACEHOLDER}
-                      className="object-cover object-center transition-transform duration-500 group-hover:scale-105"/>}
+                      className="object-cover object-center transition-transform duration-500 group-hover:scale-[1.02]"/>}
                   </div>
                   <p className="mt-2 line-clamp-1 text-sm font-medium text-gray-900 dark:text-white">{productBaseName({ name: p.name, color: null })}</p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">{formatPrice(p.price)}/m</p>

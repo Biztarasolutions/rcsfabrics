@@ -39,7 +39,7 @@ export default function WishlistGrid({ compact = false }: { compact?: boolean })
                 transition={{ delay: i * 0.06 }}
                 className="group relative overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm dark:border-dark-700 dark:bg-dark-800">
                 {/* Image */}
-                <div className="relative overflow-hidden" style={{ aspectRatio: '4/5' }}>
+                <div className="relative overflow-hidden" style={{ aspectRatio: '4/3' }}>
                   <Link href={`/fabrics/${item.product.slug}`} aria-label={`View ${productDisplayName(item.product)}`} className="absolute inset-0 block cursor-pointer">
                     <Image src={supabaseImg(item.product.images?.[0]?.url || '', 500, 70, 'cover') || BLUR_PLACEHOLDER} alt={productDisplayName(item.product)}
                       fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" className="object-cover transition-transform duration-300 group-hover:scale-105"/>
