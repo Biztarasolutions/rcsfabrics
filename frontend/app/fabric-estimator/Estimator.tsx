@@ -191,6 +191,65 @@ export default function Estimator() {
                 <p><strong className="text-gray-900 dark:text-white">{result.low} m</strong> is enough for a standard fit. <strong className="text-gray-900 dark:text-white">{result.high} m</strong> gives your tailor extra room for fitting and adjustments — we recommend it.</p>
               </div>
 
+              {/* Change any answer here and the estimate updates straight away */}
+              <div className="mx-auto mt-6 max-w-md rounded-2xl border border-[#e6dccb] p-4 text-left dark:border-dark-700">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">Your answers</p>
+                  <p className="text-xs text-gray-500">Change any to compare</p>
+                </div>
+
+                <div className="mt-3 flex items-center justify-between gap-3 border-t border-[#efe6d6] pt-3 text-sm dark:border-dark-700">
+                  <span className="text-gray-500">Making</span>
+                  <span className="flex items-center gap-3">
+                    <span className="font-medium text-gray-900 dark:text-white">{WHO.find((w) => w.key === a.who)?.label} · {garment?.label}</span>
+                    <button type="button" onClick={() => { setHistory((h) => [...h, 'result']); setStep('who'); }}
+                      className="text-xs font-semibold text-primary-700 underline underline-offset-4 dark:text-primary-400">Change</button>
+                  </span>
+                </div>
+
+                {garment && garment.styles.length > 1 && (
+                  <div className="mt-3 border-t border-[#efe6d6] pt-3 dark:border-dark-700">
+                    <p className="text-xs text-gray-500">Style</p>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {garment.styles.map((st) => (
+                        <button key={st.key} type="button" onClick={() => setA((x) => ({ ...x, style: st.key }))} aria-pressed={a.style === st.key}
+                          className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${a.style === st.key ? 'border-gray-900 bg-gray-900 text-white dark:border-white dark:bg-white dark:text-gray-900' : 'border-[#e6dccb] text-gray-700 hover:border-gray-400 dark:border-dark-600 dark:text-gray-300'}`}>
+                          {st.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {garment?.sized && (
+                  <div className="mt-3 border-t border-[#efe6d6] pt-3 dark:border-dark-700">
+                    <p className="text-xs text-gray-500">{a.who === 'kids' ? 'Age' : 'Size'}</p>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {(a.who === 'kids' ? KID_AGES : ADULT_SIZES).map((sz) => (
+                        <button key={sz.key} type="button" onClick={() => setA((x) => ({ ...x, size: sz.key }))} aria-pressed={a.size === sz.key}
+                          className={`min-w-[2.75rem] rounded-full border px-3 py-1.5 text-xs font-medium transition ${a.size === sz.key ? 'border-gray-900 bg-gray-900 text-white dark:border-white dark:bg-white dark:text-gray-900' : 'border-[#e6dccb] text-gray-700 hover:border-gray-400 dark:border-dark-600 dark:text-gray-300'}`}>
+                          {sz.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {garment?.sleeves && (
+                  <div className="mt-3 border-t border-[#efe6d6] pt-3 dark:border-dark-700">
+                    <p className="text-xs text-gray-500">Sleeves</p>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {SLEEVES.map((sl) => (
+                        <button key={sl.key} type="button" onClick={() => setA((x) => ({ ...x, sleeves: sl.key }))} aria-pressed={a.sleeves === sl.key}
+                          className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${a.sleeves === sl.key ? 'border-gray-900 bg-gray-900 text-white dark:border-white dark:bg-white dark:text-gray-900' : 'border-[#e6dccb] text-gray-700 hover:border-gray-400 dark:border-dark-600 dark:text-gray-300'}`}>
+                          {sl.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-center">
                 {fromSlug ? (
                   <button type="button" onClick={() => addToBag(result.high)} className="button-primary justify-center px-8 py-3.5">
