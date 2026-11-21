@@ -43,10 +43,11 @@ export const verifyFolderAccess = async (folderId: string): Promise<{ id: string
   try {
     const res = await drive.files.get({
       fileId: folderId,
-      fields: 'id, name, mimeType',
+      fields: 'id, name, mimeType, trashed',
       supportsAllDrives: true,
     });
-    if (res.data.mimeType === 'application/vnd.google-apps.folder' && res.data.id) {
+    // A folder that was deleted (in the bin) counts as gone, so the sync searches again by name
+    if (res.data.mimeType === 'application/vnd.google-apps.folder' && res.data.id && !res.data.trashed) {
       return { id: res.data.id, name: res.data.name || '' };
     }
     return null;
@@ -117,31 +118,47 @@ export const findFolderIdByName = async (folderName: string): Promise<string | n
 
   try {
     const escaped = escapeDriveQueryValue(trimmed);
+    // Folders can sit at any depth, e.g. RCS Photoshoot / P10001-Satin / P10001-Polka Dot-Satin-White,
+    // so search the whole Drive by name. Only an exact (case-insensitive) name counts: a loose
+    // "contains" match could pick a group folder such as P10001-Satin or another colour.
     const res = await drive.files.list({
       ...driveListParams,
       q: `mimeType = 'application/vnd.google-apps.folder' and name = '${escaped}' and trashed = false`,
       fields: 'files(id, name)',
       pageSize: 10,
     });
-    const files = res.data.files || [];
-    if (files.length > 0) {
-      return files[0].id as string;
+    let matches = (res.data.files || []).filter((f) => f.id);
+
+    if (!matches.length) {
+      const fuzzyRes = await drive.files.list({
+        ...driveListParams,
+        q: `mimeType = 'application/vnd.google-apps.folder' and name contains '${escaped}' and trashed = false`,
+        fields: 'files(id, name)',
+        pageSize: 50,
+      });
+      const normalized = trimmed.toLowerCase().replace(/\s+/g, ' ');
+      matches = (fuzzyRes.data.files || []).filter(
+        (f) => f.id && f.name?.trim().toLowerCase().replace(/\s+/g, ' ') === normalized
+      );
     }
 
-    // Fuzzy: contains search then pick case-insensitive exact match
-    const fuzzyRes = await drive.files.list({
-      ...driveListParams,
-      q: `mimeType = 'application/vnd.google-apps.folder' and name contains '${escaped}' and trashed = false`,
-      fields: 'files(id, name)',
-      pageSize: 25,
-    });
-    const fuzzyFiles = fuzzyRes.data.files || [];
-    const normalized = trimmed.toLowerCase();
-    const exact = fuzzyFiles.find((f) => f.name?.trim().toLowerCase() === normalized);
-    if (exact?.id) return exact.id as string;
-    if (fuzzyFiles[0]?.id) return fuzzyFiles[0].id as string;
+    if (matches.length <= 1) return (matches[0]?.id as string) || null;
 
-    return null;
+    // Same name in several places (e.g. RCS Raw Pictures and RCS Photoshoot):
+    // prefer the photoshoot folder (has Fabric-1/2/3 images), then any folder with images.
+    let withImages: string | null = null;
+    for (const f of matches) {
+      const imgs = await drive.files.list({
+        ...driveListParams,
+        q: `'${f.id}' in parents and mimeType contains 'image/' and trashed = false`,
+        fields: 'files(name)',
+        pageSize: 50,
+      });
+      const names = (imgs.data.files || []).map((x) => x.name || '');
+      if (names.some((n) => /^fabric[\s_-]*\d/i.test(n))) return f.id as string;
+      if (names.length && !withImages) withImages = f.id as string;
+    }
+    return withImages || (matches[0].id as string);
   } catch (error) {
     console.error(`Error finding folder by name ${folderName}:`, error);
     return null;

@@ -156,7 +156,16 @@ const collectFolderIdsForProduct = async (
 
   const isGenericProduct = product.colors.length === 0 || (product.colors.length === 1 && product.colors[0].name === 'Unknown');
 
-  if (!product.folderUrl && isGenericProduct) {
+  let productFolderUrl = product.folderUrl;
+  if (productFolderUrl) {
+    const savedId = extractFolderId(productFolderUrl);
+    if (!savedId || !(await verifyFolderAccess(savedId))) {
+      await prisma.product.update({ where: { id: product.id }, data: { folderUrl: null } });
+      productFolderUrl = null;
+    }
+  }
+
+  if (!productFolderUrl && isGenericProduct) {
     const styleLookupNames = product.styleCode
       ? [product.styleCode, ...styleCandidates]
       : styleCandidates;
@@ -171,7 +180,12 @@ const collectFolderIdsForProduct = async (
   }
 
   for (const color of product.colors) {
-    if (color.folderUrl) continue;
+    if (color.folderUrl) {
+      const savedId = extractFolderId(color.folderUrl);
+      if (savedId && (await verifyFolderAccess(savedId))) continue;
+      // Saved folder was deleted or moved out of reach: forget it and search by name again
+      await prisma.productColor.update({ where: { id: color.id }, data: { folderUrl: null } });
+    }
 
     const candidates = [
       ...(color.productCode ? [color.productCode] : []),
