@@ -4,11 +4,11 @@ import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import {
-  ADULT_SIZES, Answers, estimate, GARMENTS, HEIGHTS, KID_AGES, SLEEVES, Who, WIDTHS, widthKeyFor,
+  ADULT_SIZES, Answers, estimate, GARMENTS, KID_AGES, SLEEVES, Who, widthKeyFor,
 } from '@/lib/estimator';
 import { BUSINESS } from '@/lib/business';
 
-type StepKey = 'who' | 'garment' | 'style' | 'size' | 'sleeves' | 'fabric' | 'result';
+type StepKey = 'who' | 'garment' | 'style' | 'size' | 'sleeves' | 'result';
 
 const WHO: { key: Who; label: string; hint: string }[] = [
   { key: 'women', label: 'Women', hint: 'Kurtis, suits, dresses, blouses' },
@@ -61,7 +61,7 @@ export default function Estimator() {
     const f: StepKey[] = ['who', 'garment', 'style'];
     if (!garment || garment.sized) f.push('size');
     if (!garment || garment.sleeves) f.push('sleeves');
-    f.push('fabric', 'result');
+    f.push('result');
     return f;
   }, [garment]);
 
@@ -79,7 +79,6 @@ export default function Estimator() {
   const totalQuestions = flow.length - 1;
   const result = step === 'result' ? estimate(a) : null;
   const sizeLabel = a.who === 'kids' ? KID_AGES.find((s) => s.key === a.size)?.label : ADULT_SIZES.find((s) => s.key === a.size)?.label;
-  const needsHeight = !!garment?.long && a.who !== 'kids';
 
   const TITLES: Record<StepKey, string> = {
     who: 'Who is it for?',
@@ -87,7 +86,6 @@ export default function Estimator() {
     style: `Which ${garment?.label.toLowerCase() || 'style'}?`,
     size: a.who === 'kids' ? 'How old is the child?' : 'What size do you wear?',
     sleeves: 'What sleeves?',
-    fabric: 'About the fabric',
     result: 'You need',
   };
 
@@ -97,7 +95,7 @@ export default function Estimator() {
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#a07c3b]">Fabric estimator</p>
         <h1 className="mt-2 font-display text-3xl text-gray-900 dark:text-white sm:text-4xl">How much fabric do I need?</h1>
         <p className="mt-2 text-gray-600 dark:text-gray-400">
-          A few quick questions and we&apos;ll tell you how many metres to buy{fromName ? <> of <strong className="text-gray-900 dark:text-white">{fromName}</strong></> : ''}.
+          A few quick questions and we&apos;ll suggest how many metres to buy{fromName ? <> of <strong className="text-gray-900 dark:text-white">{fromName}</strong></> : ''}.
         </p>
 
         {/* Progress */}
@@ -133,51 +131,16 @@ export default function Estimator() {
           )}
 
           {step === 'size' && (
-            <div className="mt-5 space-y-6">
-              <div className="flex flex-wrap gap-2">
-                {(a.who === 'kids' ? KID_AGES : ADULT_SIZES).map((s) => (
-                  <Chip key={s.key} on={a.size === s.key} onClick={() => pick({ size: s.key }, 'size', !needsHeight)}>{s.label}</Chip>
-                ))}
-              </div>
-              {needsHeight && (
-                <div>
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white">Your height</p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {HEIGHTS.map((h) => <Chip key={h.key} on={a.height === h.key} onClick={() => setA((x) => ({ ...x, height: h.key }))}>{h.label}</Chip>)}
-                  </div>
-                </div>
-              )}
-              {needsHeight && (
-                <button type="button" disabled={!a.size} onClick={() => { if (!a.height) setA((x) => ({ ...x, height: 'average' })); go(nextOf('size')); }}
-                  className="button-primary w-full py-3.5 disabled:opacity-40 sm:w-auto sm:px-10">Continue</button>
-              )}
+            <div className="mt-5 flex flex-wrap gap-2">
+              {(a.who === 'kids' ? KID_AGES : ADULT_SIZES).map((s) => (
+                <Chip key={s.key} on={a.size === s.key} onClick={() => pick({ size: s.key }, 'size')}>{s.label}</Chip>
+              ))}
             </div>
           )}
 
           {step === 'sleeves' && (
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
               {SLEEVES.map((s) => <Option key={s.key} on={a.sleeves === s.key} title={s.label} onClick={() => pick({ sleeves: s.key }, 'sleeves')}/>)}
-            </div>
-          )}
-
-          {step === 'fabric' && (
-            <div className="mt-5 space-y-6">
-              <div>
-                <p className="text-sm font-semibold text-gray-900 dark:text-white">Fabric width</p>
-                <p className="text-sm text-gray-500">{fromWidth ? `${fromName || 'This fabric'} is ${fromWidth}″ wide — already selected.` : 'Shown as “Width” on every fabric page.'}</p>
-                <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                  {WIDTHS.map((w) => <Option key={w.key} on={a.width === w.key} title={w.label} hint={w.hint} onClick={() => setA((x) => ({ ...x, width: w.key }))}/>)}
-                </div>
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-gray-900 dark:text-white">Big print, checks or stripes?</p>
-                <p className="text-sm text-gray-500">These need a little extra so the pattern lines up at the seams.</p>
-                <div className="mt-3 flex gap-2">
-                  <Chip on={!a.bigPrint} onClick={() => setA((x) => ({ ...x, bigPrint: false }))}>No</Chip>
-                  <Chip on={!!a.bigPrint} onClick={() => setA((x) => ({ ...x, bigPrint: true }))}>Yes</Chip>
-                </div>
-              </div>
-              <button type="button" onClick={() => go('result')} className="button-primary w-full py-3.5 sm:w-auto sm:px-10">Show my estimate</button>
             </div>
           )}
 
@@ -189,7 +152,7 @@ export default function Estimator() {
                 for <strong className="text-gray-900 dark:text-white">{result.garment.label} — {result.style.label}</strong>
                 {sizeLabel ? <> · {a.who === 'kids' ? sizeLabel : `size ${sizeLabel}`}</> : null}
                 {garment?.sleeves && a.sleeves ? <> · {SLEEVES.find((s) => s.key === a.sleeves)?.label.toLowerCase()}</> : null}
-                {' '}· {WIDTHS.find((w) => w.key === a.width)?.label} fabric
+                {' '}· {fromWidth ? `${fromName || 'this fabric'} is ${fromWidth}″ wide` : 'standard 44″ wide fabric'}
               </p>
 
               <div className="mx-auto mt-6 max-w-md rounded-2xl bg-[#faf6ee] p-4 text-left text-sm text-gray-700 dark:bg-dark-800 dark:text-gray-300">
@@ -208,9 +171,10 @@ export default function Estimator() {
                   Estimate another garment
                 </button>
               </div>
-              <p className="mx-auto mt-6 max-w-md text-xs text-gray-500">
-                An estimate for a standard fit. Designer cuts, extra flare or lining need more — check with your tailor, or{' '}
-                <a href={BUSINESS.whatsapp} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">ask us on WhatsApp</a>.
+              <p className="mx-auto mt-6 max-w-md rounded-xl border border-[#e6dccb] px-4 py-3 text-left text-xs leading-relaxed text-gray-600 dark:border-dark-700 dark:text-gray-400">
+                <strong className="text-gray-800 dark:text-gray-200">This is only an estimate.</strong> The fabric needed depends on your tailor, the cut and the fit,
+                so please confirm with your tailor before ordering. RCS Fabrics is not responsible for any shortfall or sizing issue.
+                Questions? <a href={BUSINESS.whatsapp} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">Ask us on WhatsApp</a>.
               </p>
             </div>
           )}
