@@ -4,9 +4,8 @@ import React, { useState } from 'react';
 import { customerImages } from '@/lib/rawPhoto';
 import { Product } from '@/types';
 import { formatPrice, calculateDiscount, productDisplayName, productBaseName } from '@/lib/utils';
-import { useCartStore, useWishlistStore } from '@/lib/store';
+import { useWishlistStore } from '@/lib/store';
 import toast from 'react-hot-toast';
-import { cartAddedToast } from '@/lib/cartToast';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useQueryClient } from '@tanstack/react-query';
@@ -24,15 +23,8 @@ const ProductCard = React.memo(function ProductCard({ product, priority = false 
   const secondImage = photos[1];
   const discountPercent = product.discountPrice ? calculateDiscount(product.basePrice, product.discountPrice) : 0;
   const price = product.discountPrice || product.basePrice;
-  const { addItem } = useCartStore();
   const { addItem: addWish, removeItem: removeWish, hasItem } = useWishlistStore();
   const isWishlisted = hasItem(product.id);
-
-  const handleAddToCart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    addItem({ id: product.id, productId: product.id, product, quantity: 0.5 });
-    cartAddedToast(`${productDisplayName(product)} (0.5m) added to cart`);
-  };
 
   const handleWishlist = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -103,11 +95,6 @@ const ProductCard = React.memo(function ProductCard({ product, priority = false 
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
             </svg>
           </button>
-          <div className={`absolute bottom-0 left-0 right-0 p-3 transition-all duration-300 ${hovered ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
-            <button onClick={handleAddToCart} className="w-full rounded-xl bg-white/90 px-4 py-2.5 text-sm font-semibold text-gray-900 shadow-md backdrop-blur-sm transition-colors hover:bg-primary-600 hover:text-white dark:bg-dark-800/90 dark:text-white">
-              Quick Add — 0.5m
-            </button>
-          </div>
         </div>
         {/* Content */}
         <div className="flex flex-1 flex-col p-4">
