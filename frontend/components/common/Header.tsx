@@ -81,14 +81,28 @@ export default function Header() {
       </div>
 
       {/* Main header */}
-      <header className={`sticky top-0 z-50 transition-all duration-300 border-b border-gray-100 dark:border-dark-800 ${
-        scrolled ? 'bg-white/95 shadow-md backdrop-blur-md dark:bg-dark-900/95' : 'bg-white dark:bg-dark-900'
+      {/* Fixed height, solid background and only the shadow animating, so the bar never
+          changes size or jumps while scrolling. The mobile menu drops over the page
+          instead of pushing it down. */}
+      <header className={`sticky top-0 z-50 h-16 border-b border-gray-100 bg-white transition-shadow duration-200 dark:border-dark-800 dark:bg-dark-900 ${
+        scrolled ? 'shadow-md' : 'shadow-none'
       }`}>
-        <div className="container-main">
-          <div className="flex h-16 items-center justify-between gap-4">
+        <div className="container-main h-full">
+          <div className="flex h-full min-w-0 items-center justify-between gap-2 lg:gap-4">
+            {/* Menu (phones and tablets): far left, before the logo */}
+            <button onClick={toggleMobileMenu} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-dark-800 -ml-2 lg:hidden"
+              aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'} aria-expanded={isMobileMenuOpen}>
+              {isMobileMenuOpen ? (
+                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
+              ) : (
+                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16"/></svg>
+              )}
+            </button>
+
             {/* Logo */}
-            <Link href="/" className="flex shrink-0 items-center" onClick={closeMobileMenu} aria-label="RCS Fabrics — home">
-              <BrandLogo height={46} priority />
+            <Link href="/" className="mr-auto flex min-w-0 shrink-0 items-center lg:mr-0" onClick={closeMobileMenu} aria-label="RCS Fabrics — home">
+              <span className="lg:hidden"><BrandLogo height={38} priority /></span>
+              <span className="hidden lg:inline"><BrandLogo height={46} /></span>
             </Link>
 
             {/* Desktop Nav */}
@@ -102,10 +116,10 @@ export default function Header() {
             </nav>
 
             {/* Actions */}
-            <div className="flex items-center gap-1">
+            <div className="-mr-2 flex shrink-0 items-center sm:gap-0.5 lg:mr-0">
               {/* Search */}
               <button id="header-search-btn" onClick={openSearch}
-                className="button-ghost rounded-full p-2" aria-label="Search">
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-dark-800" aria-label="Search">
                 <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
@@ -113,7 +127,7 @@ export default function Header() {
 
               {/* Dark mode */}
               <button id="theme-toggle" onClick={toggleTheme}
-                className="button-ghost rounded-full p-2" aria-label="Toggle theme">
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-dark-800 hidden sm:flex" aria-label="Toggle theme">
                 {isDark ? (
                   <svg className="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
@@ -126,12 +140,12 @@ export default function Header() {
               </button>
 
               {/* Wishlist */}
-              <Link href={isAuthenticated ? '/account?tab=wishlist' : '/wishlist'} className="button-ghost relative rounded-full p-2" aria-label="Wishlist">
+              <Link href={isAuthenticated ? '/account?tab=wishlist' : '/wishlist'} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-dark-800 relative" aria-label="Wishlist">
                 <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
                 </svg>
                 {wishlistCount > 0 && (
-                  <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                  <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
                     {wishlistCount}
                   </span>
                 )}
@@ -139,13 +153,13 @@ export default function Header() {
 
               {/* Cart */}
               <button id="cart-toggle" onClick={toggleCart}
-                className="button-ghost relative rounded-full p-2" aria-label="Cart">
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-dark-800 relative" aria-label="Cart">
                 <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
                 </svg>
                 {cartCount > 0 && (
                   <motion.span key={cartCount} initial={{ scale: 0 }} animate={{ scale: 1 }}
-                    className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary-600 text-[10px] font-bold text-white">
+                    className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary-600 px-1 text-[10px] font-bold text-white">
                     {cartCount}
                   </motion.span>
                 )}
@@ -155,12 +169,13 @@ export default function Header() {
               {isAuthenticated ? (
                 <div ref={userMenuRef} className="relative">
                   <button id="user-menu-btn" onClick={() => setUserMenuOpen(!userMenuOpen)}
-                    className="flex items-center gap-1.5 rounded-full border border-gray-200 px-3 py-1.5 text-sm font-medium dark:border-dark-700 hover:bg-gray-50 dark:hover:bg-dark-800 transition-colors">
+                    aria-label="Your account"
+                    className="ml-1 flex h-10 shrink-0 items-center gap-1.5 rounded-full border border-gray-200 px-1.5 text-sm font-medium transition-colors hover:bg-gray-50 dark:border-dark-700 dark:hover:bg-dark-800 sm:px-3">
                     <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary-600 text-xs font-bold text-white">
                       {user?.firstName?.[0] || 'U'}
                     </div>
                     <span className="hidden sm:block">{user?.firstName || 'Account'}</span>
-                    <svg className="h-3.5 w-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="hidden h-3.5 w-3.5 text-gray-400 sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/>
                     </svg>
                   </button>
@@ -215,14 +230,6 @@ export default function Header() {
                 </span>
               )}
 
-              {/* Mobile menu */}
-              <button onClick={toggleMobileMenu} className="button-ghost rounded-full p-2 lg:hidden" aria-label="Menu">
-                {isMobileMenuOpen ? (
-                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
-                ) : (
-                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16"/></svg>
-                )}
-              </button>
             </div>
           </div>
         </div>
@@ -232,7 +239,7 @@ export default function Header() {
           {isMobileMenuOpen && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="overflow-hidden border-t border-gray-100 bg-white dark:border-dark-800 dark:bg-dark-900 lg:hidden">
+              className="absolute inset-x-0 top-full overflow-hidden border-t border-gray-100 bg-white shadow-xl dark:border-dark-800 dark:bg-dark-900 lg:hidden">
               <div className="container-main py-4 space-y-1">
                 {NAV_LINKS.map((link) => (
                   <Link key={link.href} href={link.href} onClick={closeMobileMenu}
@@ -240,6 +247,13 @@ export default function Header() {
                     {link.label}
                   </Link>
                 ))}
+                <div className="mt-1 space-y-1 border-t border-gray-100 pt-2 dark:border-dark-800 sm:hidden">
+                  <button type="button" onClick={toggleTheme}
+                    className="flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-sm font-medium text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-dark-800">
+                    {isDark ? 'Light mode' : 'Dark mode'}
+                    <span aria-hidden="true">{isDark ? '☀️' : '🌙'}</span>
+                  </button>
+                </div>
                 {!isAuthenticated && (
                   <div className="pt-2 border-t border-gray-100 dark:border-dark-800">
                     <Link href="/auth" onClick={closeMobileMenu} className="button-primary block w-full py-3 text-center">

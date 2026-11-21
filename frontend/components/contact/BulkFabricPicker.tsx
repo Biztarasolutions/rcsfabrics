@@ -3,7 +3,7 @@ import React, { useMemo, useState } from 'react';
 import Image from 'next/image';
 import { useAllProducts } from '@/hooks/useCollections';
 import { supabaseImg, BLUR_PLACEHOLDER } from '@/lib/image';
-import { productDisplayName } from '@/lib/utils';
+import { productDisplayName, productBaseName, productColorName } from '@/lib/utils';
 import { SITE_URL } from '@/lib/seo';
 import toast from 'react-hot-toast';
 
@@ -145,7 +145,8 @@ export default function BulkFabricPicker({
                     {img && <Image src={supabaseImg(img, 200, 70, 'cover')} alt="" fill sizes="120px" placeholder="blur" blurDataURL={BLUR_PLACEHOLDER} className="object-cover" />}
                     {on && <span className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary-700 text-xs text-white">✓</span>}
                   </div>
-                  <p className="px-2 py-1.5 text-xs font-medium leading-tight text-gray-800 dark:text-gray-200">{productDisplayName(p)}</p>
+                  <p className="px-2 pt-1.5 text-xs font-medium leading-tight text-gray-800 dark:text-gray-200">{productBaseName(p)}</p>
+                  {productColorName(p) && <p className="px-2 pb-1.5 text-[11px] leading-tight text-gray-500">{productColorName(p)}</p>}
                 </button>
               );
             })}

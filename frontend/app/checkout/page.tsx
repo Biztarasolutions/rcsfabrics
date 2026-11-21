@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useStoresHydrated, useCartStore, useAuthStore } from '@/lib/store';
 import { orderApi, publicApi, userApi } from '@/lib/api';
-import { formatPrice, productDisplayName } from '@/lib/utils';
+import { formatPrice, productDisplayName, productBaseName, productColorName } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 import { supabaseImg, BLUR_PLACEHOLDER } from '@/lib/image';
@@ -61,8 +61,8 @@ function OrderSummary({ items, subtotal, shipping, discount, total, coupon, setC
               <Image src={supabaseImg(item.product.images?.[0]?.url || '', 160, 70, 'cover') || BLUR_PLACEHOLDER} alt={productDisplayName(item.product)} fill sizes="56px" className="object-cover"/>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="truncate text-sm font-medium text-gray-900 dark:text-white">{productDisplayName(item.product)}</p>
-              <p className="text-xs text-gray-500">{item.quantity}m</p>
+              <p className="truncate text-sm font-medium text-gray-900 dark:text-white">{productBaseName(item.product)}</p>
+              <p className="text-xs text-gray-500">{[productColorName(item.product), `${item.quantity}m`].filter(Boolean).join(' · ')}</p>
             </div>
             <p className="shrink-0 text-sm font-semibold">{formatPrice((item.product.discountPrice || item.product.basePrice) * item.quantity)}</p>
           </div>
@@ -487,8 +487,8 @@ export default function CheckoutPage() {
                         <Image src={supabaseImg(item.product.images?.[0]?.url || '', 200, 70, 'cover') || BLUR_PLACEHOLDER} alt={productDisplayName(item.product)} fill sizes="96px" className="object-cover"/>
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="line-clamp-2 font-semibold text-gray-900 dark:text-white">{productDisplayName(item.product)}</p>
-                        <p className="text-sm text-gray-500">{item.quantity}m · {formatPrice(item.product.discountPrice || item.product.basePrice)}/m</p>
+                        <p className="line-clamp-2 font-semibold text-gray-900 dark:text-white">{productBaseName(item.product)}</p>
+                        <p className="text-sm text-gray-500">{[productColorName(item.product), `${item.quantity}m`, `${formatPrice(item.product.discountPrice || item.product.basePrice)}/m`].filter(Boolean).join(' · ')}</p>
                       </div>
                       <p className="shrink-0 font-bold text-primary-700 dark:text-primary-400">
                         {formatPrice((item.product.discountPrice || item.product.basePrice) * item.quantity)}

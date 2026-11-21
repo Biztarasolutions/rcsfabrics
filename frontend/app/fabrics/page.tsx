@@ -120,26 +120,27 @@ function ProductsContent() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                   </svg>
                   <input name="q" defaultValue={search} placeholder="Search fabrics..."
-                    className="input-field pl-9 py-2 text-sm w-full"/>
+                    className="input-field !pl-10 py-2 text-sm w-full"/>
                 </div>
                 <button type="submit" className="button-primary px-5 py-2 text-sm">Search</button>
                 {search && <button type="button" onClick={() => updateParam('search', '')} className="button-secondary px-4 py-2 text-sm">Clear</button>}
               </form>
-              <div className="flex items-center justify-between gap-4">
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <div className="flex items-center justify-between gap-2 sm:gap-4">
+              <p className="shrink-0 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                 {isLoading ? '...' : pagination?.total || 0} results
                 {category && <span className="ml-1">in <strong className="text-gray-700 dark:text-gray-300">{category}</strong></span>}
               </p>
-              <div className="flex items-center gap-3">
+              <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                 <button type="button" onClick={() => setFiltersOpen(true)}
                   className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 lg:hidden dark:border-dark-700 dark:bg-dark-800 dark:text-gray-200">
                   Filters{activeCount > 0 && <span className="rounded-full bg-primary-700 px-1.5 text-xs text-white">{activeCount}</span>}
                 </button>
-                <select value={sort} onChange={(e) => updateParam('sort', e.target.value)}
-                  className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm dark:border-dark-700 dark:bg-dark-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500/20">
+                <select value={sort} onChange={(e) => updateParam('sort', e.target.value)} aria-label="Sort"
+                  className="min-w-0 max-w-[9.5rem] rounded-xl sm:max-w-none border border-gray-200 bg-white px-3 py-2 text-sm dark:border-dark-700 dark:bg-dark-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500/20">
                   {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
-                <div className="flex rounded-xl border border-gray-200 dark:border-dark-700 overflow-hidden">
+                {/* Grid/list switch: tablets and up (phones always use the grid) */}
+                <div className="hidden overflow-hidden rounded-xl border border-gray-200 dark:border-dark-700 sm:flex">
                   <button onClick={() => setView('grid')} className={`p-2 transition-colors ${view === 'grid' ? 'bg-primary-600 text-white' : 'bg-white text-gray-500 dark:bg-dark-800 dark:text-gray-400'}`} aria-label="Grid view">
                     <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
                   </button>

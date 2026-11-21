@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { customerImages } from '@/lib/rawPhoto';
 import { Product } from '@/types';
-import { formatPrice, calculateDiscount, productDisplayName } from '@/lib/utils';
+import { formatPrice, calculateDiscount, productDisplayName, productBaseName } from '@/lib/utils';
 import { useCartStore, useWishlistStore } from '@/lib/store';
 import toast from 'react-hot-toast';
 import { cartAddedToast } from '@/lib/cartToast';
@@ -114,7 +114,7 @@ const ProductCard = React.memo(function ProductCard({ product, priority = false 
           <p className="text-xs font-medium uppercase tracking-wider text-primary-600 dark:text-primary-400">
             {product.category?.name || 'Fabric'}
           </p>
-          <h3 className="mt-1 line-clamp-2 font-semibold text-gray-900 dark:text-white">{productDisplayName(product)}</h3>
+          <h3 className="mt-1 line-clamp-2 font-semibold text-gray-900 dark:text-white">{productBaseName(product)}</h3>
           {(() => {
             // Show a swatch only for real hex codes; otherwise the colour's name
             const list = product.colors?.length ? product.colors : product.color ? [{ name: product.color, hexCode: product.color }] : [];
@@ -125,10 +125,13 @@ const ProductCard = React.memo(function ProductCard({ product, priority = false 
             const swatches = list.map((c: any) => ({ name: c.name, hex: hex(c.hexCode) }));
             if (!swatches.length) return null;
             return (
-              <div className="mt-1 flex items-center gap-1.5">
-                {swatches.slice(0, 5).map((c: any, idx: number) => c.hex
-                  ? <span key={idx} className="h-3.5 w-3.5 rounded-full border border-black/10" style={{ backgroundColor: c.hex }} title={c.name} />
-                  : <span key={idx} className="text-xs capitalize text-gray-500 dark:text-gray-400">{c.name}{idx < Math.min(swatches.length, 5) - 1 ? ',' : ''}</span>)}
+              <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                {swatches.slice(0, 5).map((c: any, idx: number) => (
+                  <span key={idx} className="flex min-w-0 items-center gap-1.5 text-sm capitalize text-gray-600 dark:text-gray-300">
+                    {c.hex && <span className="h-3.5 w-3.5 shrink-0 rounded-full border border-black/10" style={{ backgroundColor: c.hex }} aria-hidden="true" />}
+                    <span className="truncate">{c.name}{!c.hex && idx < Math.min(swatches.length, 5) - 1 ? ',' : ''}</span>
+                  </span>
+                ))}
               </div>
             );
           })()}

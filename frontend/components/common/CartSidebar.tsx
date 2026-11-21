@@ -3,7 +3,7 @@ import React from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCartStore } from '@/lib/store';
-import { formatPrice, productDisplayName } from '@/lib/utils';
+import { formatPrice, productDisplayName, productBaseName, productColorName } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 import { supabaseImg } from '@/lib/image';
@@ -90,8 +90,8 @@ export default function CartSidebar() {
                           <div className="flex flex-1 flex-col justify-between min-w-0">
                             <div className="flex items-start justify-between gap-1">
                               <div className="min-w-0">
-                                <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">{productDisplayName(item.product)}</p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">{formatPrice(price)}/m</p>
+                                <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">{productBaseName(item.product)}</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">{[productColorName(item.product), `${formatPrice(price)}/m`].filter(Boolean).join(' · ')}</p>
                               </div>
                               <button onClick={() => { removeItem(item.id); toast('Removed from cart'); }}
                                 className="ml-1 shrink-0 text-gray-300 hover:text-red-400 transition-colors">

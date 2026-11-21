@@ -3,7 +3,7 @@ import React from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useWishlistStore, useCartStore, useStoresHydrated } from '@/lib/store';
-import { formatPrice, productDisplayName } from '@/lib/utils';
+import { formatPrice, productDisplayName, productBaseName, productColorName } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import { cartAddedToast } from '@/lib/cartToast';
 import Image from 'next/image';
@@ -52,12 +52,13 @@ export default function WishlistGrid({ compact = false }: { compact?: boolean })
                 </div>
                 {/* Content */}
                 <div className="p-4">
-                  <p className="text-xs font-medium uppercase tracking-wider text-primary-600 dark:text-primary-400">{item.product.bestFor?.join(', ') || item.product.category?.name}</p>
+                  <p className="text-xs font-medium uppercase tracking-wider text-primary-600 dark:text-primary-400">{item.product.category?.name || 'Fabric'}</p>
                   <h3 className="mt-1 font-semibold text-gray-900 dark:text-white">
                     <Link href={`/fabrics/${item.product.slug}`} className="hover:text-primary-700 hover:underline dark:hover:text-primary-400">
-                      {productDisplayName(item.product)}
+                      {productBaseName(item.product)}
                     </Link>
                   </h3>
+                  {productColorName(item.product) && <p className="text-sm text-gray-600 dark:text-gray-300">{productColorName(item.product)}</p>}
                   <div className="mt-2 flex items-center justify-between">
                     <span className="font-bold text-primary-700 dark:text-primary-400">
                       {formatPrice(item.product.discountPrice || item.product.basePrice)}<span className="text-xs font-normal text-gray-400">/m</span>

@@ -75,9 +75,30 @@ export const extractDesignName = (name: string, categoryName: string, code: numb
 };
 
 /** Product name with its colour, e.g. "Lachka — Pink" (skips if the name already has it). */
-export function productDisplayName(product: { name?: string; color?: string | null } | null | undefined): string {
+/**
+ * Customer-facing title: the design name only, e.g. "Lachka" (never "Lachka — Orange").
+ * The colour is shown separately (productColorName). Database names are not changed.
+ */
+export function productBaseName(product: { name?: string; color?: string | null } | null | undefined): string {
   const name = product?.name?.trim() || '';
   const color = product?.color?.trim();
-  if (!color || name.toLowerCase().includes(color.toLowerCase())) return name;
-  return `${name} — ${color}`;
+  if (!color) return name;
+  const esc = color.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // Drop a trailing colour written as "Name — Colour", "Name - Colour", "Name (Colour)" or "Name Colour"
+  const stripped = name.replace(new RegExp(`\\s*(?:[—–-]\\s*|\\(\\s*)?${esc}\\s*\\)?$`, 'i'), '').trim();
+  return stripped || name;
+}
+
+/** The colour shown under the title */
+export const productColorName = (product: { color?: string | null } | null | undefined): string =>
+  product?.color?.trim() || '';
+
+/**
+ * Name + colour in one string, for places with no separate colour line:
+ * WhatsApp messages, image alt text, "added to cart" pop-ups. E.g. "Lachka (Orange)".
+ */
+export function productDisplayName(product: { name?: string; color?: string | null } | null | undefined): string {
+  const base = productBaseName(product);
+  const color = productColorName(product);
+  return color && color.toLowerCase() !== base.toLowerCase() ? `${base} (${color})` : base;
 }

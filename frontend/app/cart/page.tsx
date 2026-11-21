@@ -3,7 +3,7 @@ import React from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCartStore, useStoresHydrated } from '@/lib/store';
-import { formatPrice, productDisplayName } from '@/lib/utils';
+import { formatPrice, productDisplayName, productBaseName, productColorName } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 import { supabaseImg } from '@/lib/image';
@@ -61,8 +61,9 @@ export default function CartPage() {
                     <div className="flex flex-1 flex-col gap-2 min-w-0">
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <p className="text-xs font-medium uppercase tracking-wider text-primary-600 dark:text-primary-400">{item.product.bestFor?.join(', ') || item.product.category?.name}</p>
-                          <h3 className="font-semibold text-gray-900 dark:text-white leading-tight">{productDisplayName(item.product)}</h3>
+                          <p className="text-xs font-medium uppercase tracking-wider text-primary-600 dark:text-primary-400">{item.product.category?.name || 'Fabric'}</p>
+                          <h3 className="font-semibold text-gray-900 dark:text-white leading-tight">{productBaseName(item.product)}</h3>
+                          {productColorName(item.product) && <p className="text-sm text-gray-600 dark:text-gray-300">{productColorName(item.product)}</p>}
                           <p className="text-sm text-gray-500 dark:text-gray-400">{formatPrice(price)}/m</p>
                         </div>
                         <button onClick={() => { removeItem(item.id); toast('Item removed'); }}
