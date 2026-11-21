@@ -297,7 +297,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
   const availableVariants = groupProducts.length > 0 ? groupProducts : [PRODUCT];
 
 
-  // WhatsApp chat with Mayank. WhatsApp links can't attach files, so the product
+  // WhatsApp chat with the shop. WhatsApp links can't attach files, so the product
   // link is included — WhatsApp shows it as a preview card with the product photo.
   const whatsappHref = (() => {
     const url = `${SITE_URL}/fabrics/${PRODUCT.slug}`;

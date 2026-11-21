@@ -63,7 +63,7 @@ export default function ContactPage() {
         <div className="container-main text-center">
           <span className="section-tag">Get in touch</span>
           <h1 className="section-title mt-3 font-display">Contact Us</h1>
-          <p className="section-subtitle">The quickest way to reach us is WhatsApp — chat with Mayank, Mon–Sat, 9am–6pm.</p>
+          <p className="section-subtitle">The quickest way to reach us is WhatsApp — Mon–Sat, 9am–6pm.</p>
           <a href={waLink()} target="_blank" rel="noopener noreferrer"
             className="mt-8 inline-flex items-center gap-2.5 rounded-xl bg-[#25D366] px-8 py-4 text-base font-semibold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-[#1fb658]">
             {WA}
@@ -81,8 +81,8 @@ export default function ContactPage() {
               <p className="mt-3 text-gray-600 dark:text-gray-400">Whether you need help with an order, want more photos of a fabric, or have a bulk requirement — we're just a message away.</p>
             </div>
             {[
-              { key: 'wa', title: 'WhatsApp', info: BUSINESS.phone, sub: 'Fastest reply — chat with Mayank', href: waLink(), cta: 'Chat on WhatsApp', primary: true },
-              { key: 'call', title: 'Call us', info: BUSINESS.phone, sub: 'Mayank Jain · Mon–Sat, 9am–6pm', href: telLink(), cta: 'Call now', primary: false },
+              { key: 'wa', title: 'WhatsApp', info: BUSINESS.phone, sub: 'Fastest reply — chat with us', href: waLink(), cta: 'Chat on WhatsApp', primary: true },
+              { key: 'call', title: 'Call us', info: BUSINESS.phone, sub: 'Mon–Sat, 9am–6pm', href: telLink(), cta: 'Call now', primary: false },
             ].map((c) => (
               <div key={c.key} className={`rounded-2xl border p-5 ${c.primary ? 'border-[#25D366]/40 bg-[#25D366]/5' : 'border-gray-200 dark:border-dark-700'}`}>
                 <p className="font-semibold text-gray-900 dark:text-white">{c.title}</p>

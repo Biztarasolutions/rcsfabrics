@@ -4,7 +4,7 @@ import React from 'react';
 import { BUSINESS } from '@/lib/business';
 
 // "RCS Fabrics Club" — customers ask to join the WhatsApp group; the request
-// arrives in Mayank's WhatsApp as a ready-typed message.
+// arrives in the shop's WhatsApp as a ready-typed message.
 const JOIN_MESSAGE =
   'Hi! I would like to join the WhatsApp group to get updated with latest stock and pricing.';
 
@@ -33,7 +33,7 @@ export default function NewsletterSignup() {
               Join the RCS Fabrics Club
             </h2>
             <p className="mt-4 text-base leading-relaxed text-gray-600 dark:text-gray-300 sm:text-lg">
-              Get our latest stock and pricing straight on WhatsApp. Tap the button to send a request — Mayank will add you
+              Get our latest stock and pricing straight on WhatsApp. Tap the button to send a request — we'll add you
               to the club group.
             </p>
 
