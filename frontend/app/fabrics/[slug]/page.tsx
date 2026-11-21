@@ -341,8 +341,6 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
     return /^([0-9a-f]{3}|[0-9a-f]{6})$/i.test(h) ? `#${h}` : '#d6cfc4';
   };
   const discountPct = PRODUCT.discountPrice ? Math.round(((PRODUCT.basePrice - PRODUCT.discountPrice) / PRODUCT.basePrice) * 100) : 0;
-  const designId = PRODUCT.productCode || PRODUCT.sku || '';
-  const designCode = (designId.match(/P\d{4,}/i) || [])[0]?.toUpperCase() || '';
   const widthCm = PRODUCT.width ? Math.round(PRODUCT.width * 2.54) : 0;
   const otherColours = availableVariants.filter((v: any) => v.id !== PRODUCT.id);
   const alsoLike = (Array.isArray(sameType) ? sameType : [])
@@ -449,7 +447,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
           <div className="min-w-0 lg:col-span-5">
             <div className="lg:sticky lg:top-24">
               <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs">
-                <span className="font-semibold uppercase tracking-[0.18em] text-[#a07c3b]">{PRODUCT.category?.name}{designCode ? ` · ${designCode}` : ''}</span>
+                <span className="font-semibold uppercase tracking-[0.18em] text-[#a07c3b]">{PRODUCT.category?.name}</span>
                 {stock > 0 ? (
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 font-medium text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-600"/>{lowStock ? `Only ${stock} m left` : 'In stock'}
@@ -544,12 +542,12 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
               <a href={whatsappHref} target="_blank" rel="noopener noreferrer"
                 className="mt-4 flex items-center justify-center gap-2 text-sm text-gray-600 hover:text-[#128C4B] dark:text-gray-300">
                 <span className="text-[#25D366]"><svg className="h-4 w-4 fill-current" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347M12.05 21.785h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></span>
-                Not sure about the colour or feel? <span className="font-semibold underline underline-offset-4">Ask Mayank on WhatsApp</span>
+                Not sure about the colour or feel? <span className="font-semibold underline underline-offset-4">Ask us on WhatsApp</span>
               </a>
 
               {/* Promise */}
               <ul className="mt-7 divide-y divide-[#e6dccb] rounded-2xl border border-[#e6dccb] bg-[#faf6ee] text-sm dark:divide-dark-700 dark:border-dark-700 dark:bg-dark-900">
-                <li className="flex items-center gap-3 px-4 py-3.5"><Icon d={I_TRUCK}/><span className="text-gray-700 dark:text-gray-300">Delivered by <strong className="text-gray-900 dark:text-white">{deliverByLabel(new Date())}</strong> if ordered today</span></li>
+                <li className="flex items-start gap-3 px-4 py-3.5"><Icon d={I_TRUCK}/><span className="text-gray-700 dark:text-gray-300">Delivered by <strong className="text-gray-900 dark:text-white">{deliverByLabel(new Date())}</strong> if ordered today.<br/><span className="text-gray-500 dark:text-gray-400">Need it urgently? <a href={whatsappHref} target="_blank" rel="noopener noreferrer" className="font-medium text-[#128C4B] underline underline-offset-4 dark:text-[#4ade80]">Message us on WhatsApp</a></span></span></li>
                 <li className="flex items-center gap-3 px-4 py-3.5"><Icon d={I_SCISSORS}/><span className="text-gray-700 dark:text-gray-300">Cut fresh to your length</span></li>
                 <li className="flex items-center gap-3 px-4 py-3.5"><Icon d={I_SHIELD}/><span className="text-gray-700 dark:text-gray-300">Wrong or damaged? Tell us within 48 h — <Link href="/returns" className="underline underline-offset-4">we&apos;ll put it right</Link></span></li>
               </ul>
@@ -593,7 +591,6 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
                     <dt className="text-gray-500">Stretch</dt><dd>{PRODUCT.stretchability}</dd>
                     <dt className="text-gray-500">Colour</dt><dd>{PRODUCT.color}</dd>
                     <dt className="text-gray-500">Sold by</dt><dd>From {minQty} m, in 0.5 m steps</dd>
-                    {designId && (<><dt className="text-gray-500">Design ID</dt><dd className="break-all">{designId}</dd></>)}
                   </dl>
                   <p className="mt-4 text-xs text-gray-500">Colours can look slightly different on screen. Message us on WhatsApp for a quick video of the fabric.</p>
                 </Section>

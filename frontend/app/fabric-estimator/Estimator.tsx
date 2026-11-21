@@ -184,7 +184,7 @@ export default function Estimator() {
           {step === 'result' && result && (
             <div className="text-center">
               <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#a07c3b]">You need about</p>
-              <p className="mt-3 font-display text-7xl text-gray-900 dark:text-white">{result.metres}<span className="ml-2 text-3xl text-gray-500">m</span></p>
+              <p className="mt-3 font-display text-6xl text-gray-900 dark:text-white sm:text-7xl">{result.low}–{result.high}<span className="ml-2 text-3xl text-gray-500">m</span></p>
               <p className="mt-3 text-gray-600 dark:text-gray-400">
                 for <strong className="text-gray-900 dark:text-white">{result.garment.label} — {result.style.label}</strong>
                 {sizeLabel ? <> · {a.who === 'kids' ? sizeLabel : `size ${sizeLabel}`}</> : null}
@@ -193,13 +193,13 @@ export default function Estimator() {
               </p>
 
               <div className="mx-auto mt-6 max-w-md rounded-2xl bg-[#faf6ee] p-4 text-left text-sm text-gray-700 dark:bg-dark-800 dark:text-gray-300">
-                <p><strong className="text-gray-900 dark:text-white">Want a little spare?</strong> Buy {result.safe} m if your tailor likes extra room for fitting, or you plan to pre-wash cotton or rayon (they can shrink slightly).</p>
+                <p><strong className="text-gray-900 dark:text-white">{result.low} m</strong> is enough for a standard fit. <strong className="text-gray-900 dark:text-white">{result.high} m</strong> gives your tailor extra room for fitting and adjustments — we recommend it.</p>
               </div>
 
               <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-center">
                 {fromSlug ? (
-                  <Link href={`/fabrics/${fromSlug}?qty=${result.metres}`} className="button-primary justify-center px-8 py-3.5">
-                    Add {result.metres} m of {fromName || 'this fabric'} →
+                  <Link href={`/fabrics/${fromSlug}?qty=${result.high}`} className="button-primary justify-center px-8 py-3.5">
+                    Add {result.high} m of {fromName || 'this fabric'} →
                   </Link>
                 ) : (
                   <Link href="/fabrics" className="button-primary justify-center px-8 py-3.5">Shop fabrics →</Link>

@@ -167,6 +167,9 @@ export function estimate(a: Answers) {
   const printAdd = a.bigPrint ? 0.25 : 0;
 
   const raw = Math.max(0.5, (st.metres * sizeF + heightAdd + sleeveAdd) * widthF + printAdd);
-  const metres = roundUpHalf(raw);
-  return { metres, safe: metres + 0.5, garment: g, style: st };
+  // A range, not one number: cuts, fit and tailors differ. The upper end leaves room for
+  // fitting and mistakes; bigger garments get a wider margin.
+  const low = roundUpHalf(raw);
+  const high = low + (low >= 4 ? 1 : 0.5);
+  return { low, high, garment: g, style: st };
 }
