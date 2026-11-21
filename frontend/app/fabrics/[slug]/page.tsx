@@ -162,6 +162,17 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
     if (q > 0) setQty(Math.round(q * 2) / 2);
   }, []);
   const [zoomed, setZoomed] = useState(false);
+  // Each photo's own shape (width ÷ height), learned when it loads. The frame follows the
+  // photo, so nothing is cut off and there are no empty bands. Kept between 4:5 and 3:2.
+  const [ratios, setRatios] = useState<Record<string, number>>({});
+  const rememberRatio = (url: string) => (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const t = e.currentTarget;
+    if (t.naturalWidth && t.naturalHeight && !t.src.startsWith('data:')) {
+      const r = t.naturalWidth / t.naturalHeight;
+      setRatios((m) => (m[url] === r ? m : { ...m, [url]: r }));
+    }
+  };
+  const frameRatio = (url?: string) => Math.min(1.5, Math.max(0.8, (url && ratios[url]) || 1.5));
   const [lightbox, setLightbox] = useState(false);
   useEffect(() => {
     if (!lightbox) return;
@@ -391,13 +402,15 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
           <div className="min-w-0 lg:col-span-7">
             {/* Phones: swipe through full-width photos */}
             <div className="-mx-4 lg:hidden">
-              <div className="flex snap-x snap-mandatory overflow-x-auto scrollbar-hide"
+              <div className="flex snap-x snap-mandatory overflow-x-auto scrollbar-hide transition-[aspect-ratio] duration-300"
+                style={{ aspectRatio: String(frameRatio(images?.[activeImg]?.url)) }}
                 onScroll={(e) => { const el = e.currentTarget; const i = Math.round(el.scrollLeft / el.clientWidth); if (i !== activeImg) setActiveImg(i); }}>
                 {(images.length ? images : [{ id: 'none', url: '' }]).map((img: any, i: number) => (
                   <button key={img.id} type="button" onClick={() => { setActiveImg(i); img.url && setLightbox(true); }}
-                    className="relative w-full shrink-0 snap-center bg-[#f4efe7] dark:bg-dark-800" style={{ aspectRatio: '3 / 2' }} aria-label={`Photo ${i + 1} — tap to enlarge`}>
+                    className="relative h-full w-full shrink-0 snap-center bg-[#f4efe7] dark:bg-dark-800" aria-label={`Photo ${i + 1} — tap to enlarge`}>
                     <Image src={supabaseImg(img.url || '', 900) || BLUR_PLACEHOLDER} alt={`${productDisplayName(PRODUCT)} — photo ${i + 1}`}
-                      fill priority={i === 0} sizes="100vw" placeholder="blur" blurDataURL={BLUR_PLACEHOLDER} className="object-contain object-center"/>
+                      fill priority={i === 0} sizes="100vw" placeholder="blur" blurDataURL={BLUR_PLACEHOLDER} className="object-cover object-center"
+                      onLoad={rememberRatio(img.url)}/>
                     {isCustomerPhoto(img.url) && <span className="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-gray-800">Made by a customer</span>}
                   </button>
                 ))}
@@ -424,12 +437,12 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
                   ))}
                 </div>
               )}
-              <div className="relative flex-1 cursor-zoom-in overflow-hidden rounded-2xl bg-[#f4efe7] dark:bg-dark-800" style={{ aspectRatio: '3 / 2' }}
+              <div className="relative flex-1 cursor-zoom-in overflow-hidden rounded-2xl bg-[#f4efe7] dark:bg-dark-800" style={{ aspectRatio: String(frameRatio(images?.[activeImg]?.url)) }}
                 onMouseEnter={() => setZoomed(true)} onMouseLeave={() => setZoomed(false)}
                 onClick={() => images?.[activeImg]?.url && setLightbox(true)}>
                 <Image src={supabaseImg(images?.[activeImg]?.url || '', 1200) || BLUR_PLACEHOLDER} alt={productDisplayName(PRODUCT)}
                   fill priority sizes="(max-width: 1024px) 100vw, 55vw" placeholder="blur" blurDataURL={BLUR_PLACEHOLDER}
-                  className="object-contain object-center"/>
+                  className="object-cover object-center" onLoad={rememberRatio(images?.[activeImg]?.url || '')}/>
                 {isCustomerPhoto(images?.[activeImg]?.url) && <span className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-gray-800">Made by a customer</span>}
                 <button onClick={(e) => { e.stopPropagation(); handleShare(); }} aria-label="Share this fabric"
                   className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-sm hover:bg-white">
