@@ -402,6 +402,20 @@ export const createProduct = async (
       }));
     }
 
+    // Refuse duplicates: same product code (design + category + colour + code) already in the shop
+    const plannedCodes = (processedColors.length ? processedColors.map((c: any) => c.productCode)
+      : [buildProductCode(cleanedName, category.name, 'Unknown', code)]);
+    const dupes = await prisma.product.findMany({
+      where: { OR: plannedCodes.flatMap((c: string) => [
+        { productCode: { equals: c, mode: 'insensitive' as const } },
+        { slug: generateSlug(c) },
+      ]) },
+      select: { productCode: true, name: true },
+    });
+    if (dupes.length) {
+      throw new ApiError(409, `Duplicate product — already exists: ${dupes.map((d) => d.productCode || d.name).join(', ')}. Nothing was saved.`);
+    }
+
     const createdProducts = [];
     
     // Fallback if no colors are provided, create at least one product

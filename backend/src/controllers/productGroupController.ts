@@ -62,7 +62,7 @@ export const createProductGroup = async (req: Request, res: Response): Promise<v
       const names = already.map((a) => a.productCode).join(', ');
       res.status(409).json({
         success: false,
-        message: `Already added: ${names}. Nothing was created — edit the existing fabric instead, or remove those colours from this form.`,
+        message: `Duplicate product — already exists: ${names}. Nothing was saved. Edit the existing fabric instead, or remove these colours from the form.`,
         data: { existing: already.map((a) => a.productCode) },
       });
       return;
@@ -89,10 +89,9 @@ export const createProductGroup = async (req: Request, res: Response): Promise<v
       });
 
       if (existingProduct) {
-        // Generate a unique slug by adding a timestamp
-        const uniqueSlug = generateSlug(`${productName}-${Date.now()}`);
-        // Update the slug to the unique version
-        slug = uniqueSlug;
+        // Never make a copy with a timestamped address — report it as a duplicate instead
+        res.status(409).json({ success: false, message: `Duplicate product — ${productName} already exists. Nothing more was saved.` });
+        return;
       }
 
       
@@ -150,7 +149,7 @@ export const createProductGroup = async (req: Request, res: Response): Promise<v
           const field = dbError.meta?.target?.[0] || 'field';
           res.status(400).json({ 
             success: false, 
-            message: `A product with this ${field} already exists. Please use a different name, color, or code.` 
+            message: `Duplicate product — a product with this ${field} already exists.` 
           });
           return;
         } else {
