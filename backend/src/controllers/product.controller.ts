@@ -4,6 +4,7 @@ import { AuthRequest, ApiResponse } from '@/types';
 import { parsePagination, createPaginationMeta } from '@/utils/pagination.util';
 import { ApiError } from '@/middleware/errorHandler';
 import { getDriveImageStream } from '@/utils/googleDrive.util';
+import { notifyReview } from '@/services/reviewNotifications';
 
 export const createReview = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -16,6 +17,7 @@ export const createReview = async (req: AuthRequest, res: Response): Promise<voi
       return;
     }
 
+    const existed = await prisma.review.findUnique({ where: { productId_userId: { productId, userId } }, select: { id: true } });
     const review = await prisma.review.upsert({
       where: { productId_userId: { productId, userId } },
       create: { productId, userId, rating: Number(rating), title, comment },
@@ -29,6 +31,9 @@ export const createReview = async (req: AuthRequest, res: Response): Promise<voi
       where: { id: productId },
       data: { rating: agg._avg.rating || 0, ratingCount: agg._count },
     });
+
+    // Thank-you email to the customer and a copy to support@ (not awaited: never slows the page)
+    void notifyReview(review.id, !!existed);
 
     res.status(201).json({ success: true, data: review });
   } catch (error: any) {
