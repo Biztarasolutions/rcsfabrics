@@ -89,6 +89,16 @@ export async function notifyOrder(orderId: string, event: 'placed' | 'paid'): Pr
   }
 }
 
+/** Re-send the team copy of an order (with the print buttons) to the orders mailbox */
+export async function resendTeamOrderEmail(orderId: string): Promise<boolean> {
+  const order = await loadOrder(orderId);
+  if (!order) return false;
+  const mails = buildOrderEmails(order, order.paymentStatus === 'PAID' ? 'paid' : 'placed');
+  const team = mails[mails.length - 1];
+  await sendEmail({ ...team, subject: `[Copy] ${team.subject}` });
+  return true;
+}
+
 type Mail = { to: string[]; subject: string; html: string; mailbox: 'orders'; replyTo?: string };
 const ORDER_HELP = { contactEmail: MAILBOX.orders(), helpTitle: 'Questions about your order?' };
 

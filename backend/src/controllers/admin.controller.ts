@@ -29,7 +29,7 @@ import {
 } from '@/utils/googleDrive.util';
 import { uploadImageToSupabase } from '@/utils/supabase.util';
 import { invalidateProductCaches } from '@/middleware/cache';
-import { notifyOrderStatus } from '@/services/orderNotifications';
+import { notifyOrderStatus, resendTeamOrderEmail } from '@/services/orderNotifications';
 
 // Reusable function to convert a stream to a buffer
 const streamToBuffer = (stream: any): Promise<Buffer> => {
@@ -2351,4 +2351,15 @@ export const startMissingImageSync = (): void => {
   const run = () => { autoSyncMissingImages().catch((e) => console.error('[Auto-sync] failed:', e)); };
   setTimeout(run, 2 * 60 * 1000);
   setInterval(run, 30 * 60 * 1000).unref();
+};
+
+/** Email the order (with Print address / Print bill buttons) to our orders mailbox again */
+export const emailOrderToTeam = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const ok = await resendTeamOrderEmail(req.params.id);
+    if (!ok) { res.status(404).json({ success: false, message: 'Order not found' }); return; }
+    res.json({ success: true, message: 'Order emailed to orders@rcsfabrics.com' });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || 'Could not send the email' });
+  }
 };

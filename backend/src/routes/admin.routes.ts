@@ -8,6 +8,7 @@ import {
   getAdminProducts as getProducts,
   getAdminOrders as getOrders,
   updateOrderStatus,
+  emailOrderToTeam,
   getCancelledOrders,
   getDashboardStats,
   getCustomers,
@@ -79,6 +80,7 @@ router.patch('/products/:id/stock', adjustStock);
 router.get('/orders/cancelled', managers, getCancelledOrders);
 router.get('/orders', managers, getOrders);
 router.put('/orders/:id', managers, updateOrderStatus);
+router.post('/orders/:id/email-team', managers, emailOrderToTeam);
 
 // Customer Management
 router.get('/customers', managers, getCustomers);

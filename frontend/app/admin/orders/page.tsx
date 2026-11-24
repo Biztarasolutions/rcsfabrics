@@ -297,6 +297,12 @@ export default function AdminOrdersPage() {
                   <div className="flex flex-wrap gap-2">
                     <a href={`/print/${selectedOrder.id}?type=label&t=${selectedOrder.printToken}`} target="_blank" rel="noopener noreferrer" className="button-secondary px-4 py-2 text-sm">🖨 Print address</a>
                     <a href={`/print/${selectedOrder.id}?type=bill&t=${selectedOrder.printToken}`} target="_blank" rel="noopener noreferrer" className="button-secondary px-4 py-2 text-sm">🖨 Print bill</a>
+                    <button type="button" className="button-secondary px-4 py-2 text-sm"
+                      onClick={() => adminApi.emailOrderToTeam(selectedOrder.id)
+                        .then(() => toast.success('Sent to orders@rcsfabrics.com'))
+                        .catch((e: any) => toast.error(e?.response?.data?.message || e.message))}>
+                      📧 Email to us
+                    </button>
                   </div>
                 )}
 

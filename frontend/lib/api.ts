@@ -131,6 +131,7 @@ export const adminApi = {
   getOrders: (params?: any) => api.get('admin/orders', { params }),
   getCancelledOrders: (params?: any) => api.get('admin/orders/cancelled', { params }),
   updateOrderStatus: (id: string, status: string) => api.put(`admin/orders/${id}`, { status }),
+  emailOrderToTeam: (id: string) => api.post(`admin/orders/${id}/email-team`, {}),
   setOrderTracking: (id: string, trackingNumber: string) => api.put(`admin/orders/${id}`, { trackingNumber }),
   getCustomers: (params?: any) => api.get('admin/customers', { params }),
   getMyRole: () => api.get('admin/me'),
