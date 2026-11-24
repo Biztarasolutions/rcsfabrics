@@ -2313,3 +2313,40 @@ export const previewProduct = async (req: AuthRequest, res: Response): Promise<v
   }
 };
 
+
+/**
+ * Background job: fabrics that are live but still have no photos (e.g. the photos were
+ * still being made in Drive when the fabric was added) get synced automatically.
+ */
+export const autoSyncMissingImages = async (): Promise<number> => {
+  const products = await prisma.product.findMany({
+    where: { isActive: true, images: { none: {} } },
+    include: { colors: true, category: { select: { name: true } } },
+    take: 10,
+  });
+  let synced = 0;
+  for (const product of products) {
+    try {
+      const n = await syncImagesForProduct({
+        id: product.id,
+        name: product.name,
+        code: product.code,
+        styleCode: product.styleCode,
+        folderUrl: product.folderUrl,
+        colors: product.colors.map((c: any) => ({ id: c.id, name: c.name, productCode: c.productCode, folderUrl: c.folderUrl })),
+      }, product.category.name);
+      console.log(`[Auto-sync] ${product.productCode || product.name}: ${n} photos`);
+      synced++;
+    } catch (err: any) {
+      console.warn(`[Auto-sync] ${product.productCode || product.name}: ${err.message || err}`);
+    }
+  }
+  if (synced) invalidateProductCaches();
+  return synced;
+};
+
+export const startMissingImageSync = (): void => {
+  const run = () => { autoSyncMissingImages().catch((e) => console.error('[Auto-sync] failed:', e)); };
+  setTimeout(run, 2 * 60 * 1000);
+  setInterval(run, 30 * 60 * 1000).unref();
+};

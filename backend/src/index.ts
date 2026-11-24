@@ -15,6 +15,7 @@ import cartRoutes from '@/routes/cart.routes';
 import wishlistRoutes from '@/routes/wishlist.routes';
 import enquiryRoutes from '@/routes/enquiry.routes';
 import { startUnpaidOrderSweeper } from '@/services/orderNotifications';
+import { startMissingImageSync } from '@/controllers/admin.controller';
 
 import { errorHandler, notFound } from '@/middleware/errorHandler';
 import { authenticateToken } from '@/middleware/auth';
@@ -145,6 +146,7 @@ app.listen(port, () => {
   // Move any Raw (admin-only) photo out of customer photos
   void import('@/utils/rawPhoto').then((m) => m.moveRawPhotosOutOfCustomerImages());
   startUnpaidOrderSweeper();
+  startMissingImageSync();
   console.log(`⚡ Server is running at http://localhost:${port}`);
   console.log(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
 });
