@@ -116,7 +116,8 @@ export const adminApi = {
   getStats: (params?: { status?: string }) => api.get('admin/dashboard/stats', { params }),
   getAdminProducts: (params?: any) => api.get('admin/products', { params }),
   createProductGroup: async (data: any) => {
-    const res = await api.post('admin/products/group', data);
+    // Creating many colours can take a while: give it 3 minutes so a slow save isn't mistaken for a failure
+    const res = await api.post('admin/products/group', data, { timeout: 180000 });
     return res.data;
   },
   createProduct: async (data: any) => {

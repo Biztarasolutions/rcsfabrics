@@ -87,7 +87,7 @@ export default function CreateProductFamilyPage() {
       toast.success(data?.message || 'Product family created successfully!');
       router.push('/admin/products');
     },
-    onError: (err: any) => toast.error(err.message),
+    onError: (err: any) => toast.error(err?.response?.data?.message || err.message, { duration: 8000 }),
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -325,7 +325,7 @@ export default function CreateProductFamilyPage() {
         </div>
 
         <button type="submit" disabled={createGroupMutation.isPending} className="w-full rounded-xl bg-black py-4 text-center font-bold text-white hover:bg-gray-900 disabled:opacity-50">
-          {createGroupMutation.isPending ? 'Saving...' : 'Save Product Family'}
+          {createGroupMutation.isPending ? `Saving ${form.variants?.length || ''} colours… please wait, don't press again` : 'Save Product Family'}
         </button>
       </form>
     </div>

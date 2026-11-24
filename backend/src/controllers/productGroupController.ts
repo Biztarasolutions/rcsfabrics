@@ -47,10 +47,25 @@ export const createProductGroup = async (req: Request, res: Response): Promise<v
       } else {
         discountPrice = basePriceNum - discountValueNum;
       }
-      // Ensure discount price is not negative
-      if (discountPrice < 0) {
-        discountPrice = 0;
-      }
+      // Ensure discount price is not negative; prices are whole rupees (₹1079, not ₹1079.10)
+      discountPrice = Math.max(0, Math.round(discountPrice));
+    }
+
+    // Stop duplicates: if any colour of this design already exists (same product code), refuse.
+    // This also makes a repeated "Save" (e.g. after a slow response) harmless.
+    const plannedCodes = (variants || []).map((v: any) => buildProductCode(cleanedName, categoryName, v.color, code));
+    const already = await prisma.product.findMany({
+      where: { OR: plannedCodes.map((c: string) => ({ productCode: { equals: c, mode: 'insensitive' as const } })) },
+      select: { productCode: true },
+    });
+    if (already.length) {
+      const names = already.map((a) => a.productCode).join(', ');
+      res.status(409).json({
+        success: false,
+        message: `Already added: ${names}. Nothing was created — edit the existing fabric instead, or remove those colours from this form.`,
+        data: { existing: already.map((a) => a.productCode) },
+      });
+      return;
     }
 
     // Create a product for each variant
@@ -91,7 +106,7 @@ export const createProductGroup = async (req: Request, res: Response): Promise<v
             code: code ? parseInt(code, 10) : null,
             styleCode,
             productCode: productName,
-            basePrice: basePriceNum,
+            basePrice: Math.round(basePriceNum),
             discountPrice,
             discountType,
             discountValue: discountValue ? parseFloat(discountValue) : null,
