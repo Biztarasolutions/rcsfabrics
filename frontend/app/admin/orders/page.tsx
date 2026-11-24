@@ -8,7 +8,6 @@ import toast from 'react-hot-toast';
 import Image from 'next/image';
 import { BLUR_PLACEHOLDER, supabaseImg } from '@/lib/image';
 
-const STATUS_OPTIONS = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'RETURNED'];
 // Statuses an admin can set by hand. Shipped happens when tracking is added; Delivered
 // happens automatically 15 days after the order date.
 const MARK_OPTIONS = ['CANCELLED', 'PROCESSING', 'SHIPPED', 'DELIVERED'];
@@ -157,7 +156,8 @@ export default function AdminOrdersPage() {
           className="input-field w-44 py-2.5">
           <option value="">Active orders</option>
           <option value="ALL">All orders (incl. cancelled)</option>
-          {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s === 'CANCELLED' ? 'Cancelled' : s.charAt(0) + s.slice(1).toLowerCase()}</option>)}
+          {/* Same statuses, same order, as the status dropdown */}
+          {MARK_OPTIONS.map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
         </select>
         {(filterStatus || search) && (
           <button onClick={() => { setFilterStatus(''); setSearch(''); setPage(1); }}
