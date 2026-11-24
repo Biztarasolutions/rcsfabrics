@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'RCS Fabrics',
     short_name: 'RCS Fabrics',
-    description: 'Premium fabrics by the metre — a family fabric business since 1958.',
+    description: 'Premium fabrics by the metre — a family fabric business since 1962.',
     start_url: '/',
     display: 'standalone',
     background_color: '#fdf6eb',

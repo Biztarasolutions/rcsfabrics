@@ -2,7 +2,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { motion, useReducedMotion } from 'framer-motion';
-import type { FamilyMember, TimelineEntry } from '@/content/about';
+import type { TimelineEntry } from '@/content/about';
 import { WORLD_DOTS, WORLD_W, WORLD_H, DIMAPUR } from './worldDots';
 
 /* ── Reveal: gentle fade-up on scroll (disabled for reduced-motion users) ── */
@@ -59,33 +59,6 @@ export function Portrait({ photo, alt, initials, className = '' }: { photo?: str
 }
 
 /* ── Family profile ── */
-export function FamilyCard({ m, index }: { m: FamilyMember; index: number }) {
-  const reverse = index % 2 === 1;
-  return (
-    <Reveal>
-      <article className="grid items-center gap-8 md:grid-cols-12 md:gap-14">
-        <div className={`relative mx-auto w-full max-w-[260px] md:col-span-4 md:max-w-[320px] ${reverse ? 'md:order-2 md:mr-0' : 'md:ml-0'}`}>
-          <div className="absolute -inset-3 -z-10 hidden translate-x-3 translate-y-3 rounded-[28px] border border-[#c9a24e]/30 md:block" aria-hidden="true" />
-          <Portrait photo={m.photo} alt={m.photoAlt || m.name} initials={m.initials} className="aspect-[4/5] w-full rounded-[24px]" />
-        </div>
-        <div className={`md:col-span-8 ${reverse ? 'md:order-1' : ''}`}>
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#a07c3b]">{m.role}</p>
-          <h3 className="mt-3 font-display text-3xl text-[#2b2118] sm:text-4xl">{m.name}</h3>
-          <div className="mt-5 space-y-4 text-[17px] leading-relaxed text-[#5a4b3c]">
-            {m.paragraphs.map((p) => <p key={p}>{p}</p>)}
-          </div>
-          <ul className="mt-6 flex flex-wrap gap-2" aria-label={`${m.name} — focus areas`}>
-            {m.focus.map((f) => (
-              <li key={f} className="rounded-full border border-[#d9c39a] bg-[#faf6ee] px-3.5 py-1.5 text-sm text-[#6b5434]">{f}</li>
-            ))}
-          </ul>
-        </div>
-      </article>
-    </Reveal>
-  );
-}
-
-/* ── Timeline: vertical on mobile, horizontal on desktop ── */
 export function Timeline({ entries }: { entries: TimelineEntry[] }) {
   return (
     <ol className="relative grid gap-10 lg:grid-cols-3 lg:gap-8">

@@ -585,7 +585,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
                 {[
                   { d: I_GEM, t: 'Hand-picked', s: 'quality' },
                   { d: I_TAG, t: 'Honest price', s: 'per metre' },
-                  { d: I_HOME, t: 'Family-run', s: 'since 1958' },
+                  { d: I_HOME, t: 'Family-run', s: 'since 1962' },
                 ].map((x) => (
                   <div key={x.t} className="flex flex-col items-center gap-2 px-2 text-center sm:flex-row sm:text-left">
                     <svg className="h-9 w-9 shrink-0 text-[#a07c3b]" fill="none" stroke="currentColor" strokeWidth={1.2} viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d={x.d}/></svg>

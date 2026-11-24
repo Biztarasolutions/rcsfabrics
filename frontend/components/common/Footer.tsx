@@ -29,9 +29,7 @@ const FOOTER_SECTIONS = [
     title: 'Company',
     links: [
       { label: 'About RCS', href: '/about' },
-      { label: 'Meet the Family', href: '/about#family' },
       { label: 'Our Story', href: '/about#story' },
-      { label: 'Our Philosophy', href: '/about#philosophy' },
       { label: 'Privacy Policy', href: '/privacy' },
       { label: 'Terms of Service', href: '/terms' },
     ],
@@ -59,7 +57,7 @@ export default function Footer() {
               <BrandLogo height={64} variant="dark" />
             </Link>
             <p className="mt-5 text-sm leading-relaxed text-gray-400">
-              A family fabric business from Dimapur, Nagaland, since 1958 — now online. Quality fabrics sold by the metre.
+              A family fabric business from Dimapur, Nagaland, since 1962 — now online. Quality fabrics sold by the metre.
             </p>
 
             {/* Contact — WhatsApp first */}
