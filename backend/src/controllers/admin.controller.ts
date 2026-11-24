@@ -614,6 +614,7 @@ export const updateProduct = async (
         if (match) fUrl = folderUrlFromId(match.folderId);
         
         return {
+          id:          typeof c.id === 'string' ? c.id : undefined,
           name:        colorName,
           hexCode:     c.hexCode ? (c.hexCode.startsWith('#') ? c.hexCode : `#${c.hexCode}`) : '#000000',
           folderUrl:   fUrl,
@@ -626,17 +627,30 @@ export const updateProduct = async (
     const styleCodeToUpdate = cleanedUpdateData.styleCode || existingProduct.styleCode;
 
     if (processedColors !== undefined && styleCodeToUpdate) {
-      // Synchronize all variants for this styleCode
+      // The colours of the design being edited: found by the product's CURRENT style code
+      // (not the new one), so renaming the design or a colour updates these rows instead of adding new ones.
+      const groupKeys = [existingProduct.styleCode, styleCodeToUpdate].filter(Boolean) as string[];
       const existingVariants = await prisma.product.findMany({
-        where: { styleCode: styleCodeToUpdate }
+        where: { OR: [{ id: existingProduct.id }, { styleCode: { in: groupKeys } }] },
       });
 
-      const processedProductCodes = processedColors.map(c => c.productCode);
+      // Pair each submitted colour with an existing row: by id, then by product code (any case)
+      const used = new Set<string>();
+      const lc = (s?: string | null) => (s || '').trim().toLowerCase();
+      const matchFor = (c: any) => {
+        let v = c.id ? existingVariants.find((x) => x.id === c.id && !used.has(x.id)) : undefined;
+        if (!v) v = existingVariants.find((x) => !used.has(x.id) && lc(x.productCode) === lc(c.productCode));
+        if (!v) v = existingVariants.find((x) => !used.has(x.id) && lc(x.color) === lc(c.name));
+        if (v) used.add(v.id);
+        return v;
+      };
+      const pairs = processedColors.map((c) => ({ c, existing: matchFor(c) }));
 
-      // Delete variants that were removed
-      const variantsToDelete = existingVariants.filter(v => !processedProductCodes.includes(v.productCode));
-      for (const v of variantsToDelete) {
-        await prisma.product.delete({ where: { id: v.id } });
+      // Colours removed in the form: delete them, or hide them if they are part of past orders
+      for (const v of existingVariants.filter((x) => !used.has(x.id))) {
+        const inOrders = await prisma.orderItem.count({ where: { productId: v.id } });
+        if (inOrders) await prisma.product.update({ where: { id: v.id }, data: { isActive: false } });
+        else await prisma.product.delete({ where: { id: v.id } });
       }
 
       // Base payload common to all variants
@@ -658,11 +672,17 @@ export const updateProduct = async (
       const updatePayload = payload;
 
       // Update existing or create new variants
-      for (const c of processedColors) {
-        const existing = existingVariants.find(v => v.productCode === c.productCode);
+      for (const { c, existing } of pairs) {
+        // Keep the old web address if the new one is already used by another product
+        let slug = generateSlug(c.productCode);
+        const taken = await prisma.product.findUnique({ where: { slug }, select: { id: true } });
+        if (taken && taken.id !== existing?.id) {
+          if (existing) slug = existing.slug;
+          else throw new ApiError(409, `Duplicate product — ${c.productCode} already exists.`);
+        }
         const variantData = {
           ...updatePayload,
-          slug: generateSlug(c.productCode),
+          slug,
           totalStock: c.inventory,
           color: c.name,
           productCode: c.productCode,

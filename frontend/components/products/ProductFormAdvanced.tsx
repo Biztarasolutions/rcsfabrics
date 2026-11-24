@@ -100,6 +100,7 @@ export default function ProductFormAdvanced({ initialData, onClose }: ProductFor
         name: cleanedName,
         // Ensure colors array exists and includes productCode and inventory from all variants
         colors: initialData.variants?.map((v: any) => ({
+          id: v.id, // the existing product for this colour, so saving updates it instead of adding a new one
           name: v.colors?.[0]?.name || v.color,
           hexCode: v.colors?.[0]?.hexCode || '#000000',
           productCode: v.productCode,
