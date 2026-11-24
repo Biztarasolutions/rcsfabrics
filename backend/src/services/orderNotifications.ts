@@ -1,6 +1,7 @@
 import { prisma } from '@/index';
 import { getCashfreePaymentStatus } from '@/utils/cashfree';
 import { sendEmail, MAILBOX } from '@/utils/email';
+import { printToken } from '@/utils/printToken';
 import {
   BRAND, brandEmail, button, detailsTable, emailThumb, esc, inr, itemsTable, note, para, progress, sectionTitle, siteUrl, totalsTable,
 } from '@/utils/emailLayout';
@@ -57,6 +58,9 @@ const paymentLine = (o: FullOrder): string =>
   `${esc(PAYMENT_LABEL[o.paymentMethod || ''] || o.paymentMethod || '—')} · ${esc(PAYMENT_STATUS[o.paymentStatus] || o.paymentStatus)}`;
 
 const orderLink = (o: FullOrder): string => `${siteUrl()}/account/orders/${o.id}`;
+/** Printable shipping label / bill (signed link, works without logging in) */
+export const printLink = (o: { id: string }, type: 'label' | 'bill'): string =>
+  `${siteUrl()}/print/${o.id}?type=${type}&t=${printToken(o.id)}`;
 
 /** Items + totals + delivery address, shared by the order emails */
 function orderBody(o: FullOrder): string {
@@ -147,7 +151,12 @@ export function buildOrderEmails(order: FullOrder, event: 'placed' | 'paid'): Ma
             ['Payment', paymentLine(order) + (order.utrReference ? `<br/><span style="font-weight:400">UTR ${esc(order.utrReference)}</span>` : '')],
           ])}
           ${orderBody(order).replace('Your fabrics', 'Items to cut').replace('Delivering to', 'Ship to')}
-          <div style="height:10px"></div>
+          ${sectionTitle('Print')}
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+            <td style="padding-right:10px">${button(printLink(order, 'label'), '🖨 Print address')}</td>
+            <td>${button(printLink(order, 'bill'), '🖨 Print bill')}</td>
+          </tr></table>
+          <div style="height:4px"></div>
           ${button(`${siteUrl()}/admin/orders`, 'Open in admin')}`,
       }),
     }));

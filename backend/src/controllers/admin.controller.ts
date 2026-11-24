@@ -4,6 +4,7 @@ import { optimizeImage, photoFingerprint, samePhoto } from '@/utils/imageOptimiz
 import { isRawFileName } from '@/utils/rawPhoto';
 import { customerCode } from '@/utils/customer';
 import { prisma } from '@/index';
+import { printToken } from '@/utils/printToken';
 import { isManager, isStaff, effectiveRole, isSuperAdminEmail, ASSIGNABLE_ROLES } from '@/utils/roles';
 import { AuthRequest, ApiResponse } from '@/types';
 import {
@@ -1049,7 +1050,8 @@ export const getAdminOrders = async (
       success: true,
       message: 'Orders retrieved',
       data: {
-        orders,
+        // printToken: lets the admin open the printable label / bill pages
+        orders: orders.map((o) => ({ ...o, printToken: printToken(o.id) })),
         ...meta,
       },
       statusCode: 200,

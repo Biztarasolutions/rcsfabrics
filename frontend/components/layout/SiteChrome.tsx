@@ -8,7 +8,8 @@ import Footer from '@/components/common/Footer';
 
 export default function SiteChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isAdmin = pathname?.startsWith('/admin');
+  // Admin and printable pages (label / bill) have no site header or footer
+  const isAdmin = pathname?.startsWith('/admin') || pathname?.startsWith('/print');
   // Product pages have their own WhatsApp buttons (with the product link) on mobile
   const liftWhatsApp = /^\/fabrics\/[^/]+/.test(pathname || '');
 

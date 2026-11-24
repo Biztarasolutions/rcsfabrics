@@ -14,6 +14,7 @@ import adminRoutes from '@/routes/admin.routes';
 import cartRoutes from '@/routes/cart.routes';
 import wishlistRoutes from '@/routes/wishlist.routes';
 import enquiryRoutes from '@/routes/enquiry.routes';
+import printRoutes from '@/routes/print.routes';
 import { startUnpaidOrderSweeper } from '@/services/orderNotifications';
 import { startMissingImageSync } from '@/controllers/admin.controller';
 
@@ -116,6 +117,7 @@ app.get('/api/settings', async (_req: Request, res: Response) => {
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/enquiries', enquiryRoutes);
+app.use('/api/print', printRoutes);
 app.use('/api/products', productRoutes);
 // Cashfree payment notifications (signed by Cashfree, no login)
 app.post('/api/payments/cashfree/webhook', cashfreeWebhook);

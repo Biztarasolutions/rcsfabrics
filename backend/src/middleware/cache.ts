@@ -10,6 +10,7 @@ const NO_CACHE_PREFIXES = [
   '/api/settings',
   '/api/admin',
   '/api/orders',
+  '/api/print',
   '/api/cart',
   '/api/wishlist',
   '/api/users',
