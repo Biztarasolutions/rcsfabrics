@@ -291,6 +291,13 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
     onError: (err: any) => toast.error(err.message || 'Failed to submit review'),
   });
 
+  // Links from the review email open at the reviews: /fabrics/slug#reviews
+  const reviewsReady = !!initialProduct;
+  useEffect(() => {
+    if (!reviewsReady || typeof window === 'undefined' || window.location.hash !== '#reviews') return;
+    const t = setTimeout(() => tabsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 400);
+    return () => clearTimeout(t);
+  }, [reviewsReady]);
   if (isProductLoading || previewMode === null || (previewMode && !storesHydrated)) return <div className="flex min-h-screen items-center justify-center"><div className="h-10 w-10 animate-spin rounded-full border-4 border-primary-600 border-t-transparent"/></div>;
   if (isProductError || !initialProduct) return <div className="flex min-h-screen items-center justify-center text-center py-20"><div><p className="text-6xl">🧶</p><h2 className="mt-4 text-2xl font-bold">Fabric not found</h2>{previewMode && <p className="mt-2 text-sm text-gray-500">Preview is only available when signed in as staff.</p>}<button onClick={() => router.back()} className="button-primary mt-6 px-8 py-3">Go Back</button></div></div>;
 
@@ -679,7 +686,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
         )}
 
         {/* ── Reviews ── */}
-        <div ref={tabsRef} className="mt-16 scroll-mt-24">
+        <div ref={tabsRef} id="reviews" className="mt-16 scroll-mt-24">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <h2 className="font-display text-2xl text-gray-900 dark:text-white sm:text-3xl">Reviews</h2>
             {REVIEWS.length > 0 && <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400"><Stars n={PRODUCT.rating || 0}/>{(PRODUCT.rating || 0).toFixed(1)} · {REVIEWS.length} {REVIEWS.length === 1 ? 'review' : 'reviews'}</div>}

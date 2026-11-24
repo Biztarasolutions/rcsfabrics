@@ -2,7 +2,7 @@ import { prisma } from '@/index';
 import { getCashfreePaymentStatus } from '@/utils/cashfree';
 import { sendEmail, MAILBOX } from '@/utils/email';
 import {
-  brandEmail, button, detailsTable, esc, inr, itemsTable, note, para, progress, sectionTitle, siteUrl, totalsTable,
+  brandEmail, button, detailsTable, emailThumb, esc, inr, itemsTable, note, para, progress, sectionTitle, siteUrl, totalsTable,
 } from '@/utils/emailLayout';
 
 const teamEmails = (): string[] => {
@@ -357,10 +357,98 @@ export async function autoDeliverOrders(): Promise<number> {
   return due.length;
 }
 
+/** "How was your fabric?" — sent once, this many days after an order is delivered */
+export const REVIEW_REQUEST_DAYS = 3;
+
+export interface ReviewItem { name: string; image?: string | null; url: string }
+
+/** Review-request email (pure: no sending) */
+export function buildReviewRequestEmail(o: { orderNumber: string; user: { email: string; firstName?: string | null } }, items: ReviewItem[]): Mail {
+  const first = o.user.firstName ? ` ${esc(o.user.firstName)}` : '';
+  const rows = items.map((i, idx) => {
+    const img = emailThumb(i.image);
+    const line = idx ? 'border-top:1px solid #eadfcc;' : '';
+    return `
+    <tr>
+      <td width="72" style="padding:14px 0;${line}vertical-align:middle">
+        ${img ? `<img src="${esc(img)}" width="64" height="64" alt="" style="display:block;width:64px;height:64px;border-radius:8px;object-fit:cover;background:#f6efe3"/>`
+              : '<div style="width:64px;height:64px;border-radius:8px;background:#f6efe3"></div>'}
+      </td>
+      <td style="padding:14px 12px;${line}vertical-align:middle;font-family:Georgia,'Times New Roman',serif;font-size:15px;font-weight:600;color:#2b2118">${esc(i.name)}</td>
+      <td align="right" style="padding:14px 0;${line}vertical-align:middle;white-space:nowrap">
+        <a href="${esc(i.url)}" style="display:inline-block;padding:9px 14px;border-radius:8px;background:#6b1219;color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:600;text-decoration:none">Write a review</a>
+      </td>
+    </tr>`;
+  }).join('');
+  return {
+    mailbox: 'orders',
+    to: [o.user.email],
+    subject: `How was your fabric? — Order ${o.orderNumber}`,
+    html: brandEmail({
+      ...ORDER_HELP,
+      preheader: 'Tell us how your fabric turned out — it takes a minute.',
+      eyebrow: `Order ${o.orderNumber}`,
+      title: 'How was your fabric?',
+      body: `
+        ${para(`Hi${first}, we hope your fabric arrived well and you are enjoying it.`)}
+        ${para('Could you take a minute to tell other customers what you thought? Honest reviews — good or bad — help them choose, and help our family business improve.')}
+        ${sectionTitle(items.length > 1 ? 'Your fabrics' : 'Your fabric')}
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse">${rows}</table>
+        <div style="height:8px"></div>
+        ${note('Made something with it? We would love to see it — send us a photo on WhatsApp.')}`,
+    }),
+  };
+}
+
+/** Sends the review request once per delivered order, REVIEW_REQUEST_DAYS after delivery. */
+export async function sendReviewRequests(): Promise<number> {
+  const day = 24 * 60 * 60 * 1000;
+  const due = await prisma.order.findMany({
+    where: {
+      status: 'DELIVERED',
+      reviewRequestedAt: null,
+      // only recent deliveries, so older orders don't all get an email at once
+      deliveredAt: { lt: new Date(Date.now() - REVIEW_REQUEST_DAYS * day), gt: new Date(Date.now() - 30 * day) },
+    },
+    include: { items: true, user: { select: { id: true, email: true, firstName: true } } },
+    take: 20,
+  });
+  let sent = 0;
+  for (const o of due) {
+    // Claim it first so two servers / runs never send twice
+    const claimed = await prisma.order.updateMany({ where: { id: o.id, reviewRequestedAt: null }, data: { reviewRequestedAt: new Date() } });
+    if (!claimed.count || !o.user?.email) continue;
+    try {
+      const productIds = [...new Set(o.items.map((i) => i.productId))];
+      const [products, reviewed] = await Promise.all([
+        prisma.product.findMany({ where: { id: { in: productIds }, isActive: true }, select: { id: true, slug: true } }),
+        prisma.review.findMany({ where: { userId: o.user.id, productId: { in: productIds } }, select: { productId: true } }),
+      ]);
+      const done = new Set(reviewed.map((r) => r.productId));
+      const slug = new Map(products.map((p) => [p.id, p.slug]));
+      const seen = new Set<string>();
+      const items: ReviewItem[] = [];
+      for (const i of o.items) {
+        if (seen.has(i.productId) || done.has(i.productId) || !slug.get(i.productId)) continue;
+        seen.add(i.productId);
+        items.push({ name: i.productName, image: i.productImage, url: `${siteUrl()}/fabrics/${slug.get(i.productId)}#reviews` });
+      }
+      if (!items.length) continue; // already reviewed everything
+      await sendEmail(buildReviewRequestEmail({ orderNumber: o.orderNumber, user: o.user }, items));
+      sent++;
+      console.log(`[Review request] sent for ${o.orderNumber}`);
+    } catch (err) {
+      console.error('[Review request] failed for', o.orderNumber, err);
+    }
+  }
+  return sent;
+}
+
 export function startUnpaidOrderSweeper(): void {
   const run = () => {
     releaseUnpaidOrders().catch((e) => console.error('[Unpaid orders] sweep failed:', e));
     autoDeliverOrders().catch((e) => console.error('[Auto-deliver] sweep failed:', e));
+    sendReviewRequests().catch((e) => console.error('[Review request] sweep failed:', e));
   };
   setTimeout(run, 60 * 1000);
   setInterval(run, 5 * 60 * 1000).unref();
