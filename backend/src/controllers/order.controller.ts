@@ -17,7 +17,10 @@ import {
 export { calculateShipping };
 
 /** Load a coupon and check it is usable for this subtotal; returns the discount in ₹. */
-const getValidCoupon = async (code: string, subtotal: number) => {
+// Orders that count as "used": placed and not cancelled (an unpaid online order that was abandoned stays PENDING)
+const COUNTED_STATUSES = ['PROCESSING', 'SHIPPED', 'DELIVERED', 'RETURNED'] as const;
+
+const getValidCoupon = async (code: string, subtotal: number, userId?: string) => {
   const coupon = await prisma.coupon.findUnique({ where: { code: code.trim().toUpperCase() } });
   const now = new Date();
   if (!coupon || !coupon.isActive || coupon.startsAt > now || coupon.expiresAt < now) {
@@ -25,6 +28,18 @@ const getValidCoupon = async (code: string, subtotal: number) => {
   }
   if (coupon.maxUses != null && coupon.usedCount >= coupon.maxUses) {
     throw new ApiError(400, 'This coupon has reached its usage limit');
+  }
+  if (userId && coupon.firstOrderOnly) {
+    const earlier = await prisma.order.count({ where: { userId, status: { in: [...COUNTED_STATUSES] } } });
+    if (earlier > 0) throw new ApiError(400, 'This coupon is only for your first order');
+  }
+  if (userId && coupon.perUserLimit != null) {
+    const mine = await prisma.order.count({
+      where: { userId, couponCode: { equals: coupon.code, mode: 'insensitive' }, status: { in: [...COUNTED_STATUSES] } },
+    });
+    if (mine >= coupon.perUserLimit) {
+      throw new ApiError(400, coupon.perUserLimit === 1 ? 'You have already used this coupon' : `You can use this coupon only ${coupon.perUserLimit} times`);
+    }
   }
   const minOrder = coupon.minOrderAmount ?? 0;
   if (subtotal < minOrder) {
@@ -129,7 +144,7 @@ export const createOrder = async (
     let discountAmount = 0;
     let appliedCoupon: { id: string; code: string } | null = null;
     if (couponCode) {
-      const result = await getValidCoupon(String(couponCode), subtotal);
+      const result = await getValidCoupon(String(couponCode), subtotal, req.userId!);
       discountAmount = result.discount;
       appliedCoupon = { id: result.coupon.id, code: result.coupon.code };
     }
@@ -514,7 +529,7 @@ export const validateCoupon = async (
 
     const subtotal = Number(amount);
     if (!Number.isFinite(subtotal) || subtotal < 0) throw new ApiError(400, 'Invalid order amount');
-    const { coupon, discount: finalDiscount } = await getValidCoupon(String(code), subtotal);
+    const { coupon, discount: finalDiscount } = await getValidCoupon(String(code), subtotal, req.userId);
 
     res.json({
       success: true,

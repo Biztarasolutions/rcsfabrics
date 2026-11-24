@@ -1551,6 +1551,8 @@ export const createCoupon = async (
       discountValue,
       minOrderAmount,
       maxUses,
+      perUserLimit,
+      firstOrderOnly,
       expiresAt,
     } = req.body;
 
@@ -1568,6 +1570,8 @@ export const createCoupon = async (
         discountValue,
         minOrderAmount: minOrderAmount || null,
         maxUses: maxUses || null,
+        perUserLimit: perUserLimit ? Number(perUserLimit) : null,
+        firstOrderOnly: !!firstOrderOnly,
         startsAt: new Date(),
         expiresAt: expiry,
         isActive: true,
@@ -1603,11 +1607,12 @@ export const updateCoupon = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
-    const { isActive } = req.body;
-    const coupon = await prisma.coupon.update({
-      where: { id },
-      data: { isActive },
-    });
+    const { isActive, perUserLimit, firstOrderOnly } = req.body;
+    const data: any = {};
+    if (isActive !== undefined) data.isActive = !!isActive;
+    if (perUserLimit !== undefined) data.perUserLimit = perUserLimit ? Number(perUserLimit) : null;
+    if (firstOrderOnly !== undefined) data.firstOrderOnly = !!firstOrderOnly;
+    const coupon = await prisma.coupon.update({ where: { id }, data });
     res.json({ success: true, message: 'Coupon updated', data: coupon, statusCode: 200 } as ApiResponse);
   } catch (error) {
     res.status(500).json({ success: false, message: 'Internal server error', statusCode: 500 } as ApiResponse);

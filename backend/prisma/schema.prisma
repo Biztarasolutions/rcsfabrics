@@ -305,6 +305,10 @@ model Coupon {
   maxDiscount    Float?
   minOrderAmount Float?
   maxUses        Int?
+  /// How many times one customer may use it (1 = once per customer); null = no per-customer limit
+  perUserLimit   Int?
+  /// Only for a customer's first order
+  firstOrderOnly Boolean      @default(false)
   usedCount      Int          @default(0)
   isActive       Boolean      @default(true)
   startsAt       DateTime

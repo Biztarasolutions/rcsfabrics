@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api';
 import { toast } from 'react-hot-toast';
 
-const EMPTY = { code: '', discountType: 'PERCENTAGE', discountValue: '', minOrderAmount: '', maxUses: '', expiresAt: '', isActive: true };
+const EMPTY = { code: '', discountType: 'PERCENTAGE', discountValue: '', minOrderAmount: '', maxUses: '', onePerCustomer: true, firstOrderOnly: false, expiresAt: '', isActive: true };
 
 function isNoExpiry(dateStr: string) {
   return !dateStr || new Date(dateStr).getFullYear() >= 2099;
@@ -43,6 +43,12 @@ export default function AdminCouponsPage() {
     onError: (err: any) => toast.error(err.message),
   });
 
+  const ruleMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => adminApi.updateCoupon(id, data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin-coupons'] }); toast.success('Coupon updated'); },
+    onError: (err: any) => toast.error(err.message),
+  });
+
   const deleteMutation = useMutation({
     mutationFn: (id: string) => adminApi.deleteCoupon(id),
     onSuccess: () => {
@@ -62,6 +68,8 @@ export default function AdminCouponsPage() {
       discountValue: Number(form.discountValue),
       minOrderAmount: form.minOrderAmount ? Number(form.minOrderAmount) : null,
       maxUses: form.maxUses ? Number(form.maxUses) : null,
+      perUserLimit: form.onePerCustomer ? 1 : null,
+      firstOrderOnly: !!form.firstOrderOnly,
       expiresAt: form.expiresAt || null,
     };
     createMutation.mutate(data);
@@ -124,6 +132,18 @@ export default function AdminCouponsPage() {
                           </>
                         )}
                         {!coupon.maxUses && <span className="text-xs text-gray-400">Unlimited</span>}
+                      </div>
+                      <div className="mt-2 flex flex-col gap-1 text-xs text-gray-600 dark:text-gray-300">
+                        <label className="inline-flex items-center gap-1.5">
+                          <input type="checkbox" checked={coupon.perUserLimit === 1} disabled={ruleMutation.isPending}
+                            onChange={(e) => ruleMutation.mutate({ id: coupon.id, data: { perUserLimit: e.target.checked ? 1 : null } })} />
+                          Once per customer
+                        </label>
+                        <label className="inline-flex items-center gap-1.5">
+                          <input type="checkbox" checked={!!coupon.firstOrderOnly} disabled={ruleMutation.isPending}
+                            onChange={(e) => ruleMutation.mutate({ id: coupon.id, data: { firstOrderOnly: e.target.checked } })} />
+                          First order only
+                        </label>
                       </div>
                     </td>
                     <td className="px-5 py-4 hidden lg:table-cell text-xs text-gray-500 dark:text-gray-400">
@@ -210,11 +230,21 @@ export default function AdminCouponsPage() {
                       className="input-field" placeholder="No minimum"/>
                   </div>
                   <div>
-                    <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Usage Limit</label>
+                    <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Total uses (all customers)</label>
                     <input type="number" value={form.maxUses}
                       onChange={(e) => setForm({ ...form, maxUses: e.target.value })}
                       className="input-field" placeholder="Unlimited"/>
                   </div>
+                </div>
+                <div className="space-y-2 rounded-xl border border-gray-100 p-3 text-sm text-gray-700 dark:border-dark-700 dark:text-gray-300">
+                  <label className="flex items-start gap-2">
+                    <input type="checkbox" className="mt-0.5" checked={!!form.onePerCustomer} onChange={(e) => setForm({ ...form, onePerCustomer: e.target.checked })} />
+                    <span><b>Once per customer</b> — each account can use this coupon only one time</span>
+                  </label>
+                  <label className="flex items-start gap-2">
+                    <input type="checkbox" className="mt-0.5" checked={!!form.firstOrderOnly} onChange={(e) => setForm({ ...form, firstOrderOnly: e.target.checked })} />
+                    <span><b>First order only</b> — only customers who haven't ordered before</span>
+                  </label>
                 </div>
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
