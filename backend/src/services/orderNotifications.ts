@@ -2,7 +2,7 @@ import { prisma } from '@/index';
 import { getCashfreePaymentStatus } from '@/utils/cashfree';
 import { sendEmail, MAILBOX } from '@/utils/email';
 import {
-  brandEmail, button, detailsTable, emailThumb, esc, inr, itemsTable, note, para, progress, sectionTitle, siteUrl, totalsTable,
+  BRAND, brandEmail, button, detailsTable, emailThumb, esc, inr, itemsTable, note, para, progress, sectionTitle, siteUrl, totalsTable,
 } from '@/utils/emailLayout';
 
 const teamEmails = (): string[] => {
@@ -358,7 +358,7 @@ export async function autoDeliverOrders(): Promise<number> {
 }
 
 /** "How was your fabric?" — sent once, this many days after an order is delivered */
-export const REVIEW_REQUEST_DAYS = 3;
+export const REVIEW_REQUEST_DAYS = 5;
 
 export interface ReviewItem { name: string; image?: string | null; url: string }
 
@@ -395,7 +395,8 @@ export function buildReviewRequestEmail(o: { orderNumber: string; user: { email:
         ${sectionTitle(items.length > 1 ? 'Your fabrics' : 'Your fabric')}
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse">${rows}</table>
         <div style="height:8px"></div>
-        ${note('Made something with it? We would love to see it — send us a photo on WhatsApp.')}`,
+        ${note(`<strong>Made something with it?</strong> We would love to see it — send us a photo on WhatsApp.`)}
+        ${button(`${BRAND.whatsapp}?text=${encodeURIComponent(`Hi! Here is what I made with my fabric from order ${o.orderNumber}.`)}`, 'Send a photo on WhatsApp')}`,
     }),
   };
 }
