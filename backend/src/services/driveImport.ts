@@ -59,7 +59,7 @@ export const importFabricsFromDrive = async (limit = 40): Promise<ImportResult> 
     listAllFolders(),
     prisma.category.findMany({ select: { id: true, name: true, description: true, bestFor: true, properties: true } }),
     // archived products (removed by the admin) don't block a fresh import
-    prisma.product.findMany({ where: { NOT: { sku: { startsWith: 'ARCHIVED-' } } }, select: { productCode: true, slug: true, name: true, categoryId: true, color: true } }),
+    prisma.product.findMany({ where: { OR: [{ sku: null }, { NOT: { sku: { startsWith: 'ARCHIVED-' } } }] }, select: { productCode: true, slug: true, name: true, categoryId: true, color: true } }),
   ]);
 
   const catByName = new Map(categories.map((c) => [norm(c.name), c]));

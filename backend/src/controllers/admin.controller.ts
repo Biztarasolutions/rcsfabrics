@@ -8,6 +8,8 @@ import { printToken } from '@/utils/printToken';
 
 /** sku marker for products removed by the admin but kept because past orders refer to them */
 export const ARCHIVED_PREFIX = 'ARCHIVED-';
+/** "not archived" — sku is empty for most products, and NOT(startsWith) alone would drop those (SQL NULL) */
+const NOT_ARCHIVED = { OR: [{ sku: null }, { NOT: { sku: { startsWith: ARCHIVED_PREFIX } } }] };
 import { importFabricsFromDrive } from '@/services/driveImport';
 import { assignRcsCodes, ensureCategoryNumbers } from '@/services/rcsCode';
 import { isManager, isStaff, effectiveRole, isSuperAdminEmail, ASSIGNABLE_ROLES } from '@/utils/roles';
@@ -917,7 +919,7 @@ export const getAdminProducts = async (
     );
 
     // Archived products (removed, but kept for past orders) never show in the list
-    const where: any = { NOT: { sku: { startsWith: ARCHIVED_PREFIX } } };
+    const where: any = { AND: [NOT_ARCHIVED] };
     if (search) {
       where.OR = [
         { name: { contains: search as string, mode: 'insensitive' } },
@@ -969,7 +971,7 @@ export const getAdminProducts = async (
     }
 
     const flatProducts = await prisma.product.findMany({
-      where: { AND: [variantWhere, { NOT: { sku: { startsWith: ARCHIVED_PREFIX } } }] },
+      where: { AND: [variantWhere, NOT_ARCHIVED] },
       include: {
         images: {
           where: { isMain: true },
