@@ -37,7 +37,6 @@ export default function AdminProductsPage() {
   });
   const actualData = productsData?.data || productsData;
   const products = actualData?.products || [];
-  const noPhotoCount = products.filter((p: any) => !p.images?.length).length;
   const [bigPhoto, setBigPhoto] = useState<string | null>(null);
   // Admin thumbnail: the Raw original if synced, else the main customer photo
   const thumbOf = (p: any): string | null => p.rawImage?.url || p.images?.[0]?.url || null;
@@ -184,12 +183,6 @@ export default function AdminProductsPage() {
         </p>
       )}
 
-      {noPhotoCount > 0 && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
-          <strong>{noPhotoCount} {noPhotoCount === 1 ? 'product has' : 'products have'} no photos</strong> on this page and {noPhotoCount === 1 ? 'is' : 'are'} hidden from the shop.
-          Check its photo folder in Google Drive (Category / Name-Colour), then press <strong>Import</strong>.
-        </div>
-      )}
 
       {/* Mobile: one card per fabric with a large, uncropped photo */}
       <div className="space-y-3 md:hidden">
@@ -222,9 +215,6 @@ export default function AdminProductsPage() {
                       <span key={i} title={c.name} className={`h-4 w-4 rounded-full border border-gray-300 ${(c.stock ?? 0) === 0 ? 'opacity-40' : ''}`} style={{ backgroundColor: c.hexCode }} />
                     ))}
                   </div>
-                )}
-                {!product.images?.length && (
-                  <span className="mt-1.5 inline-block rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">No photos · hidden from shop</span>
                 )}
               </div>
             </div>
@@ -296,12 +286,6 @@ export default function AdminProductsPage() {
                             {product.rcsCode ? product.rcsCode.split('-').slice(0, 3).join('-') : product.code ? `P${product.code}` : ''} · {product.variants?.length || 1} colour{(product.variants?.length || 1) > 1 ? 's' : ''}
                           </span>
                           <span className="mt-1"><StatusBadge p={product} /></span>
-                          {!product.images?.length && (
-                            <span className="mt-1 inline-block w-fit rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
-                              title="Hidden from the shop until it has photos. Check its Drive folder, then press Import.">
-                              No photos · hidden from shop
-                            </span>
-                          )}
                         </div>
                       </div>
                     </td>

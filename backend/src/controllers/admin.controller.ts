@@ -2177,6 +2177,7 @@ export const syncAllProductImages = async (
     }
 
     invalidateProductCaches();
+    await deactivatePhotoless().catch((e) => console.error('[Photos] deactivate failed:', e));
 
     res.json({
       success: true,
@@ -2380,9 +2381,22 @@ export const autoSyncMissingImages = async (): Promise<number> => {
   return synced;
 };
 
+/** Live products without any photo are switched to Inactive (Make live shows why). */
+export const deactivatePhotoless = async (): Promise<number> => {
+  const r = await prisma.product.updateMany({
+    where: { isActive: true, images: { none: {} } },
+    data: { isActive: false },
+  });
+  if (r.count) { console.log(`[Photos] ${r.count} product(s) without photos made inactive`); invalidateProductCaches(); }
+  return r.count;
+};
+
 export const startMissingImageSync = (): void => {
   // Only pulls photos for products that already exist; adding new fabrics from Drive is done by the admin
-  const run = () => { autoSyncMissingImages().catch((e) => console.error('[Auto-sync] failed:', e)); };
+  const run = async () => {
+    await autoSyncMissingImages().catch((e) => console.error('[Auto-sync] failed:', e));
+    await deactivatePhotoless().catch((e) => console.error('[Photos] deactivate failed:', e));
+  };
   setTimeout(run, 2 * 60 * 1000);
   setInterval(run, 30 * 60 * 1000).unref();
 };
@@ -2435,13 +2449,13 @@ export const setProductLive = async (req: AuthRequest, res: Response): Promise<v
       const problems: string[] = [];
       for (const v of variants) {
         const missing: string[] = [];
-        if (!(v.basePrice > 0)) missing.push('price');
-        if (!(v.width > 0)) missing.push('width');
-        if (!v._count.images) missing.push('photos');
+        if (!(v.basePrice > 0)) missing.push('price not set');
+        if (!(v.width > 0)) missing.push('width not set');
+        if (!v._count.images) missing.push('no photos yet — add them to its Drive folder and press Import');
         if (missing.length) problems.push(`${v.color || v.productCode}: ${missing.join(', ')}`);
       }
       if (problems.length) {
-        res.status(400).json({ success: false, message: `Fill these in first — ${problems.join(' · ')}` });
+        res.status(400).json({ success: false, message: `Can't make it live — ${problems.join(' · ')}` });
         return;
       }
     }
