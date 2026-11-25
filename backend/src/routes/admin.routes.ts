@@ -9,6 +9,8 @@ import {
   getAdminOrders as getOrders,
   updateOrderStatus,
   emailOrderToTeam,
+  importFromDrive,
+  setProductLive,
   getCancelledOrders,
   getDashboardStats,
   getCustomers,
@@ -68,6 +70,8 @@ router.post('/products', createProduct);
 router.get('/products', getProducts);
 router.put('/products/:id', updateProduct);
 router.delete('/products/:id', deleteProduct);
+router.post('/products/import-drive', importFromDrive);
+router.put('/products/:id/live', setProductLive);
 router.post('/products/sync-all', syncAllProductImages);
 router.post('/products/:id/sync', syncProductImages);
 router.post('/products/migrate-codes', migrateProductCodes);

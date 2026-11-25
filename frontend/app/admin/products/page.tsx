@@ -18,11 +18,13 @@ export default function AdminProductsPage() {
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [page, setPage] = useState(1);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  // '' = all · live · draft · inactive
+  const [status, setStatus] = useState('');
 
   const { data: productsData = { products: [], total: 0, pages: 1 }, isLoading, isError, error } = useQuery({
-    queryKey: ['admin-products', search, page],
+    queryKey: ['admin-products', search, page, status],
     queryFn: async () => {
-        const response = await adminApi.getAdminProducts({ search, page, limit: 50 });
+        const response = await adminApi.getAdminProducts({ search, page, limit: 50, status: status || undefined });
         const data = response.data;
         // If the API returns an array directly, wrap it to match expected shape
         if (Array.isArray(data)) {
@@ -70,6 +72,27 @@ export default function AdminProductsPage() {
     onError: (err: any) => toast.error(err.message || 'Failed to sync all images'),
   });
 
+  const importMutation = useMutation({
+    mutationFn: () => adminApi.importFromDrive(),
+    onSuccess: (res: any) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      const d = res?.data?.data || {};
+      toast.success(res?.data?.message || 'Import finished', { duration: 7000 });
+      if (d.created?.length) setStatus('draft');
+      if (d.unknownCategory?.length) toast(`Category not found for: ${d.unknownCategory.slice(0, 5).join(', ')}${d.unknownCategory.length > 5 ? '…' : ''} — check the folder name or add the category.`, { duration: 10000, icon: '⚠️' });
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.message || err.message || 'Import failed'),
+  });
+
+  const liveMutation = useMutation({
+    mutationFn: ({ id, live }: { id: string; live: boolean }) => adminApi.setProductLive(id, live),
+    onSuccess: (res: any) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      toast.success(res?.data?.message || 'Updated');
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.message || err.message, { duration: 9000 }),
+  });
+
   const handleSyncSingle = (id: string) => {
     syncSingleMutation.mutate(id);
   };
@@ -79,6 +102,36 @@ export default function AdminProductsPage() {
   };
 
 
+
+  // Live: in the shop · Draft: imported, details missing · Inactive: switched off
+  const statusOf = (p: any): 'live' | 'draft' | 'inactive' | 'partial' => {
+    const vs = p.variants?.length ? p.variants : [p];
+    if (vs.some((v: any) => v.isDraft)) return 'draft';
+    const live = vs.filter((v: any) => v.isActive).length;
+    return live === vs.length ? 'live' : live === 0 ? 'inactive' : 'partial';
+  };
+  const STATUS_BADGE: Record<string, [string, string]> = {
+    live: ['Live', 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'],
+    partial: ['Partly live', 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400'],
+    draft: ['Draft · add details', 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'],
+    inactive: ['Inactive', 'bg-gray-100 text-gray-600 dark:bg-dark-700 dark:text-gray-400'],
+  };
+  const StatusBadge = ({ p }: { p: any }) => {
+    const [label, cls] = STATUS_BADGE[statusOf(p)];
+    return <span className={`inline-block w-fit rounded px-1.5 py-0.5 text-[10px] font-semibold ${cls}`}>{label}</span>;
+  };
+  const LiveButton = ({ p, className }: { p: any; className: string }) => {
+    const st = statusOf(p);
+    const goLive = st !== 'live';
+    const busy = liveMutation.isPending && liveMutation.variables?.id === p.id;
+    return (
+      <button onClick={() => liveMutation.mutate({ id: p.id, live: goLive })} disabled={busy}
+        title={goLive ? 'Show this design (all colours) in the shop' : 'Hide this design (all colours) from the shop'}
+        className={`${className} ${goLive ? 'border-green-300 bg-green-600 text-white hover:bg-green-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-dark-600 dark:text-gray-300 dark:hover:bg-dark-700'}`}>
+        {busy ? '…' : goLive ? 'Make live' : 'Make inactive'}
+      </button>
+    );
+  };
 
   return (
     <div className="min-w-0 w-full max-w-full space-y-6">
@@ -94,7 +147,7 @@ export default function AdminProductsPage() {
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Products</h2>
           <p className="text-sm text-gray-500">{totalProducts} fabrics in catalog</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <button 
             onClick={handleSyncAll} 
             disabled={syncAllMutation.isPending}
@@ -104,6 +157,11 @@ export default function AdminProductsPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.228 5.6M22 7h-6v6" />
             </svg>
             {syncAllMutation.isPending ? 'Syncing...' : 'Sync All Images'}
+          </button>
+          <button onClick={() => importMutation.mutate()} disabled={importMutation.isPending}
+            title="Add every new colour folder from Google Drive as a draft"
+            className="flex items-center gap-2 rounded-xl border border-primary-200 bg-primary-50 px-4 py-2.5 text-sm font-semibold text-primary-700 hover:bg-primary-100 dark:border-primary-900 dark:bg-primary-950/30 dark:text-primary-300">
+            {importMutation.isPending ? 'Importing… (can take a minute)' : '⤓ Import from Drive'}
           </button>
           <Link href="/admin/products/create-family" className="button-primary flex items-center gap-2 px-5 py-2.5">
             <span className="text-lg">+</span> Add Product Family
@@ -125,6 +183,20 @@ export default function AdminProductsPage() {
           />
         </div>
       </div>
+
+      <div className="flex flex-wrap gap-2">
+        {[['', 'All'], ['live', 'Live'], ['draft', 'Drafts'], ['inactive', 'Inactive']].map(([v, l]) => (
+          <button key={v} onClick={() => { setStatus(v); setPage(1); }}
+            className={`rounded-full border px-4 py-1.5 text-sm font-semibold ${status === v ? 'border-primary-600 bg-primary-600 text-white' : 'border-gray-200 text-gray-600 hover:border-primary-400 dark:border-dark-600 dark:text-gray-300'}`}>
+            {l}
+          </button>
+        ))}
+      </div>
+      {status === 'draft' && (
+        <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
+          Drafts were added from Google Drive and are hidden from customers. Press <strong>Edit</strong> to fill in pattern, width, price, discount and stock (and each colour&apos;s swatch), then press <strong>Make live</strong>.
+        </p>
+      )}
 
       {noPhotoCount > 0 && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
@@ -151,6 +223,7 @@ export default function AdminProductsPage() {
               </button>
               <div className="min-w-0 flex-1">
                 <p className="truncate font-bold text-gray-900 dark:text-white">{product.name}</p>
+                <StatusBadge p={product} />
                 <p className="text-xs text-gray-500">{product.code ? `P${product.code}` : (product.styleCode?.split('-').pop() || '—')} · {product.category?.name || '—'}</p>
                 <p className="mt-1 text-sm">
                   <span className="font-semibold text-gray-900 dark:text-white">{formatPrice(product.discountPrice || product.basePrice)}</span>
@@ -169,7 +242,8 @@ export default function AdminProductsPage() {
                 )}
               </div>
             </div>
-            <div className="mt-3 grid grid-cols-4 gap-2 text-xs font-medium">
+            <LiveButton p={product} className="mt-3 w-full rounded-lg border py-2 text-xs font-semibold" />
+            <div className="mt-2 grid grid-cols-4 gap-2 text-xs font-medium">
               <button onClick={() => handleSyncSingle(product.id)} disabled={syncSingleMutation.isPending}
                 className="rounded-lg border border-blue-200 py-2 text-blue-600 dark:border-blue-900 dark:text-blue-400">
                 {syncSingleMutation.variables === product.id && syncSingleMutation.isPending ? 'Syncing…' : 'Sync'}
@@ -198,8 +272,8 @@ export default function AdminProductsPage() {
                 <th className="w-[10%] px-4 py-3 align-middle text-left">Price</th>
                 <th className="w-[12%] px-4 py-3 align-middle text-left">Selling At</th>
                 <th className="w-[10%] px-4 py-3 align-middle text-left">Total Stock</th>
-                <th className="w-[18%] px-4 py-3 align-middle text-left">Colors</th>
-                <th className="w-[13%] px-4 py-3 align-middle text-right">Actions</th>
+                <th className="w-[11%] px-4 py-3 align-middle text-left">Colors</th>
+                <th className="w-[20%] px-4 py-3 align-middle text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 dark:divide-dark-700">
@@ -235,6 +309,7 @@ export default function AdminProductsPage() {
                           <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium mt-0.5">
                             {product.code ? `P${product.code}` : (product.styleCode?.split('-').pop() || '—')}
                           </span>
+                          <span className="mt-1"><StatusBadge p={product} /></span>
                           {!product.images?.length && (
                             <span className="mt-1 inline-block w-fit rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
                               title="Hidden from the shop until photos sync. Check the Google Drive folder name matches the product code, then press Sync.">
@@ -252,11 +327,11 @@ export default function AdminProductsPage() {
                     </td>
 
                     <td className="w-[10%] px-4 py-3.5 align-middle text-xs font-semibold text-gray-900 dark:text-white">
-                      {formatPrice(product.basePrice)}
+                      {product.basePrice ? formatPrice(product.basePrice) : <span className="text-amber-600">Not set</span>}
                     </td>
 
                     <td className="w-[12%] px-4 py-3.5 align-middle text-xs font-semibold text-gray-900 dark:text-white">
-                      {formatPrice(product.discountPrice || product.basePrice)}
+                      {product.basePrice ? formatPrice(product.discountPrice || product.basePrice) : '—'}
                     </td>
 
                     <td className="w-[10%] px-4 py-3.5 align-middle text-xs font-semibold">
@@ -265,7 +340,7 @@ export default function AdminProductsPage() {
                       </span>
                     </td>
 
-                    <td className="w-[18%] px-4 py-3.5 align-middle text-xs">
+                    <td className="w-[11%] px-4 py-3.5 align-middle text-xs">
                       {product.colors && product.colors.length > 0 ? (
                         <div className="grid grid-cols-5 gap-2 w-max items-center justify-start">
                           {product.colors.map((color: any, idx: number) => (
@@ -292,8 +367,9 @@ export default function AdminProductsPage() {
                     </td>
 
                     {/* Actions */}
-                    <td className="w-[13%] px-4 py-3.5 align-middle text-right">
+                    <td className="w-[20%] px-4 py-3.5 align-middle text-right">
                       <div className="flex items-center justify-end gap-1.5">
+                        <LiveButton p={product} className="rounded-lg border px-2 py-1 text-xs font-semibold transition-colors" />
                         <button
                           onClick={() => handleSyncSingle(product.id)}
                           disabled={syncSingleMutation.isPending}

@@ -5,6 +5,7 @@ import { isRawFileName } from '@/utils/rawPhoto';
 import { customerCode } from '@/utils/customer';
 import { prisma } from '@/index';
 import { printToken } from '@/utils/printToken';
+import { importFabricsFromDrive } from '@/services/driveImport';
 import { isManager, isStaff, effectiveRole, isSuperAdminEmail, ASSIGNABLE_ROLES } from '@/utils/roles';
 import { AuthRequest, ApiResponse } from '@/types';
 import {
@@ -728,6 +729,7 @@ export const updateProduct = async (
               bestFor: cleanedUpdateData.bestFor ?? existingProduct.bestFor,
               properties: cleanedUpdateData.properties ?? existingProduct.properties,
               isActive: cleanedUpdateData.isActive ?? existingProduct.isActive,
+              isDraft: existingProduct.isDraft,
             }
           });
         }
@@ -879,7 +881,7 @@ export const getAdminProducts = async (
       throw new ApiError(403, 'Only admins can access this');
     }
 
-    const { page, limit, search } = req.query;
+    const { page, limit, search, status } = req.query;
     const { page: parsedPage, limit: parsedLimit, skip } = parsePagination(
       page as string,
       limit as string
@@ -890,8 +892,13 @@ export const getAdminProducts = async (
       where.OR = [
         { name: { contains: search as string, mode: 'insensitive' } },
         { sku: { contains: search as string, mode: 'insensitive' } },
+        { productCode: { contains: search as string, mode: 'insensitive' } },
       ];
     }
+    // Live = shown in the shop · Draft = imported, details to fill · Inactive = switched off
+    if (status === 'live') where.isActive = true;
+    else if (status === 'draft') where.isDraft = true;
+    else if (status === 'inactive') { where.isActive = false; where.isDraft = false; }
 
     // Step 1: Paginate by styleCode
     const groupedStyles = await prisma.product.groupBy({
@@ -2342,7 +2349,7 @@ export const previewProduct = async (req: AuthRequest, res: Response): Promise<v
  */
 export const autoSyncMissingImages = async (): Promise<number> => {
   const products = await prisma.product.findMany({
-    where: { isActive: true, images: { none: {} } },
+    where: { OR: [{ isActive: true }, { isDraft: true }], images: { none: {} } },
     include: { colors: true, category: { select: { name: true } } },
     take: 10,
   });
@@ -2368,7 +2375,14 @@ export const autoSyncMissingImages = async (): Promise<number> => {
 };
 
 export const startMissingImageSync = (): void => {
-  const run = () => { autoSyncMissingImages().catch((e) => console.error('[Auto-sync] failed:', e)); };
+  const run = async () => {
+    // 1) new colour folders in Drive → draft products  2) pull photos for anything without them
+    try {
+      const r = await importFabricsFromDrive();
+      if (r.created.length) { console.log(`[Drive import] ${r.created.length} new draft fabrics:`, r.created.join(', ')); invalidateProductCaches(); }
+    } catch (e) { console.error('[Drive import] failed:', e); }
+    await autoSyncMissingImages().catch((e) => console.error('[Auto-sync] failed:', e));
+  };
   setTimeout(run, 2 * 60 * 1000);
   setInterval(run, 30 * 60 * 1000).unref();
 };
@@ -2381,5 +2395,62 @@ export const emailOrderToTeam = async (req: AuthRequest, res: Response): Promise
     res.json({ success: true, message: 'Order emailed to orders@rcsfabrics.com' });
   } catch (err: any) {
     res.status(500).json({ success: false, message: err.message || 'Could not send the email' });
+  }
+};
+
+/** Admin: find new fabrics in Drive and add them as drafts, then pull their photos */
+export const importFromDrive = async (_req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const result = await importFabricsFromDrive();
+    if (result.created.length) {
+      invalidateProductCaches();
+      // pull photos now so the drafts show their pictures straight away
+      await autoSyncMissingImages().catch((e) => console.error('[Import] photo sync failed:', e));
+    }
+    const n = result.created.length;
+    res.json({
+      success: true,
+      message: n ? `Imported ${n} new ${n === 1 ? 'fabric' : 'fabrics'} as drafts — fill in price, width and stock, then make them live.`
+                 : 'No new fabrics found in Drive.',
+      data: result,
+    });
+  } catch (err: any) {
+    console.error('[Import] failed:', err);
+    res.status(500).json({ success: false, message: err.message || 'Import from Drive failed' });
+  }
+};
+
+/** Admin: make a whole design (all its colours) live in the shop, or inactive */
+export const setProductLive = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const live = !!req.body?.live;
+    const product = await prisma.product.findUnique({ where: { id: req.params.id } });
+    if (!product) { res.status(404).json({ success: false, message: 'Product not found' }); return; }
+    const variants = await prisma.product.findMany({
+      where: product.styleCode ? { styleCode: product.styleCode } : { id: product.id },
+      include: { _count: { select: { images: true } } },
+    });
+    if (live) {
+      const problems: string[] = [];
+      for (const v of variants) {
+        const missing: string[] = [];
+        if (!(v.basePrice > 0)) missing.push('price');
+        if (!(v.width > 0)) missing.push('width');
+        if (!v._count.images) missing.push('photos');
+        if (missing.length) problems.push(`${v.color || v.productCode}: ${missing.join(', ')}`);
+      }
+      if (problems.length) {
+        res.status(400).json({ success: false, message: `Fill these in first — ${problems.join(' · ')}` });
+        return;
+      }
+    }
+    await prisma.product.updateMany({
+      where: { id: { in: variants.map((v) => v.id) } },
+      data: live ? { isActive: true, isDraft: false } : { isActive: false },
+    });
+    invalidateProductCaches();
+    res.json({ success: true, message: live ? 'Now live in the shop' : 'Made inactive — hidden from the shop' });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || 'Could not change the status' });
   }
 };

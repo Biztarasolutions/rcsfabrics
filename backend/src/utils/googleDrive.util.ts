@@ -306,3 +306,34 @@ export const fetchFolderImagesByProductCode = async (
   return all.filter((f) => filenameMatchesProductCode(f.name, productCode));
 };
 
+
+/** Every folder the website can see in Drive whose name starts with a product code (P10001-…). */
+export const listProductFolders = async (): Promise<Array<{ id: string; name: string }>> => {
+  const out: Array<{ id: string; name: string }> = [];
+  let pageToken: string | undefined;
+  do {
+    const res: any = await drive.files.list({
+      ...driveListParams,
+      q: `mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
+      fields: 'nextPageToken, files(id, name)',
+      pageSize: 1000,
+      pageToken,
+    });
+    for (const f of res.data.files || []) {
+      if (f.id && f.name && /^P\d+-/i.test(f.name.trim())) out.push({ id: f.id, name: f.name.trim() });
+    }
+    pageToken = res.data.nextPageToken || undefined;
+  } while (pageToken);
+  return out;
+};
+
+/** True when the folder has finished photoshoot images (Fabric-1, Fabric-2 …). */
+export const folderHasFabricPhotos = async (folderId: string): Promise<boolean> => {
+  const res = await drive.files.list({
+    ...driveListParams,
+    q: `'${folderId}' in parents and mimeType contains 'image/' and trashed = false`,
+    fields: 'files(name)',
+    pageSize: 50,
+  });
+  return (res.data.files || []).some((f) => /^fabric[\s_-]*\d/i.test(f.name || ''));
+};

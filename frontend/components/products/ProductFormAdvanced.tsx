@@ -98,13 +98,17 @@ export default function ProductFormAdvanced({ initialData, onClose }: ProductFor
         ...EMPTY_FORM,
         ...sanitizedInitialData,
         name: cleanedName,
+        // Imported drafts have no price / width yet: show empty boxes, not 0
+        basePrice: initialData.basePrice ? String(initialData.basePrice) : '',
+        width: initialData.width ? String(initialData.width) : '',
+        pattern: initialData.pattern || '',
         // Ensure colors array exists and includes productCode and inventory from all variants
         colors: initialData.variants?.map((v: any) => ({
           id: v.id, // the existing product for this colour, so saving updates it instead of adding a new one
           name: v.colors?.[0]?.name || v.color,
           hexCode: v.colors?.[0]?.hexCode || '#000000',
           productCode: v.productCode,
-          inventory: String(v.totalStock || '0'),
+          inventory: initialData.isDraft && !v.totalStock ? '' : String(v.totalStock || '0'),
         })) || [{ name: '', hexCode: '#000000', inventory: '' }],
       });
     }
