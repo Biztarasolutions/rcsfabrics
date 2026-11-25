@@ -6,7 +6,6 @@ import { adminApi } from '@/lib/api';
 import { formatPrice } from '@/lib/utils';
 import toast from 'react-hot-toast';
 // (removed unused Image import)
-import Link from 'next/link';
 import ProductFormAdvanced from '@/components/products/ProductFormAdvanced';
 import ProductPhotosPanel from '@/components/admin/ProductPhotosPanel';
 import { supabaseImg } from '@/lib/image';
@@ -152,9 +151,6 @@ export default function AdminProductsPage() {
             className="flex items-center gap-2 rounded-xl border border-primary-200 bg-primary-50 px-4 py-2.5 text-sm font-semibold text-primary-700 hover:bg-primary-100 dark:border-primary-900 dark:bg-primary-950/30 dark:text-primary-300">
             {importMutation.isPending ? 'Importing… (can take a few minutes)' : '⤓ Import'}
           </button>
-          <Link href="/admin/products/create-family" className="button-primary flex items-center gap-2 px-5 py-2.5">
-            <span className="text-lg">+</span> Add Product Family
-          </Link>
         </div>
       </div>
 
@@ -193,7 +189,7 @@ export default function AdminProductsPage() {
         {isLoading ? (
           <p className="py-10 text-center text-gray-500">Loading products...</p>
         ) : products.length === 0 ? (
-          <p className="py-10 text-center text-gray-500">No products found. Create your first product!</p>
+          <p className="py-10 text-center text-gray-500">No products found. Press Import to bring in fabrics from Google Drive.</p>
         ) : products.map((product: any) => (
           <div key={product.id} className="rounded-2xl border border-gray-200 bg-white p-3 dark:border-dark-700 dark:bg-dark-800">
             <div className="flex gap-3">
@@ -265,7 +261,7 @@ export default function AdminProductsPage() {
               ) : products.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-10 text-center text-gray-500">
-                    No products found. Create your first product!
+                    No products found. Press Import to bring in fabrics from Google Drive.
                   </td>
                 </tr>
               ) : (
