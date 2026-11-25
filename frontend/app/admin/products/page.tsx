@@ -63,21 +63,19 @@ export default function AdminProductsPage() {
     onError: (err: any) => toast.error(err.message || 'Failed to sync images'),
   });
 
-  const syncAllMutation = useMutation({
-    mutationFn: () => adminApi.syncAllProducts(),
-    onSuccess: (res: any) => {
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
-      toast.success(res?.data?.message || 'All products synced!');
-    },
-    onError: (err: any) => toast.error(err.message || 'Failed to sync all images'),
-  });
 
   const importMutation = useMutation({
-    mutationFn: () => adminApi.importFromDrive(),
+    // One button: add new fabrics from Drive as drafts, then refresh photos of every product
+    mutationFn: async () => {
+      const res = await adminApi.importFromDrive();
+      await adminApi.syncAllProducts().catch(() => null);
+      return res;
+    },
     onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
       const d = res?.data?.data || {};
-      toast.success(res?.data?.message || 'Import finished', { duration: 7000 });
+      const n = d.created?.length || 0;
+      toast.success(n ? `Imported ${n} new ${n === 1 ? 'fabric' : 'fabrics'} as drafts and refreshed all photos.` : 'No new fabrics — photos refreshed.', { duration: 7000 });
       if (d.created?.length) setStatus('draft');
       if (d.notUnderstood?.length) toast(`Could not read the colour from: ${d.notUnderstood.slice(0, 5).join(', ')}${d.notUnderstood.length > 5 ? '…' : ''} — name the folder like "Polka Dot-White".`, { duration: 10000, icon: '⚠️' });
       if (d.waitingForPhotos?.length) toast(`${d.waitingForPhotos.length} folder(s) skipped — no Fabric photos in them yet.`, { duration: 7000, icon: 'ℹ️' });
@@ -98,9 +96,6 @@ export default function AdminProductsPage() {
     syncSingleMutation.mutate(id);
   };
 
-  const handleSyncAll = () => {
-    syncAllMutation.mutate();
-  };
 
 
 
@@ -149,20 +144,10 @@ export default function AdminProductsPage() {
           <p className="text-sm text-gray-500">{totalProducts} fabrics in catalog</p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <button 
-            onClick={handleSyncAll} 
-            disabled={syncAllMutation.isPending}
-            className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-dark-700 dark:bg-dark-800 dark:text-gray-200 dark:hover:bg-dark-700 transition-all active:scale-[0.98]"
-          >
-            <svg className={`h-4 w-4 text-gray-500 dark:text-gray-400 ${syncAllMutation.isPending ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.228 5.6M22 7h-6v6" />
-            </svg>
-            {syncAllMutation.isPending ? 'Syncing...' : 'Sync All Images'}
-          </button>
           <button onClick={() => importMutation.mutate()} disabled={importMutation.isPending}
-            title="Add every new fabric folder from the Drive photoshoot folder (Category / Name-Colour) as a draft"
+            title="Add new fabrics from the Drive photoshoot folder as drafts and refresh the photos of all products"
             className="flex items-center gap-2 rounded-xl border border-primary-200 bg-primary-50 px-4 py-2.5 text-sm font-semibold text-primary-700 hover:bg-primary-100 dark:border-primary-900 dark:bg-primary-950/30 dark:text-primary-300">
-            {importMutation.isPending ? 'Importing… (can take a minute)' : '⤓ Import from Drive'}
+            {importMutation.isPending ? 'Importing… (can take a few minutes)' : '⤓ Import'}
           </button>
           <Link href="/admin/products/create-family" className="button-primary flex items-center gap-2 px-5 py-2.5">
             <span className="text-lg">+</span> Add Product Family
