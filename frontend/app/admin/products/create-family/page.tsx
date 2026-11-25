@@ -73,7 +73,7 @@ export default function CreateProductFamilyPage() {
   const selectedCategory = categories.find((c: any) => c.id === form.categoryId);
 
   useEffect(() => {
-    if (form.name && form.categoryId && form.code && selectedCategory) {
+    if (form.name && form.categoryId && selectedCategory) {
       setStyleCode(buildStyleCode(form.name, selectedCategory.name, form.code));
       return;
     }
@@ -232,7 +232,7 @@ export default function CreateProductFamilyPage() {
             
             <div>
               <label className="mb-1.5 block text-sm font-medium">Code *</label>
-              <input name="code" type="number" value={form.code} onChange={handleChange} placeholder="e.g. 10001" className="input-field w-full" required />
+              <input name="code" type="number" value={form.code} onChange={handleChange} placeholder="Optional" className="input-field w-full" />
             </div>
             
             <div>

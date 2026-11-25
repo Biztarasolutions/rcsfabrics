@@ -117,7 +117,7 @@ export default function ProductFormAdvanced({ initialData, onClose }: ProductFor
   const selectedCategory = categories.find((c: any) => c.id === form.categoryId);
 
   useEffect(() => {
-    if (form.name && form.categoryId && form.code && selectedCategory) {
+    if (form.name && form.categoryId && selectedCategory) {
       setStyleCode(buildStyleCode(form.name, selectedCategory.name, form.code));
       return;
     }
@@ -253,7 +253,7 @@ export default function ProductFormAdvanced({ initialData, onClose }: ProductFor
           {/* Code */}
           <div>
             <label className="mb-1.5 block text-sm font-medium">Code (Number) *</label>
-            <input name="code" type="number" value={form.code} onChange={handleChange} placeholder="e.g., 101" className="input-field" required />
+            <input name="code" type="number" value={form.code ?? ''} onChange={handleChange} placeholder="Optional" className="input-field" />
           </div>
           {/* Style Code Display */}
           <div className="sm:col-span-2">
@@ -318,7 +318,7 @@ export default function ProductFormAdvanced({ initialData, onClose }: ProductFor
           <button
             type="button"
             onClick={addColor}
-            disabled={!form.name || !form.categoryId || !form.code}
+            disabled={!form.name || !form.categoryId}
             className="button-secondary px-3 py-1.5 text-sm disabled:cursor-not-allowed disabled:opacity-50"
           >
             + Add Color

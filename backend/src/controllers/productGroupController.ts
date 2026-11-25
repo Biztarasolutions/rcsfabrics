@@ -22,7 +22,7 @@ export const createProductGroup = async (req: Request, res: Response): Promise<v
 
     const categoryName = category.name;
     const cleanedName = extractDesignName(name, categoryName, code);
-    const styleCode = code ? buildStyleCode(cleanedName, categoryName, code) : `P${Date.now()}`; // Or however styleCode is meant to be derived if code is absent
+    const styleCode = buildStyleCode(cleanedName, categoryName, code); // the code is optional
 
     // Parse and validate base price
     const basePriceNum = parseFloat(basePrice);

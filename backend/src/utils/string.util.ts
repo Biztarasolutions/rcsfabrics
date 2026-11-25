@@ -46,25 +46,31 @@ export const truncateString = (str: string, length: number): string => {
   return str.slice(0, length) + '...';
 };
 
-/** e.g. 10001 → P10001 */
-export const formatProductCodeSuffix = (code: number | string): string => `P${code}`;
+export type CodeValue = number | string | null | undefined;
+/** Products added without a number (the new Drive structure) have no code */
+export const hasCode = (code: CodeValue): boolean =>
+  code !== null && code !== undefined && String(code).trim() !== '' && String(code) !== '000' && Number(code) !== 0;
 
-/** Style code: Code-Name-Category (e.g. P10001-Polka Dot-Satin) */
-export const buildStyleCode = (name: string, categoryName: string, code: number | string): string =>
-  `${formatProductCodeSuffix(code)}-${name.trim()}-${categoryName.trim()}`;
+/** e.g. 10001 → P10001 */
+export const formatProductCodeSuffix = (code: CodeValue): string => (hasCode(code) ? `P${code}` : '');
+const withCode = (code: CodeValue, rest: string) => (hasCode(code) ? `${formatProductCodeSuffix(code)}-${rest}` : rest);
+
+/** Style code: [Code-]Name-Category (e.g. P10001-Polka Dot-Satin, or Polka Dot-Satin) */
+export const buildStyleCode = (name: string, categoryName: string, code: CodeValue): string =>
+  withCode(code, `${name.trim()}-${categoryName.trim()}`);
 
 /** Product code: Code-Name-Category-Color (e.g. P10001-Polka Dot-Satin-White) */
 export const buildProductCode = (
   name: string,
   categoryName: string,
   colorName: string,
-  code: number | string
+  code: CodeValue
 ): string =>
-  `${formatProductCodeSuffix(code)}-${name.trim()}-${categoryName.trim()}-${colorName.trim()}`;
+  withCode(code, `${name.trim()}-${categoryName.trim()}-${colorName.trim()}`);
 
 /** Legacy style code: 101-SAT-POL */
 export const buildLegacyStyleCode = (
-  code: number | string,
+  code: CodeValue,
   categoryName: string,
   productName: string
 ): string => {
@@ -80,7 +86,7 @@ export const buildLegacyProductCode = (legacyStyle: string, colorName: string): 
 export const getDriveFolderNameCandidates = (opts: {
   name: string;
   categoryName: string;
-  code: number | string;
+  code: CodeValue;
   colorName?: string;
 }): string[] => {
   const { name, categoryName, code, colorName } = opts;
@@ -91,6 +97,12 @@ export const getDriveFolderNameCandidates = (opts: {
   };
 
   const style = buildStyleCode(name, categoryName, code);
+  if (!hasCode(code)) {
+    // New structure: Category folder / "Name-Colour" folder
+    if (colorName) { add(`${name.trim()}-${colorName.trim()}`); add(buildProductCode(name, categoryName, colorName, code)); }
+    else add(style);
+    return [...seen];
+  }
   const legacyStyle = buildLegacyStyleCode(code, categoryName, name);
 
   if (colorName) {
@@ -113,8 +125,9 @@ export const getDriveFolderNameCandidates = (opts: {
  * Handles new format "P10001-Polka Dot-Satin[-White]" → "Polka Dot"
  * and old format "Polka Dot-Satin-P10001[-White]" → "Polka Dot"
  */
-export const extractDesignName = (name: string, categoryName: string, code: number | string): string => {
+export const extractDesignName = (name: string, categoryName: string, code: CodeValue): string => {
   let cleaned = name.trim();
+  if (!hasCode(code)) return cleaned;
   const pcode = formatProductCodeSuffix(code);
 
   // New format: starts with "P10001-"

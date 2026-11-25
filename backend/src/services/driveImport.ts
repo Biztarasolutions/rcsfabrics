@@ -1,27 +1,39 @@
 import { prisma } from '@/index';
-import { listProductFolders, folderHasFabricPhotos, folderUrlFromId } from '@/utils/googleDrive.util';
+import { listAllFolders, folderHasFabricPhotos, folderUrlFromId } from '@/utils/googleDrive.util';
 import { buildProductCode, buildStyleCode, generateSlug } from '@/utils/string.util';
 
-export interface ParsedFolder { folderId: string; folderName: string; code: number; design: string; categoryId: string; categoryName: string; color: string }
+type Cat = { id: string; name: string };
+export interface ParsedFolder { name: string; color: string; categoryId: string; categoryName: string; code: number | null }
+
+const norm = (s?: string | null) => (s || '').trim().toLowerCase().replace(/\s+/g, ' ');
 
 /**
- * "P10001-Polka Dot-Satin-White" → code 10001, design "Polka Dot", category Satin, colour "White".
- * The category is found by name, so designs and colours may contain hyphens.
+ * Product folder inside a category folder: "Polka Dot-White" → name "Polka Dot", colour "White".
+ * The colour is the part after the LAST hyphen.
  */
-export const parseColourFolder = (name: string, categories: Array<{ id: string; name: string }>): Omit<ParsedFolder, 'folderId'> | null => {
-  const m = name.trim().match(/^P(\d+)-(.+)$/i);
+export const parseProductFolder = (folderName: string, cat: Cat): ParsedFolder | null => {
+  const raw = folderName.trim().replace(/\s*-\s*/g, '-');
+  const at = raw.lastIndexOf('-');
+  if (at <= 0 || at === raw.length - 1) return null;
+  const name = raw.slice(0, at).trim();
+  const color = raw.slice(at + 1).trim();
+  if (!name || !color) return null;
+  return { name, color, categoryId: cat.id, categoryName: cat.name.trim(), code: null };
+};
+
+/** Older structure, still understood: "P10001-Polka Dot-Satin-White" */
+export const parseCodedFolder = (folderName: string, categories: Cat[]): ParsedFolder | null => {
+  const m = folderName.trim().match(/^P(\d+)-(.+)$/i);
   if (!m) return null;
   const rest = m[2];
-  // longest category name first (e.g. "Cotton Silk" before "Silk")
   const cats = [...categories].sort((a, b) => b.name.length - a.name.length);
   for (const c of cats) {
     const marker = `-${c.name.trim().toLowerCase()}-`;
     const at = rest.toLowerCase().lastIndexOf(marker);
     if (at <= 0) continue;
-    const design = rest.slice(0, at).trim();
+    const name = rest.slice(0, at).trim();
     const color = rest.slice(at + marker.length).trim();
-    if (!design || !color) continue;
-    return { folderName: name.trim(), code: Number(m[1]), design, categoryId: c.id, categoryName: c.name.trim(), color };
+    if (name && color) return { name, color, categoryId: c.id, categoryName: c.name.trim(), code: Number(m[1]) };
   }
   return null;
 };
@@ -29,55 +41,71 @@ export const parseColourFolder = (name: string, categories: Array<{ id: string; 
 export interface ImportResult {
   created: string[];
   waitingForPhotos: string[];
-  unknownCategory: string[];
+  notUnderstood: string[];
 }
 
 /**
- * Looks through Drive for colour folders (with finished Fabric photos) that are not in the shop yet
- * and adds each as a DRAFT: hidden from customers, price / width / stock left empty for the admin.
+ * Photoshoot structure:  <Category folder, e.g. "Satin"> / <"Name-Colour" folder> / Fabric-1, Fabric-2, …
+ * Every product folder with finished Fabric photos that is not in the shop yet becomes a DRAFT:
+ * hidden from customers, name / category / colour / description filled in, price · width · stock left empty.
+ * Run by the admin from Admin → Products → Import from Drive.
  */
 export const importFabricsFromDrive = async (limit = 40): Promise<ImportResult> => {
   const [folders, categories, products] = await Promise.all([
-    listProductFolders(),
-    prisma.category.findMany({ select: { id: true, name: true } }),
-    prisma.product.findMany({ select: { productCode: true, slug: true, code: true, name: true, categoryId: true, color: true } }),
+    listAllFolders(),
+    prisma.category.findMany({ select: { id: true, name: true, description: true, bestFor: true, properties: true } }),
+    prisma.product.findMany({ select: { productCode: true, slug: true, name: true, categoryId: true, color: true } }),
   ]);
-  const norm = (s?: string | null) => (s || '').trim().toLowerCase().replace(/\s+/g, ' ');
-  // Already in the shop if the product code matches, or the same design + category + colour + code
-  // exists (older products use codes like "Polka Dot-Satin-P10001-White")
-  const have = new Set(products.map((p) => norm(p.productCode)));
-  const sameFabric = new Set(products.map((p) => [p.code, norm(p.name), p.categoryId, norm(p.color)].join('|')));
+
+  const catByName = new Map(categories.map((c) => [norm(c.name), c]));
+  const catFolders = new Map<string, Cat>(); // folder id → category
+  for (const f of folders) {
+    const c = catByName.get(norm(f.name));
+    if (c) catFolders.set(f.id, c);
+  }
+
+  // The same fabric = same name + category + colour (any code, any spelling of spaces/case)
+  const keyOf = (name: string, categoryId: string, color: string) => [norm(name), categoryId, norm(color)].join('|');
+  const have = new Set(products.map((p) => keyOf(p.name, p.categoryId, p.color)));
+  const codes = new Set(products.map((p) => norm(p.productCode)));
   const slugs = new Set(products.map((p) => p.slug));
-  const result: ImportResult = { created: [], waitingForPhotos: [], unknownCategory: [] };
-  const seen = new Set<string>();
+  const result: ImportResult = { created: [], waitingForPhotos: [], notUnderstood: [] };
 
   for (const f of folders) {
     if (result.created.length >= limit) break;
-    const parsed = parseColourFolder(f.name, categories);
-    if (!parsed) {
-      // design-level folders like "P10001-Satin" have only two parts; report only colour-looking names
-      if (f.name.split('-').length >= 4) result.unknownCategory.push(f.name);
-      continue;
-    }
-    const productCode = buildProductCode(parsed.design, parsed.categoryName, parsed.color, parsed.code);
-    const key = norm(productCode);
-    const fabricKey = [parsed.code, norm(parsed.design), parsed.categoryId, norm(parsed.color)].join('|');
-    if (have.has(key) || seen.has(key) || sameFabric.has(fabricKey)) continue;
-    seen.add(key);
+    const parentCat = f.parents.map((id) => catFolders.get(id)).find(Boolean);
+    let parsed: ParsedFolder | null = null;
+    if (parentCat) {
+      parsed = parseProductFolder(f.name, parentCat);
+      if (!parsed) { result.notUnderstood.push(`${parentCat.name} / ${f.name}`); continue; }
+    } else if (/^P\d+-/i.test(f.name)) {
+      parsed = parseCodedFolder(f.name, categories);
+      if (!parsed) continue;
+    } else continue;
+
+    const key = keyOf(parsed.name, parsed.categoryId, parsed.color);
+    const productCode = buildProductCode(parsed.name, parsed.categoryName, parsed.color, parsed.code);
+    if (have.has(key) || codes.has(norm(productCode))) continue;
     if (!(await folderHasFabricPhotos(f.id))) { result.waitingForPhotos.push(f.name); continue; }
 
     const slug = generateSlug(productCode);
     if (slugs.has(slug)) continue;
+    const cat = categories.find((c) => c.id === parsed!.categoryId)!;
     const folderUrl = folderUrlFromId(f.id);
     await prisma.product.create({
       data: {
-        name: parsed.design,
+        name: parsed.name,
         slug,
         categoryId: parsed.categoryId,
         code: parsed.code,
-        styleCode: buildStyleCode(parsed.design, parsed.categoryName, parsed.code),
+        styleCode: buildStyleCode(parsed.name, parsed.categoryName, parsed.code),
         productCode,
         color: parsed.color,
+        // category information
+        description: cat.description || null,
+        bestFor: cat.bestFor || [],
+        properties: cat.properties || [],
+        // for the admin to fill in
         basePrice: 0,
         width: 0,
         pattern: '',
@@ -91,8 +119,8 @@ export const importFabricsFromDrive = async (limit = 40): Promise<ImportResult> 
     });
     slugs.add(slug);
     have.add(key);
-    sameFabric.add(fabricKey);
-    result.created.push(productCode);
+    codes.add(norm(productCode));
+    result.created.push(`${parsed.name} (${parsed.color}) · ${parsed.categoryName}`);
   }
   return result;
 };

@@ -149,7 +149,7 @@ const collectFolderIdsForProduct = async (
     await addFromUrl(color.folderUrl);
   }
 
-  const code = product.code ?? '000';
+  const code = product.code ?? null;
   const styleCandidates = getDriveFolderNameCandidates({
     name: product.name,
     categoryName,
@@ -217,7 +217,7 @@ const collectProductCodesForSync = (
   categoryName: string
 ): string[] => {
   const codes = new Set<string>();
-  const numericCode = product.code ?? '000';
+  const numericCode = product.code ?? null;
 
   if (product.styleCode) codes.add(product.styleCode.trim());
 
@@ -286,7 +286,7 @@ const syncImagesForProduct = async (
       ...getDriveFolderNameCandidates({
         name: product.name,
         categoryName,
-        code: product.code ?? '000',
+        code: product.code ?? null,
         colorName: color.name,
       }),
     ];
@@ -367,8 +367,8 @@ export const createProduct = async (
       colors,
     } = req.body;
 
-    if (!name || !categoryId || !basePrice || !code) {
-      throw new ApiError(400, 'Name, category, code, and price are required');
+    if (!name || !categoryId || !basePrice) {
+      throw new ApiError(400, 'Name, category and price are required');
     }
 
     // Get category to build styleCode
@@ -437,7 +437,7 @@ export const createProduct = async (
           slug,
           description: category.description,
           categoryId,
-          code,
+          code: code ? Number(code) : null,
           styleCode,
           productCode: colorVar.productCode,
           basePrice,
@@ -584,7 +584,7 @@ export const updateProduct = async (
     }
 
     const categoryName = existingProduct.category?.name || 'Unknown';
-    const productCode = cleanedUpdateData.code ?? existingProduct.code ?? '000';
+    const productCode = cleanedUpdateData.code ?? existingProduct.code ?? null;
 
     // Clean name in case it contains category, code, or color variants
     let name = cleanedUpdateData.name || existingProduct.name;
@@ -713,7 +713,7 @@ export const updateProduct = async (
               },
               name: cleanedName,
               categoryId: existingProduct.categoryId,
-              code: Number(productCode),
+              code: productCode == null ? null : Number(productCode),
               styleCode: styleCodeToUpdate,
               basePrice: cleanedUpdateData.basePrice ?? existingProduct.basePrice,
               width: cleanedUpdateData.width ?? existingProduct.width,
@@ -2212,7 +2212,7 @@ export const migrateProductCodes = async (_req: AuthRequest, res: Response): Pro
       try {
         const categoryName = product.category?.name || 'Unknown';
         const colorName = product.color || 'Unknown';
-        const code = product.code ?? '000';
+        const code = product.code ?? null;
         const newProductCode = buildProductCode(product.name, categoryName, colorName, code);
         const newStyleCode = buildStyleCode(product.name, categoryName, code);
         const newSlug = generateSlug(newProductCode);
@@ -2375,14 +2375,8 @@ export const autoSyncMissingImages = async (): Promise<number> => {
 };
 
 export const startMissingImageSync = (): void => {
-  const run = async () => {
-    // 1) new colour folders in Drive → draft products  2) pull photos for anything without them
-    try {
-      const r = await importFabricsFromDrive();
-      if (r.created.length) { console.log(`[Drive import] ${r.created.length} new draft fabrics:`, r.created.join(', ')); invalidateProductCaches(); }
-    } catch (e) { console.error('[Drive import] failed:', e); }
-    await autoSyncMissingImages().catch((e) => console.error('[Auto-sync] failed:', e));
-  };
+  // Only pulls photos for products that already exist; adding new fabrics from Drive is done by the admin
+  const run = () => { autoSyncMissingImages().catch((e) => console.error('[Auto-sync] failed:', e)); };
   setTimeout(run, 2 * 60 * 1000);
   setInterval(run, 30 * 60 * 1000).unref();
 };

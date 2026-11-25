@@ -45,28 +45,33 @@ export const cn = (...classes: (string | undefined | null | boolean)[]): string 
   return classes.filter(Boolean).join(' ');
 };
 
-/** e.g. 10001 → P10001 */
-export const formatProductCodeSuffix = (code: number | string): string => `P${code}`;
+type CodeValue = number | string | null | undefined;
+const hasCode = (code: CodeValue) => code !== null && code !== undefined && String(code).trim() !== '' && Number(code) !== 0;
 
-/** Style code: Code-Name-Category (e.g. P10001-Polka Dot-Satin) */
-export const buildStyleCode = (name: string, categoryName: string, code: number | string): string =>
-  `${formatProductCodeSuffix(code)}-${name.trim()}-${categoryName.trim()}`;
+/** e.g. 10001 → P10001 (empty when the product has no code) */
+export const formatProductCodeSuffix = (code: CodeValue): string => (hasCode(code) ? `P${code}` : '');
+const withCode = (code: CodeValue, rest: string) => (hasCode(code) ? `P${code}-${rest}` : rest);
 
-/** Product code: Code-Name-Category-Color (e.g. P10001-Polka Dot-Satin-White) */
+/** Style code: [Code-]Name-Category (e.g. P10001-Polka Dot-Satin, or Polka Dot-Satin) */
+export const buildStyleCode = (name: string, categoryName: string, code?: CodeValue): string =>
+  withCode(code, `${name.trim()}-${categoryName.trim()}`);
+
+/** Product code: [Code-]Name-Category-Color */
 export const buildProductCode = (
   name: string,
   categoryName: string,
   colorName: string,
-  code: number | string
+  code?: CodeValue
 ): string =>
-  `${formatProductCodeSuffix(code)}-${name.trim()}-${categoryName.trim()}-${colorName.trim()}`;
+  withCode(code, `${name.trim()}-${categoryName.trim()}-${colorName.trim()}`);
 
 /**
  * Extracts and cleans the core design/product name by removing category, code and color suffixes.
  * E.g., "Polka Dot-Satin-P10001-White" -> "Polka Dot"
  */
-export const extractDesignName = (name: string, categoryName: string, code: number | string): string => {
+export const extractDesignName = (name: string, categoryName: string, code?: CodeValue): string => {
   let cleaned = name.trim();
+  if (!hasCode(code)) return cleaned;
   const suffix = `-${categoryName.trim()}-${formatProductCodeSuffix(code)}`;
   if (cleaned.includes(suffix)) {
     cleaned = cleaned.split(suffix)[0];

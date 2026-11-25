@@ -79,7 +79,8 @@ export default function AdminProductsPage() {
       const d = res?.data?.data || {};
       toast.success(res?.data?.message || 'Import finished', { duration: 7000 });
       if (d.created?.length) setStatus('draft');
-      if (d.unknownCategory?.length) toast(`Category not found for: ${d.unknownCategory.slice(0, 5).join(', ')}${d.unknownCategory.length > 5 ? '…' : ''} — check the folder name or add the category.`, { duration: 10000, icon: '⚠️' });
+      if (d.notUnderstood?.length) toast(`Could not read the colour from: ${d.notUnderstood.slice(0, 5).join(', ')}${d.notUnderstood.length > 5 ? '…' : ''} — name the folder like "Polka Dot-White".`, { duration: 10000, icon: '⚠️' });
+      if (d.waitingForPhotos?.length) toast(`${d.waitingForPhotos.length} folder(s) skipped — no Fabric photos in them yet.`, { duration: 7000, icon: 'ℹ️' });
     },
     onError: (err: any) => toast.error(err?.response?.data?.message || err.message || 'Import failed'),
   });
@@ -159,7 +160,7 @@ export default function AdminProductsPage() {
             {syncAllMutation.isPending ? 'Syncing...' : 'Sync All Images'}
           </button>
           <button onClick={() => importMutation.mutate()} disabled={importMutation.isPending}
-            title="Add every new colour folder from Google Drive as a draft"
+            title="Add every new fabric folder from the Drive photoshoot folder (Category / Name-Colour) as a draft"
             className="flex items-center gap-2 rounded-xl border border-primary-200 bg-primary-50 px-4 py-2.5 text-sm font-semibold text-primary-700 hover:bg-primary-100 dark:border-primary-900 dark:bg-primary-950/30 dark:text-primary-300">
             {importMutation.isPending ? 'Importing… (can take a minute)' : '⤓ Import from Drive'}
           </button>
@@ -224,7 +225,7 @@ export default function AdminProductsPage() {
               <div className="min-w-0 flex-1">
                 <p className="truncate font-bold text-gray-900 dark:text-white">{product.name}</p>
                 <StatusBadge p={product} />
-                <p className="text-xs text-gray-500">{product.code ? `P${product.code}` : (product.styleCode?.split('-').pop() || '—')} · {product.category?.name || '—'}</p>
+                <p className="text-xs text-gray-500">{product.code ? `P${product.code} · ` : ''}{product.color || ''}{product.variants?.length > 1 ? ` +${product.variants.length - 1} colours` : ''} · {product.category?.name || '—'}</p>
                 <p className="mt-1 text-sm">
                   <span className="font-semibold text-gray-900 dark:text-white">{formatPrice(product.discountPrice || product.basePrice)}</span>
                   {product.discountPrice && product.discountPrice < product.basePrice && <span className="ml-1.5 text-xs text-gray-400 line-through">{formatPrice(product.basePrice)}</span>}
@@ -307,7 +308,7 @@ export default function AdminProductsPage() {
                             {product.name}
                           </span>
                           <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium mt-0.5">
-                            {product.code ? `P${product.code}` : (product.styleCode?.split('-').pop() || '—')}
+                            {product.code ? `P${product.code}` : `${product.variants?.length || 1} colour${(product.variants?.length || 1) > 1 ? 's' : ''}`}
                           </span>
                           <span className="mt-1"><StatusBadge p={product} /></span>
                           {!product.images?.length && (

@@ -307,20 +307,20 @@ export const fetchFolderImagesByProductCode = async (
 };
 
 
-/** Every folder the website can see in Drive whose name starts with a product code (P10001-…). */
-export const listProductFolders = async (): Promise<Array<{ id: string; name: string }>> => {
-  const out: Array<{ id: string; name: string }> = [];
+/** Every folder the website can see in Drive, with its parent folder(s). */
+export const listAllFolders = async (): Promise<Array<{ id: string; name: string; parents: string[] }>> => {
+  const out: Array<{ id: string; name: string; parents: string[] }> = [];
   let pageToken: string | undefined;
   do {
     const res: any = await drive.files.list({
       ...driveListParams,
       q: `mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
-      fields: 'nextPageToken, files(id, name)',
+      fields: 'nextPageToken, files(id, name, parents)',
       pageSize: 1000,
       pageToken,
     });
     for (const f of res.data.files || []) {
-      if (f.id && f.name && /^P\d+-/i.test(f.name.trim())) out.push({ id: f.id, name: f.name.trim() });
+      if (f.id && f.name) out.push({ id: f.id, name: f.name.trim(), parents: f.parents || [] });
     }
     pageToken = res.data.nextPageToken || undefined;
   } while (pageToken);
