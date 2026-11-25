@@ -187,7 +187,7 @@ export default function AdminProductsPage() {
       {noPhotoCount > 0 && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
           <strong>{noPhotoCount} {noPhotoCount === 1 ? 'product has' : 'products have'} no photos</strong> on this page and {noPhotoCount === 1 ? 'is' : 'are'} hidden from the shop.
-          Check the Google Drive folder is named exactly like the product code and shared with the website, then press <strong>Sync</strong> on the product.
+          Check its photo folder in Google Drive (Category / Name-Colour), then press <strong>Import</strong>.
         </div>
       )}
 
@@ -298,7 +298,7 @@ export default function AdminProductsPage() {
                           <span className="mt-1"><StatusBadge p={product} /></span>
                           {!product.images?.length && (
                             <span className="mt-1 inline-block w-fit rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
-                              title="Hidden from the shop until photos sync. Check the Google Drive folder name matches the product code, then press Sync.">
+                              title="Hidden from the shop until it has photos. Check its Drive folder, then press Import.">
                               No photos · hidden from shop
                             </span>
                           )}

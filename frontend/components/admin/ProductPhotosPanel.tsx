@@ -38,7 +38,6 @@ export default function ProductPhotosPanel({ variants }: { variants: any[] }) {
     <div className="mb-6 rounded-2xl border border-gray-200 p-4 dark:border-dark-700">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h4 className="text-base font-bold text-gray-900 dark:text-white">Photos</h4>
-        <p className="text-xs text-gray-500">From the Google Drive folder · press <strong>Sync</strong> on the product to update</p>
       </div>
 
       <div className="mt-4 space-y-5">
