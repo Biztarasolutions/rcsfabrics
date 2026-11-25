@@ -5,6 +5,9 @@ import { isRawFileName } from '@/utils/rawPhoto';
 import { customerCode } from '@/utils/customer';
 import { prisma } from '@/index';
 import { printToken } from '@/utils/printToken';
+
+/** sku marker for products removed by the admin but kept because past orders refer to them */
+export const ARCHIVED_PREFIX = 'ARCHIVED-';
 import { importFabricsFromDrive } from '@/services/driveImport';
 import { assignRcsCodes, ensureCategoryNumbers } from '@/services/rcsCode';
 import { isManager, isStaff, effectiveRole, isSuperAdminEmail, ASSIGNABLE_ROLES } from '@/utils/roles';
@@ -846,18 +849,39 @@ export const deleteProduct = async (
       productIds = related.map((p) => p.id);
     }
 
-    // Delete associated colors and images
-    await prisma.productColor.deleteMany({ where: { productId: { in: productIds } } });
-    await prisma.productImage.deleteMany({ where: { productId: { in: productIds } } });
+    // Colours that appear in past orders can't be erased (orders and bills point to them):
+    // they are archived instead — hidden from the shop and from Admin → Products.
+    const ordered = await prisma.orderItem.findMany({
+      where: { productId: { in: productIds } },
+      select: { productId: true },
+      distinct: ['productId'],
+    });
+    const keep = new Set(ordered.map((o) => o.productId));
+    const toDelete = productIds.filter((pid) => !keep.has(pid));
+    const toArchive = productIds.filter((pid) => keep.has(pid));
 
-    // Delete the product(s)
-    await prisma.product.deleteMany({ where: { id: { in: productIds } } });
+    // Photos, colours, reviews, cart and wishlist entries are removed with the product (cascade)
+    if (toDelete.length) await prisma.product.deleteMany({ where: { id: { in: toDelete } } });
+    for (const pid of toArchive) {
+      const cur = await prisma.product.findUnique({ where: { id: pid }, select: { slug: true } });
+      await prisma.product.update({
+        where: { id: pid },
+        // free the web address so the same fabric can be imported again later
+        data: { isActive: false, isDraft: false, sku: `${ARCHIVED_PREFIX}${pid}`, slug: `${cur?.slug}-archived-${pid.slice(-6)}` },
+      });
+    }
+    if (toArchive.length) {
+      await prisma.cartItem.deleteMany({ where: { productId: { in: toArchive } } });
+      await prisma.wishlist.deleteMany({ where: { productId: { in: toArchive } } });
+    }
 
     invalidateProductCaches();
 
     res.json({
       success: true,
-      message: `Deleted ${productIds.length} product variant(s) successfully`,
+      message: toArchive.length
+        ? `Removed. ${toArchive.length} colour(s) are in past orders, so they are kept for those orders' records but hidden everywhere.`
+        : `Deleted ${productIds.length} product variant(s) successfully`,
       statusCode: 200,
     } as ApiResponse);
   } catch (error) {
@@ -892,7 +916,8 @@ export const getAdminProducts = async (
       limit as string
     );
 
-    const where: any = {};
+    // Archived products (removed, but kept for past orders) never show in the list
+    const where: any = { NOT: { sku: { startsWith: ARCHIVED_PREFIX } } };
     if (search) {
       where.OR = [
         { name: { contains: search as string, mode: 'insensitive' } },
@@ -944,7 +969,7 @@ export const getAdminProducts = async (
     }
 
     const flatProducts = await prisma.product.findMany({
-      where: variantWhere,
+      where: { AND: [variantWhere, { NOT: { sku: { startsWith: ARCHIVED_PREFIX } } }] },
       include: {
         images: {
           where: { isMain: true },
