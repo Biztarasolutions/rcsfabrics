@@ -1,6 +1,6 @@
 import { prisma } from '@/index';
 import { listAllFolders, folderHasFabricPhotos, folderUrlFromId } from '@/utils/googleDrive.util';
-import { buildProductCode, buildStyleCode, generateSlug } from '@/utils/string.util';
+import { buildProductCode, buildStyleCode, cleanDesignName, generateSlug } from '@/utils/string.util';
 import { properCase } from '@/services/rcsCode';
 
 type Cat = { id: string; name: string };
@@ -18,7 +18,8 @@ export const parseProductFolder = (folderName: string, cat: Cat): ParsedFolder |
   const sep = raw.includes(',') ? ',' : '-';
   const at = raw.lastIndexOf(sep);
   if (at <= 0 || at === raw.length - 1) return null;
-  const name = properCase(raw.slice(0, at).replace(/[-,]+$/, ''));
+  // old folder names like "P10005-French Chantilly-Lace-Beige" still give "French Chantilly"
+  const name = properCase(cleanDesignName(raw.slice(0, at).replace(/[-,]+$/, ''), cat.name));
   const color = properCase(raw.slice(at + 1).replace(/^[-,]+/, ''));
   if (!name || !color) return null;
   return { name, color, categoryId: cat.id, categoryName: cat.name.trim(), code: null };

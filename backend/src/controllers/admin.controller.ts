@@ -16,6 +16,7 @@ import {
   buildProductCode,
   getDriveFolderNameCandidates,
   extractDesignName,
+  cleanDesignName,
 } from '@/utils/string.util';
 import { parsePagination, createPaginationMeta } from '@/utils/pagination.util';
 import { ApiError } from '@/middleware/errorHandler';
@@ -378,7 +379,7 @@ export const createProduct = async (
       throw new ApiError(404, 'Category not found');
     }
 
-    const cleanedName = extractDesignName(name, category.name, code);
+    const cleanedName = cleanDesignName(extractDesignName(name, category.name, code), category.name);
     const styleCode = buildStyleCode(cleanedName, category.name, code);
 
     let processedColors: any[] = [];
@@ -592,7 +593,7 @@ export const updateProduct = async (
 
     // Clean name in case it contains category, code, or color variants
     let name = cleanedUpdateData.name || existingProduct.name;
-    const cleanedName = extractDesignName(name, categoryName, productCode);
+    const cleanedName = cleanDesignName(extractDesignName(name, categoryName, productCode), categoryName);
     if (cleanedUpdateData.name !== undefined) {
       cleanedUpdateData.name = cleanedName;
     }

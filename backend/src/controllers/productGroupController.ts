@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { assignRcsCodes } from '@/services/rcsCode';
 import { PrismaClient } from '@prisma/client';
-import { generateSlug, buildStyleCode, buildProductCode, extractDesignName } from '../utils/string.util';
+import { generateSlug, buildStyleCode, buildProductCode, extractDesignName, cleanDesignName } from '../utils/string.util';
 import { syncImagesForProduct } from '../services/driveService';
 
 const prisma = new PrismaClient();
@@ -22,7 +22,7 @@ export const createProductGroup = async (req: Request, res: Response): Promise<v
     }
 
     const categoryName = category.name;
-    const cleanedName = extractDesignName(name, categoryName, code);
+    const cleanedName = cleanDesignName(extractDesignName(name, categoryName, code), categoryName);
     const styleCode = buildStyleCode(cleanedName, categoryName, code); // the code is optional
 
     // Parse and validate base price

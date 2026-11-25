@@ -145,3 +145,16 @@ export const extractDesignName = (name: string, categoryName: string, code: Code
   return cleaned.trim();
 };
 
+
+/**
+ * Clean a design name that may still carry the old numbering:
+ * "P10005-French Chantilly-Lace" (category Lace) → "French Chantilly"
+ */
+export const cleanDesignName = (name: string, categoryName?: string): string => {
+  let n = (name || '').trim().replace(/^P\d+\s*-\s*/i, '');
+  const cat = (categoryName || '').trim().toLowerCase();
+  if (cat) {
+    while (n.toLowerCase().endsWith(`-${cat}`)) n = n.slice(0, -cat.length - 1).trim();
+  }
+  return n.trim();
+};
