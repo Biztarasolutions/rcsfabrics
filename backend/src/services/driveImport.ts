@@ -69,7 +69,17 @@ export const importFabricsFromDrive = async (limit = 40): Promise<ImportResult> 
 
   // The same fabric = same name + category + colour (any code, any spelling of spaces/case)
   const keyOf = (name: string, categoryId: string, color: string) => [norm(name), categoryId, norm(color)].join('|');
-  const have = new Set(products.map((p) => keyOf(p.name, p.categoryId, p.color)));
+  // "Polka Dot Poplin" in Poplin is the same design as a folder named "Polka Dot"
+  const catName = new Map(categories.map((c) => [c.id, norm(c.name)]));
+  const withoutCategory = (name: string, categoryId: string) => {
+    const n = norm(name); const c = catName.get(categoryId) || '';
+    return c && n.endsWith(` ${c}`) ? n.slice(0, -c.length - 1) : n;
+  };
+  const have = new Set<string>();
+  for (const p of products) {
+    have.add(keyOf(p.name, p.categoryId, p.color));
+    have.add(keyOf(withoutCategory(p.name, p.categoryId), p.categoryId, p.color));
+  }
   const codes = new Set(products.map((p) => norm(p.productCode)));
   const slugs = new Set(products.map((p) => p.slug));
   const result: ImportResult = { created: [], waitingForPhotos: [], notUnderstood: [] };

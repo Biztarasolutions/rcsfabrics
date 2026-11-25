@@ -43,11 +43,28 @@ export const assignRcsCodes = async (): Promise<number> => {
   const [cats, products] = await Promise.all([
     prisma.category.findMany({ select: { id: true, codeNumber: true } }),
     prisma.product.findMany({
-      select: { id: true, name: true, categoryId: true, color: true, designNumber: true, rcsCode: true },
+      select: { id: true, name: true, categoryId: true, color: true, designNumber: true, rcsCode: true, styleCode: true },
       orderBy: { createdAt: 'asc' },
     }),
   ]);
   const catNo = new Map(cats.map((c) => [c.id, c.codeNumber!]));
+
+  // Same name + same category = one design with colour variations, whatever the letter case:
+  // use the oldest spelling for all of them so they group together.
+  const catNames = new Map((await prisma.category.findMany({ select: { id: true, name: true } })).map((c) => [c.id, c.name.trim()]));
+  const canonical = new Map<string, string>();
+  for (const p of products) {
+    const k = `${p.categoryId}|${norm(p.name)}`;
+    if (!canonical.has(k)) canonical.set(k, p.name.trim().replace(/\s+/g, ' '));
+  }
+  for (const p of products) {
+    const name = canonical.get(`${p.categoryId}|${norm(p.name)}`)!;
+    const styleCode = `${name}-${catNames.get(p.categoryId) || ''}`;
+    if (p.name !== name || p.styleCode !== styleCode) {
+      await prisma.product.update({ where: { id: p.id }, data: { name, styleCode } });
+      p.name = name;
+    }
+  }
 
   // design number per (category, name): reuse the one a colour of that design already has
   const designNo = new Map<string, number>();
