@@ -115,15 +115,19 @@ export default function AdminProductsPage() {
     const [label, cls] = STATUS_BADGE[statusOf(p)];
     return <span className={`inline-block w-fit rounded px-1.5 py-0.5 text-[10px] font-semibold ${cls}`}>{label}</span>;
   };
-  const LiveButton = ({ p, className }: { p: any; className: string }) => {
-    const st = statusOf(p);
-    const goLive = st !== 'live';
+  // Small on/off switch: on = live in the shop (all colours)
+  const LiveToggle = ({ p }: { p: any }) => {
+    const on = statusOf(p) === 'live';
     const busy = liveMutation.isPending && liveMutation.variables?.id === p.id;
     return (
-      <button onClick={() => liveMutation.mutate({ id: p.id, live: goLive })} disabled={busy}
-        title={goLive ? 'Show this design (all colours) in the shop' : 'Hide this design (all colours) from the shop'}
-        className={`${className} ${goLive ? 'border-green-300 bg-green-600 text-white hover:bg-green-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-dark-600 dark:text-gray-300 dark:hover:bg-dark-700'}`}>
-        {busy ? '…' : goLive ? 'Make live' : 'Make inactive'}
+      <button type="button" role="switch" aria-checked={on} disabled={busy}
+        onClick={() => liveMutation.mutate({ id: p.id, live: !on })}
+        title={on ? 'Live — click to make inactive' : 'Not live — click to make live'}
+        className="inline-flex shrink-0 items-center gap-1.5 text-[11px] font-semibold text-gray-600 disabled:opacity-60 dark:text-gray-300">
+        <span className={`relative inline-block h-4 w-7 rounded-full transition-colors ${on ? 'bg-green-500' : 'bg-gray-300 dark:bg-dark-600'}`}>
+          <span className={`absolute top-0.5 h-3 w-3 rounded-full bg-white shadow transition-all ${on ? 'left-3.5' : 'left-0.5'} ${busy ? 'animate-pulse' : ''}`} />
+        </span>
+        Live
       </button>
     );
   };
@@ -202,7 +206,7 @@ export default function AdminProductsPage() {
               </button>
               <div className="min-w-0 flex-1">
                 <p className="truncate font-bold text-gray-900 dark:text-white">{product.name}</p>
-                <StatusBadge p={product} />
+                <div className="flex items-center gap-2"><StatusBadge p={product} /><LiveToggle p={product} /></div>
                 <p className="text-xs text-gray-500">{product.rcsCode ? `${product.rcsCode.split('-').slice(0, 3).join('-')} · ` : ''}{product.color || ''}{product.variants?.length > 1 ? ` +${product.variants.length - 1} colours` : ''} · {product.category?.name || '—'}</p>
                 <p className="mt-1 text-sm">
                   <span className="font-semibold text-gray-900 dark:text-white">{formatPrice(product.discountPrice || product.basePrice)}</span>
@@ -218,8 +222,7 @@ export default function AdminProductsPage() {
                 )}
               </div>
             </div>
-            <LiveButton p={product} className="mt-3 w-full rounded-lg border py-2 text-xs font-semibold" />
-            <div className="mt-2 grid grid-cols-4 gap-2 text-xs font-medium">
+            <div className="mt-3 grid grid-cols-4 gap-2 text-xs font-medium">
               <button onClick={() => handleSyncSingle(product.id)} disabled={syncSingleMutation.isPending}
                 className="rounded-lg border border-blue-200 py-2 text-blue-600 dark:border-blue-900 dark:text-blue-400">
                 {syncSingleMutation.variables === product.id && syncSingleMutation.isPending ? 'Syncing…' : 'Sync'}
@@ -340,7 +343,7 @@ export default function AdminProductsPage() {
                     {/* Actions */}
                     <td className="w-[20%] px-4 py-3.5 align-middle text-right">
                       <div className="flex items-center justify-end gap-1.5">
-                        <LiveButton p={product} className="rounded-lg border px-2 py-1 text-xs font-semibold transition-colors" />
+                        <LiveToggle p={product} />
                         <button
                           onClick={() => handleSyncSingle(product.id)}
                           disabled={syncSingleMutation.isPending}
