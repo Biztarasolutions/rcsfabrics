@@ -586,7 +586,9 @@ export const updateProduct = async (
     }
 
     const categoryName = existingProduct.category?.name || 'Unknown';
-    const productCode = cleanedUpdateData.code ?? existingProduct.code ?? null;
+    // Product numbers are no longer used: codes are Name-Category-Colour, and the RCS code is separate
+    const productCode = null;
+    cleanedUpdateData.code = null;
 
     // Clean name in case it contains category, code, or color variants
     let name = cleanedUpdateData.name || existingProduct.name;
@@ -595,8 +597,8 @@ export const updateProduct = async (
       cleanedUpdateData.name = cleanedName;
     }
 
-    // styleCode should also be updated if name or code changes
-    if (cleanedUpdateData.name !== undefined || cleanedUpdateData.code !== undefined) {
+    // styleCode (groups the colours of one design): Name-Category
+    {
       cleanedUpdateData.styleCode = buildStyleCode(cleanedName, categoryName, productCode);
     }
     
@@ -676,12 +678,11 @@ export const updateProduct = async (
 
       // Update existing or create new variants
       for (const { c, existing } of pairs) {
-        // Keep the old web address if the new one is already used by another product
-        let slug = generateSlug(c.productCode);
-        const taken = await prisma.product.findUnique({ where: { slug }, select: { id: true } });
-        if (taken && taken.id !== existing?.id) {
-          if (existing) slug = existing.slug;
-          else throw new ApiError(409, `Duplicate product — ${c.productCode} already exists.`);
+        // Existing colours keep their web address (links already shared keep working)
+        let slug = existing?.slug || generateSlug(c.productCode);
+        if (!existing) {
+          const taken = await prisma.product.findUnique({ where: { slug }, select: { id: true } });
+          if (taken) throw new ApiError(409, `Duplicate product — ${c.productCode} already exists.`);
         }
         const variantData = {
           ...updatePayload,
@@ -744,7 +745,7 @@ export const updateProduct = async (
         const colorName = existingProduct.color || 'Unknown';
         const updatedProductCode = buildProductCode(cleanedName, categoryName, colorName, productCode);
         cleanedUpdateData.productCode = updatedProductCode;
-        cleanedUpdateData.slug = generateSlug(updatedProductCode);
+        delete cleanedUpdateData.slug; // keep the existing web address
       }
 
       await prisma.product.update({

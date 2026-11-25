@@ -189,6 +189,7 @@ export default function CreateProductFamilyPage() {
       basePrice: basePriceNum,
       minOrderQty: minOrderQtyNum,
       width: widthNum,
+      code: undefined,
       styleCode,
       colors,
     };
@@ -228,11 +229,6 @@ export default function CreateProductFamilyPage() {
                   No categories found. Go to Admin → Categories and add one first.
                 </p>
               )}
-            </div>
-            
-            <div>
-              <label className="mb-1.5 block text-sm font-medium">Code *</label>
-              <input name="code" type="number" value={form.code} onChange={handleChange} placeholder="Optional" className="input-field w-full" />
             </div>
             
             <div>
@@ -276,10 +272,7 @@ export default function CreateProductFamilyPage() {
               <input name="minOrderQty" type="number" step="0.5" value={form.minOrderQty} onChange={handleChange} placeholder="e.g. 0.5" className="input-field w-full" />
             </div>
 
-            <div className="sm:col-span-2">
-              <label className="mb-1.5 block text-sm font-medium">Style Code (Auto-generated)</label>
-              <input type="text" value={styleCode} readOnly className="input-field w-full bg-gray-50" />
-            </div>
+            <p className="sm:col-span-2 text-xs text-gray-500">Each colour gets its product code automatically when saved, e.g. RCS-10001-1001-Black.</p>
           </div>
         </div>
 

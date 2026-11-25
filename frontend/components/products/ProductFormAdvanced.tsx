@@ -98,12 +98,14 @@ export default function ProductFormAdvanced({ initialData, onClose }: ProductFor
         ...EMPTY_FORM,
         ...sanitizedInitialData,
         name: cleanedName,
+        code: '',
         // Imported drafts have no price / width yet: show empty boxes, not 0
         basePrice: initialData.basePrice ? String(initialData.basePrice) : '',
         width: initialData.width ? String(initialData.width) : '',
         pattern: initialData.pattern || '',
         // Ensure colors array exists and includes productCode and inventory from all variants
         colors: initialData.variants?.map((v: any) => ({
+          rcsCode: v.rcsCode || '',
           id: v.id, // the existing product for this colour, so saving updates it instead of adding a new one
           name: v.colors?.[0]?.name || v.color,
           hexCode: v.colors?.[0]?.hexCode || '#000000',
@@ -195,7 +197,6 @@ export default function ProductFormAdvanced({ initialData, onClose }: ProductFor
     const payload = {
       name: form.name,
       categoryId: form.categoryId,
-      code: form.code ? Number(form.code) : undefined,
       basePrice: Number(form.basePrice),
       discountType: form.discountType || undefined,
       discountValue: form.discountValue ? Number(form.discountValue) : undefined,
@@ -250,17 +251,6 @@ export default function ProductFormAdvanced({ initialData, onClose }: ProductFor
               <p className="mt-2"><span className="font-medium">Properties:</span> {selectedCategory.properties?.length ? selectedCategory.properties.join(', ') : 'Not set'}</p>
             </div>
           )}
-          {/* Code */}
-          <div>
-            <label className="mb-1.5 block text-sm font-medium">Code (Number) *</label>
-            <input name="code" type="number" value={form.code ?? ''} onChange={handleChange} placeholder="Optional" className="input-field" />
-          </div>
-          {/* Style Code Display */}
-          <div className="sm:col-span-2">
-            <label className="mb-1.5 block text-sm font-medium">Style Code (Auto-generated)</label>
-            <input type="text" value={styleCode} readOnly placeholder="Generated automatically" className="input-field bg-gray-50 dark:bg-dark-700" />
-            <p className="mt-1 text-xs text-gray-500">Format: Name-Category-Code (e.g. Polka Dot-Satin-P10001)</p>
-          </div>
           {/* Pattern */}
           <div>
             <label className="mb-1.5 block text-sm font-medium">Pattern *</label>
@@ -328,7 +318,10 @@ export default function ProductFormAdvanced({ initialData, onClose }: ProductFor
           {form.colors.map((color: any, index: number) => (
             <div key={index} className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-dark-700 dark:bg-dark-700/50">
               <div className="mb-3 flex items-center justify-between">
-                <span className="text-sm font-medium">Color {index + 1}</span>
+                <span className="text-sm font-medium">
+                  Color {index + 1}
+                  <span className="ml-2 font-mono text-[11px] font-normal text-gray-500 dark:text-gray-400">{color.rcsCode || 'Style code given when saved'}</span>
+                </span>
                 {form.colors.length > 1 && (
                   <button type="button" onClick={() => removeColor(index)} className="text-xs font-medium text-red-600 hover:text-red-700 dark:text-red-400">
                     Remove
