@@ -243,7 +243,7 @@ export default function AdminCouponsPage() {
                   </label>
                   <label className="flex items-start gap-2">
                     <input type="checkbox" className="mt-0.5" checked={!!form.firstOrderOnly} onChange={(e) => setForm({ ...form, firstOrderOnly: e.target.checked })} />
-                    <span><b>First order only</b> — only customers who haven't ordered before</span>
+                    <span><b>First order only</b> — only customers who haven&apos;t ordered before</span>
                   </label>
                 </div>
                 <div>
