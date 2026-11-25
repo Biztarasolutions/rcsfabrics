@@ -44,12 +44,12 @@ export default function AdminProductsPage() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => adminApi.deleteProduct(id),
-    onSuccess: () => {
+    onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
-      toast.success('Product deleted');
+      toast.success(res?.data?.message || 'Product deleted', { duration: 7000 });
       setDeleteConfirm(null);
     },
-    onError: (err: any) => toast.error(err.message),
+    onError: (err: any) => toast.error(err?.response?.data?.message || err.message),
   });
 
   const syncSingleMutation = useMutation({
