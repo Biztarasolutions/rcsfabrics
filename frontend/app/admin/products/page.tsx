@@ -225,7 +225,7 @@ export default function AdminProductsPage() {
               <div className="min-w-0 flex-1">
                 <p className="truncate font-bold text-gray-900 dark:text-white">{product.name}</p>
                 <StatusBadge p={product} />
-                <p className="text-xs text-gray-500">{product.code ? `P${product.code} · ` : ''}{product.color || ''}{product.variants?.length > 1 ? ` +${product.variants.length - 1} colours` : ''} · {product.category?.name || '—'}</p>
+                <p className="text-xs text-gray-500">{product.rcsCode ? `${product.rcsCode.split('-').slice(0, 3).join('-')} · ` : ''}{product.color || ''}{product.variants?.length > 1 ? ` +${product.variants.length - 1} colours` : ''} · {product.category?.name || '—'}</p>
                 <p className="mt-1 text-sm">
                   <span className="font-semibold text-gray-900 dark:text-white">{formatPrice(product.discountPrice || product.basePrice)}</span>
                   {product.discountPrice && product.discountPrice < product.basePrice && <span className="ml-1.5 text-xs text-gray-400 line-through">{formatPrice(product.basePrice)}</span>}
@@ -308,7 +308,7 @@ export default function AdminProductsPage() {
                             {product.name}
                           </span>
                           <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium mt-0.5">
-                            {product.code ? `P${product.code}` : `${product.variants?.length || 1} colour${(product.variants?.length || 1) > 1 ? 's' : ''}`}
+                            {product.rcsCode ? product.rcsCode.split('-').slice(0, 3).join('-') : product.code ? `P${product.code}` : ''} · {product.variants?.length || 1} colour{(product.variants?.length || 1) > 1 ? 's' : ''}
                           </span>
                           <span className="mt-1"><StatusBadge p={product} /></span>
                           {!product.images?.length && (
@@ -354,6 +354,7 @@ export default function AdminProductsPage() {
                               />
                               <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-30 opacity-0 group-hover/tooltip:opacity-100 transition-opacity duration-100 bg-gray-950 dark:bg-dark-900 text-white px-2.5 py-1.5 rounded-lg shadow-xl text-center flex flex-col items-center border border-gray-800 dark:border-dark-700 min-w-[100px]">
                                 <span className="font-semibold text-xs leading-tight whitespace-nowrap">{color.name}</span>
+                                {(() => { const v = product.variants?.find((x: any) => x.color === color.name); return v?.rcsCode ? <span className="text-[10px] text-gray-300 whitespace-nowrap">{v.rcsCode}</span> : null; })()}
                                 <span className="text-[10px] text-gray-400 mt-0.5 leading-none whitespace-nowrap">
                                   {(color.stock ?? 0) > 0 ? `${color.stock}m Available` : 'Out of Stock'}
                                 </span>

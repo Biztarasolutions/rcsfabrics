@@ -17,6 +17,7 @@ import enquiryRoutes from '@/routes/enquiry.routes';
 import printRoutes from '@/routes/print.routes';
 import { startUnpaidOrderSweeper } from '@/services/orderNotifications';
 import { startMissingImageSync } from '@/controllers/admin.controller';
+import { assignRcsCodes } from '@/services/rcsCode';
 
 import { errorHandler, notFound } from '@/middleware/errorHandler';
 import { authenticateToken } from '@/middleware/auth';
@@ -149,6 +150,8 @@ app.listen(port, () => {
   void import('@/utils/rawPhoto').then((m) => m.moveRawPhotosOutOfCustomerImages());
   startUnpaidOrderSweeper();
   startMissingImageSync();
+  // product codes RCS-<category>-<design>-<Colour> for anything missing one
+  assignRcsCodes().then((n) => n && console.log(`[RCS codes] assigned ${n}`)).catch((e) => console.error('[RCS codes] failed:', e));
   console.log(`⚡ Server is running at http://localhost:${port}`);
   console.log(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
 });

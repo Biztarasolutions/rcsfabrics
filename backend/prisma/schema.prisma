@@ -80,6 +80,8 @@ model Category {
   name        String    @unique @db.VarChar(200)
   slug        String    @unique @db.VarChar(200)
   description String?
+  /// Unique number per category (10001, 10002 …) used in product codes
+  codeNumber  Int?      @unique
   image       String?
 imageUrl    String?
   isActive    Boolean   @default(true)
@@ -133,6 +135,10 @@ model Product {
   isActive        Boolean             @default(true)
   /// Imported from Drive and waiting for price / width / stock before going live
   isDraft         Boolean             @default(false)
+  /// Number of the design within its category (1001, 1002 …), shared by all colours of the design
+  designNumber    Int?
+  /// Unique code per colour: RCS-<category number>-<design number>-<Colour>, e.g. RCS-10001-1001-Black
+  rcsCode         String?             @unique @db.VarChar(120)
   isFeatured      Boolean             @default(false)
   isNew           Boolean             @default(true)
   createdAt       DateTime            @default(now())

@@ -1,6 +1,7 @@
 import { prisma } from '@/index';
 import { listAllFolders, folderHasFabricPhotos, folderUrlFromId } from '@/utils/googleDrive.util';
 import { buildProductCode, buildStyleCode, generateSlug } from '@/utils/string.util';
+import { properCase } from '@/services/rcsCode';
 
 type Cat = { id: string; name: string };
 export interface ParsedFolder { name: string; color: string; categoryId: string; categoryName: string; code: number | null }
@@ -8,15 +9,17 @@ export interface ParsedFolder { name: string; color: string; categoryId: string;
 const norm = (s?: string | null) => (s || '').trim().toLowerCase().replace(/\s+/g, ' ');
 
 /**
- * Product folder inside a category folder: "Polka Dot-White" → name "Polka Dot", colour "White".
- * The colour is the part after the LAST hyphen.
+ * Product folder inside a category folder → name + colour, written properly:
+ *   "Polka Dot-White", "polka dot - white", "polka dot, white"  →  "Polka Dot" / "White"
+ * The colour is the part after the LAST comma (or, if there is no comma, the last hyphen).
  */
 export const parseProductFolder = (folderName: string, cat: Cat): ParsedFolder | null => {
-  const raw = folderName.trim().replace(/\s*-\s*/g, '-');
-  const at = raw.lastIndexOf('-');
+  const raw = folderName.trim();
+  const sep = raw.includes(',') ? ',' : '-';
+  const at = raw.lastIndexOf(sep);
   if (at <= 0 || at === raw.length - 1) return null;
-  const name = raw.slice(0, at).trim();
-  const color = raw.slice(at + 1).trim();
+  const name = properCase(raw.slice(0, at).replace(/[-,]+$/, ''));
+  const color = properCase(raw.slice(at + 1).replace(/^[-,]+/, ''));
   if (!name || !color) return null;
   return { name, color, categoryId: cat.id, categoryName: cat.name.trim(), code: null };
 };
@@ -33,7 +36,7 @@ export const parseCodedFolder = (folderName: string, categories: Cat[]): ParsedF
     if (at <= 0) continue;
     const name = rest.slice(0, at).trim();
     const color = rest.slice(at + marker.length).trim();
-    if (name && color) return { name, color, categoryId: c.id, categoryName: c.name.trim(), code: Number(m[1]) };
+    if (name && color) return { name: properCase(name), color: properCase(color), categoryId: c.id, categoryName: c.name.trim(), code: Number(m[1]) };
   }
   return null;
 };

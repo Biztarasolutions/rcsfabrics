@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { assignRcsCodes } from '@/services/rcsCode';
 import { PrismaClient } from '@prisma/client';
 import { generateSlug, buildStyleCode, buildProductCode, extractDesignName } from '../utils/string.util';
 import { syncImagesForProduct } from '../services/driveService';
@@ -159,6 +160,7 @@ export const createProductGroup = async (req: Request, res: Response): Promise<v
       }
     }
 
+    await assignRcsCodes().catch((e) => console.error('[RCS codes] failed:', e));
     res.status(201).json({
       success: true,
       message: 'Product group created successfully',

@@ -6,6 +6,7 @@ import { customerCode } from '@/utils/customer';
 import { prisma } from '@/index';
 import { printToken } from '@/utils/printToken';
 import { importFabricsFromDrive } from '@/services/driveImport';
+import { assignRcsCodes, ensureCategoryNumbers } from '@/services/rcsCode';
 import { isManager, isStaff, effectiveRole, isSuperAdminEmail, ASSIGNABLE_ROLES } from '@/utils/roles';
 import { AuthRequest, ApiResponse } from '@/types';
 import {
@@ -495,6 +496,7 @@ export const createProduct = async (
     }
 
     invalidateProductCaches();
+    await assignRcsCodes().catch((e) => console.error('[RCS codes] failed:', e));
 
     res.status(201).json({
       success: true,
@@ -788,6 +790,7 @@ export const updateProduct = async (
     }
 
     invalidateProductCaches();
+    await assignRcsCodes().catch((e) => console.error('[RCS codes] failed:', e));
 
     res.json({
       success: true,
@@ -893,6 +896,7 @@ export const getAdminProducts = async (
         { name: { contains: search as string, mode: 'insensitive' } },
         { sku: { contains: search as string, mode: 'insensitive' } },
         { productCode: { contains: search as string, mode: 'insensitive' } },
+        { rcsCode: { contains: search as string, mode: 'insensitive' } },
       ];
     }
     // Live = shown in the shop · Draft = imported, details to fill · Inactive = switched off
@@ -1765,6 +1769,7 @@ export const createCategory = async (
       },
     });
 
+    await ensureCategoryNumbers().catch((e) => console.error('[RCS codes] category number failed:', e));
     res.status(201).json({
       success: true,
       message: 'Category created',
@@ -2398,6 +2403,7 @@ export const importFromDrive = async (_req: AuthRequest, res: Response): Promise
     const result = await importFabricsFromDrive();
     if (result.created.length) {
       invalidateProductCaches();
+      await assignRcsCodes().catch((e) => console.error('[RCS codes] failed:', e));
       // pull photos now so the drafts show their pictures straight away
       await autoSyncMissingImages().catch((e) => console.error('[Import] photo sync failed:', e));
     }
