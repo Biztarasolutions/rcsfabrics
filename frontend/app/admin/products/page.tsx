@@ -243,16 +243,16 @@ export default function AdminProductsPage() {
       {/* Desktop table — horizontal scroll only inside this card */}
       <div className="hidden min-w-0 w-full max-w-full rounded-2xl border border-gray-200 bg-white dark:border-dark-700 dark:bg-dark-800 md:block">
         <div className="w-full max-w-full overflow-x-auto overflow-y-visible overscroll-x-contain">
-          <table className="w-full min-w-[800px] table-fixed text-sm whitespace-nowrap sm:min-w-[1000px]">
+          <table className="w-full min-w-[1080px] table-fixed text-sm whitespace-nowrap">
             <thead className="border-b border-gray-100 dark:border-dark-700 bg-gray-50 dark:bg-dark-700/50">
               <tr className="text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                <th className="w-[22%] px-4 py-3 align-middle text-left">Product</th>
-                <th className="w-[15%] px-4 py-3 align-middle text-left">Category</th>
-                <th className="w-[10%] px-4 py-3 align-middle text-left">Price</th>
-                <th className="w-[12%] px-4 py-3 align-middle text-left">Selling At</th>
-                <th className="w-[10%] px-4 py-3 align-middle text-left">Total Stock</th>
-                <th className="w-[11%] px-4 py-3 align-middle text-left">Colors</th>
-                <th className="w-[20%] px-4 py-3 align-middle text-right">Actions</th>
+                <th className="w-[20%] px-4 py-3 align-middle text-left">Product</th>
+                <th className="w-[10%] px-4 py-3 align-middle text-left">Category</th>
+                <th className="w-[8%] px-4 py-3 align-middle text-left">Price</th>
+                <th className="w-[9%] px-4 py-3 align-middle text-left">Selling At</th>
+                <th className="w-[8%] px-4 py-3 align-middle text-left">Total Stock</th>
+                <th className="w-[17%] px-4 py-3 align-middle text-left">Colors</th>
+                <th className="w-[28%] px-4 py-3 align-middle text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 dark:divide-dark-700">
@@ -272,7 +272,7 @@ export default function AdminProductsPage() {
                 products.map((product: any) => (
                   <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-dark-700/30 transition-colors">
                     {/* Product Name */}
-                    <td className="w-[22%] px-4 py-3.5 align-middle">
+                    <td className="w-[20%] px-4 py-3.5 align-middle">
                       <div className="flex items-center space-x-2.5">
                         <button type="button" onClick={() => thumbOf(product) && setBigPhoto(thumbOf(product))}
                           title="View photo" className="h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-gray-100 bg-[#f4efe7] shadow-sm dark:border-dark-700 dark:bg-dark-700">
@@ -293,33 +293,33 @@ export default function AdminProductsPage() {
                       </div>
                     </td>
 
-                    <td className="w-[15%] px-4 py-3.5 align-middle text-xs">
+                    <td className="w-[10%] px-4 py-3.5 align-middle text-xs">
                       <span className="block truncate text-gray-900 dark:text-white" title={product.category?.name || ''}>
                         {product.category?.name || '—'}
                       </span>
                     </td>
 
-                    <td className="w-[10%] px-4 py-3.5 align-middle text-xs font-semibold text-gray-900 dark:text-white">
+                    <td className="w-[8%] px-4 py-3.5 align-middle text-xs font-semibold text-gray-900 dark:text-white">
                       {product.basePrice ? formatPrice(product.basePrice) : <span className="text-amber-600">Not set</span>}
                     </td>
 
-                    <td className="w-[12%] px-4 py-3.5 align-middle text-xs font-semibold text-gray-900 dark:text-white">
+                    <td className="w-[9%] px-4 py-3.5 align-middle text-xs font-semibold text-gray-900 dark:text-white">
                       {product.basePrice ? formatPrice(product.discountPrice || product.basePrice) : '—'}
                     </td>
 
-                    <td className="w-[10%] px-4 py-3.5 align-middle text-xs font-semibold">
+                    <td className="w-[8%] px-4 py-3.5 align-middle text-xs font-semibold">
                       <span className={product.totalStock <= 10 ? 'text-red-600 dark:text-red-400' : 'text-gray-700 dark:text-gray-300'}>
                         {product.totalStock}m
                       </span>
                     </td>
 
-                    <td className="w-[11%] px-4 py-3.5 align-middle text-xs">
+                    <td className="w-[17%] px-4 py-3.5 align-middle text-xs whitespace-normal">
                       {product.colors && product.colors.length > 0 ? (
-                        <div className="grid grid-cols-5 gap-2 w-max items-center justify-start">
+                        <div className="flex flex-wrap items-center gap-1.5">
                           {product.colors.map((color: any, idx: number) => (
                             <div key={idx} className="relative group/tooltip flex items-center justify-center">
                               <div
-                                className={`h-5 w-5 rounded-full border border-gray-300 dark:border-dark-600 shadow-sm transition-all duration-200 hover:scale-110 cursor-pointer ${
+                                className={`h-4 w-4 rounded-full border border-gray-300 dark:border-dark-600 shadow-sm transition-all duration-200 hover:scale-110 cursor-pointer ${
                                   (color.stock ?? 0) === 0 ? 'opacity-40' : 'opacity-100'
                                 }`}
                                 style={{ backgroundColor: color.hexCode }}
@@ -341,7 +341,7 @@ export default function AdminProductsPage() {
                     </td>
 
                     {/* Actions */}
-                    <td className="w-[20%] px-4 py-3.5 align-middle text-right">
+                    <td className="w-[28%] px-4 py-3.5 align-middle text-right">
                       <div className="flex items-center justify-end gap-1.5">
                         <LiveToggle p={product} />
                         <button
