@@ -103,6 +103,18 @@ export const importFabricsFromDrive = async (limit = 40): Promise<ImportResult> 
     if (have.has(key) || codes.has(norm(productCode))) continue;
     if (!(await folderHasFabricPhotos(f.id))) { result.waitingForPhotos.push(f.name); continue; }
 
+    // Last check straight against the database, so a wrong in-memory list can never create a copy
+    const twin = await prisma.product.findFirst({
+      where: {
+        categoryId: parsed.categoryId,
+        name: { equals: parsed.name, mode: 'insensitive' },
+        color: { equals: parsed.color, mode: 'insensitive' },
+        OR: [{ sku: null }, { NOT: { sku: { startsWith: 'ARCHIVED-' } } }],
+      },
+      select: { id: true },
+    });
+    if (twin) { have.add(key); continue; }
+
     const slug = generateSlug(productCode);
     if (slugs.has(slug)) continue;
     const cat = categories.find((c) => c.id === parsed!.categoryId)!;
