@@ -126,10 +126,8 @@ export const getProducts = async (
         skip,
         take: parsedLimit,
         include: {
-          images: {
-            where: { isMain: true },
-            take: 1,
-          },
+          // a few photos per card so customers can swipe (main photo first)
+          images: { orderBy: [{ isMain: 'desc' }, { order: 'asc' }], take: 6 },
           category: {
             select: { name: true, slug: true },
           },
@@ -379,7 +377,7 @@ export const getHomepageData = async (
         where: { ...VISIBLE, isFeatured: true },
         take: limit,
         include: {
-          images: { where: { isMain: true }, take: 1 },
+          images: { orderBy: [{ isMain: 'desc' }, { order: 'asc' }], take: 6 },
           category: { select: { name: true } },
         },
         orderBy: { createdAt: 'desc' },
@@ -389,7 +387,7 @@ export const getHomepageData = async (
         where: { ...VISIBLE },
         take: limit,
         include: {
-          images: { where: { isMain: true }, take: 1 },
+          images: { orderBy: [{ isMain: 'desc' }, { order: 'asc' }], take: 6 },
           category: { select: { name: true } },
         },
         orderBy: { createdAt: 'desc' },
@@ -399,7 +397,7 @@ export const getHomepageData = async (
         where: { ...VISIBLE, orderItems: { some: {} } }, // only products that have actually sold
         take: limit,
         include: {
-          images: { where: { isMain: true }, take: 1 },
+          images: { orderBy: [{ isMain: 'desc' }, { order: 'asc' }], take: 6 },
           category: { select: { name: true } },
         },
         orderBy: { orderItems: { _count: 'desc' } },

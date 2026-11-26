@@ -124,6 +124,20 @@ const ProductCard = React.memo(function ProductCard({ product, priority = false 
             </svg>
           </button>
 
+          {/* Arrows for mouse users (phones swipe) */}
+          {ordered.length > 1 && (
+            <>
+              {active > 0 && (
+                <button type="button" onClick={(e) => goTo(e, active - 1)} aria-label="Previous photo"
+                  className="absolute left-2 top-1/2 hidden h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/85 text-gray-700 shadow opacity-0 transition-opacity group-hover:opacity-100 sm:flex dark:bg-dark-800/85 dark:text-gray-200">‹</button>
+              )}
+              {active < ordered.length - 1 && (
+                <button type="button" onClick={(e) => goTo(e, active + 1)} aria-label="Next photo"
+                  className="absolute right-2 top-1/2 hidden h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/85 text-gray-700 shadow opacity-0 transition-opacity group-hover:opacity-100 sm:flex dark:bg-dark-800/85 dark:text-gray-200">›</button>
+              )}
+            </>
+          )}
+
           {/* Photo dots */}
           {ordered.length > 1 && (
             <div className="absolute inset-x-0 bottom-1.5 flex justify-center gap-1">
