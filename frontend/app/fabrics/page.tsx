@@ -7,13 +7,13 @@ import { useQuery } from '@tanstack/react-query';
 import { productApi } from '@/lib/api';
 import ProductCard from '@/components/products/ProductCard';
 import ProductFilters from '@/components/products/ProductFilters';
+import { useHomepageData } from '@/hooks/useHomepageData';
 
 const SORT_OPTIONS = [
   { value: 'featured', label: 'Featured' },
-  { value: 'newest', label: 'Newest First' },
+  { value: 'newest', label: 'Newest' },
   { value: 'price-asc', label: 'Price: Low to High' },
   { value: 'price-desc', label: 'Price: High to Low' },
-  { value: 'rating', label: 'Top Rated' },
 ];
 
 function ProductsContent() {
@@ -28,11 +28,14 @@ function ProductsContent() {
   const color = searchParams.get('color') || '';
   const pattern = searchParams.get('pattern') || '';
   const stretch = searchParams.get('stretch') || '';
+  const inStock = searchParams.get('inStock') === '1';
   const page = searchParams.get('page') || '1';
   const [filtersOpen, setFiltersOpen] = React.useState(false);
+  const { data: homepageData } = useHomepageData();
+  const homepageCategories: any[] = homepageData?.categories || [];
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['products', { search, category, sort, maxPrice, color, pattern, stretch, page }],
+    queryKey: ['products', { search, category, sort, maxPrice, color, pattern, stretch, inStock, page }],
     placeholderData: (prev: any) => prev, // keep showing results while a filter loads
     queryFn: () => productApi.getAll({
       search, category, sort,
@@ -40,6 +43,7 @@ function ProductsContent() {
       color: color || undefined,
       pattern: pattern || undefined,
       stretch: stretch || undefined,
+      inStock: inStock ? 1 : undefined,
       page: Number(page),
       limit: 12,
     }).then(res => res.data.data),
@@ -65,8 +69,22 @@ function ProductsContent() {
     pattern: split(pattern),
     stretch: split(stretch),
     maxPrice: maxPrice ? Number(maxPrice) : null,
+    inStock,
   };
-  const activeCount = (category ? 1 : 0) + filterValues.color.length + filterValues.pattern.length + filterValues.stretch.length + (maxPrice ? 1 : 0);
+  const activeCount = (category ? 1 : 0) + filterValues.color.length + filterValues.pattern.length + filterValues.stretch.length + (maxPrice ? 1 : 0) + (inStock ? 1 : 0);
+
+  // Selected filters, shown as removable chips above the grid
+  const categoryName = (homepageCategories.find((c: any) => c.slug === category)?.name) || category;
+  const without = (list: string[], v: string) => list.filter((x) => x !== v).join(',');
+  const chips: { label: string; clear: Record<string, string> }[] = [
+    ...(category ? [{ label: categoryName, clear: { category: '' } }] : []),
+    ...filterValues.color.map((v) => ({ label: v, clear: { color: without(filterValues.color, v) } })),
+    ...filterValues.pattern.map((v) => ({ label: v, clear: { pattern: without(filterValues.pattern, v) } })),
+    ...filterValues.stretch.map((v) => ({ label: v, clear: { stretch: without(filterValues.stretch, v) } })),
+    ...(maxPrice ? [{ label: `Up to ₹${maxPrice}/m`, clear: { maxPrice: '' } }] : []),
+    ...(inStock ? [{ label: 'In stock', clear: { inStock: '' } }] : []),
+  ];
+  const clearAll = () => updateParams({ category: '', color: '', pattern: '', stretch: '', maxPrice: '', inStock: '' });
   const filters = <ProductFilters values={filterValues} facets={data?.facets} onChange={(p) => updateParams(p as Record<string, string>)} />;
 
   return (
@@ -93,14 +111,16 @@ function ProductsContent() {
           {filtersOpen && (
             <div className="fixed inset-0 z-[90] lg:hidden" role="dialog" aria-modal="true" aria-label="Filters">
               <div className="absolute inset-0 bg-black/40" onClick={() => setFiltersOpen(false)} />
-              <div className="absolute inset-y-0 left-0 flex w-[85%] max-w-sm flex-col bg-white shadow-xl dark:bg-dark-900">
-                <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4 dark:border-dark-700">
+              <div className="absolute inset-x-0 bottom-0 flex max-h-[85vh] flex-col rounded-t-3xl bg-white shadow-2xl dark:bg-dark-900">
+                <div className="mx-auto mt-2.5 h-1.5 w-10 rounded-full bg-gray-200 dark:bg-dark-600" aria-hidden="true" />
+                <div className="flex items-center justify-between border-b border-gray-100 px-5 py-3 dark:border-dark-700">
                   <p className="font-display text-xl text-gray-900 dark:text-white">Filters</p>
                   <button type="button" onClick={() => setFiltersOpen(false)} aria-label="Close filters" className="text-2xl leading-none text-gray-400">×</button>
                 </div>
                 <div className="flex-1 overflow-y-auto px-5 py-5">{filters}</div>
-                <div className="border-t border-gray-100 p-4 dark:border-dark-700">
-                  <button type="button" onClick={() => setFiltersOpen(false)} className="button-primary w-full py-3">
+                <div className="flex gap-2 border-t border-gray-100 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] dark:border-dark-700">
+                  {activeCount > 0 && <button type="button" onClick={clearAll} className="button-secondary px-4 py-3 text-sm">Clear all</button>}
+                  <button type="button" onClick={() => setFiltersOpen(false)} className="button-primary flex-1 py-3">
                     Show {pagination?.total ?? 0} {pagination?.total === 1 ? 'fabric' : 'fabrics'}
                   </button>
                 </div>
@@ -152,12 +172,25 @@ function ProductsContent() {
               </div>
             </div>
 
+            {chips.length > 0 && (
+              <div className="-mt-2 mb-5 flex flex-wrap items-center gap-2">
+                {chips.map((c) => (
+                  <button key={c.label + JSON.stringify(c.clear)} type="button" onClick={() => updateParams(c.clear)}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-primary-200 bg-primary-50 px-3 py-1.5 text-xs font-medium capitalize text-primary-800 hover:border-primary-400 dark:border-primary-900 dark:bg-primary-950/40 dark:text-primary-200"
+                    aria-label={`Remove filter ${c.label}`}>
+                    {c.label}<span aria-hidden="true" className="text-sm leading-none">×</span>
+                  </button>
+                ))}
+                <button type="button" onClick={clearAll} className="px-2 py-1.5 text-xs font-semibold text-primary-700 underline-offset-2 hover:underline dark:text-primary-300">Clear all</button>
+              </div>
+            )}
+
             {/* Loading / Error States */}
             {isLoading && (
-              <div className="grid grid-cols-2 gap-3 sm:gap-5 xl:grid-cols-3">
-                {[...Array(6)].map((_, i) => (
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 2xl:grid-cols-4">
+                {[...Array(8)].map((_, i) => (
                   <div key={i} className="flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white dark:border-dark-700 dark:bg-dark-800">
-                    <div className="aspect-[4/5] animate-pulse bg-gray-100 dark:bg-dark-700" />
+                    <div className="m-2 animate-pulse rounded-xl bg-gray-100 dark:bg-dark-700" style={{ aspectRatio: '4/3' }} />
                     <div className="p-4 space-y-3">
                       <div className="h-3 w-1/3 animate-pulse rounded bg-gray-200 dark:bg-dark-600" />
                       <div className="h-4 w-3/4 animate-pulse rounded bg-gray-200 dark:bg-dark-600" />
@@ -186,12 +219,12 @@ function ProductsContent() {
             ) : (
               <>
                 <motion.div
-                  className={view === 'grid' ? 'grid grid-cols-2 gap-3 sm:gap-5 xl:grid-cols-3' : 'flex flex-col gap-4'}
+                  className={view === 'grid' ? 'grid grid-cols-2 items-stretch gap-3 sm:gap-4 md:grid-cols-3 2xl:grid-cols-4' : 'flex flex-col gap-4'}
                   initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
                   {products.map((product: any, i: number) => (
                     <motion.div key={product.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.04 }}>
-                      <ProductCard product={product} />
+                      transition={{ delay: i * 0.04 }} className="h-full">
+                      <ProductCard product={product} priority={i < 4} />
                     </motion.div>
                   ))}
                 </motion.div>

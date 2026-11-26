@@ -39,10 +39,6 @@ export default function BestSellers() {
               initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }} transition={{ duration: 0.25, delay: i * 0.04 }}
               className="relative">
-              {/* Rank badge */}
-              <div className="absolute -left-2 -top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-700 text-xs font-bold text-white shadow-md">
-                #{i + 1}
-              </div>
               <ProductCard product={product} />
             </motion.div>
           ))}

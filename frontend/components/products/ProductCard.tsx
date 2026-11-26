@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { customerImages } from '@/lib/rawPhoto';
 import { Product } from '@/types';
 import { formatPrice, calculateDiscount, productDisplayName, productBaseName } from '@/lib/utils';
-import { useWishlistStore } from '@/lib/store';
+import { useCartStore, useWishlistStore } from '@/lib/store';
+import { cartAddedToast } from '@/lib/cartToast';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -13,133 +14,170 @@ import { BLUR_PLACEHOLDER, supabaseImg } from '@/lib/image';
 
 interface ProductCardProps { product: Product; priority?: boolean; }
 
+const SIZES = '(max-width: 767px) 50vw, (max-width: 1535px) 33vw, 25vw';
+const validHex = (v?: string | null) => {
+  const h = (v || '').replace('#', '').trim();
+  return /^([0-9a-f]{3}|[0-9a-f]{6})$/i.test(h) ? `#${h}` : null;
+};
+
+/** Product card: photos (swipe) · fabric type · name · colour · rating · price · Add to Cart */
 const ProductCard = React.memo(function ProductCard({ product, priority = false }: ProductCardProps) {
   const queryClient = useQueryClient();
-  const [hovered, setHovered] = useState(false);
-  const [everHovered, setEverHovered] = useState(false);
-  const [imgLoaded, setImgLoaded] = useState(false);
   const photos = customerImages(product.images);
-  const mainImage = photos.find((img) => img.isMain) || photos[0];
-  const secondImage = photos[1];
+  const ordered = (() => {
+    const main = photos.find((img) => img.isMain) || photos[0];
+    return main ? [main, ...photos.filter((p) => p !== main)].slice(0, 5) : [];
+  })();
+  const [active, setActive] = useState(0);
+  const [loaded, setLoaded] = useState(false);
+  const track = useRef<HTMLDivElement>(null);
+
   const discountPercent = product.discountPrice ? calculateDiscount(product.basePrice, product.discountPrice) : 0;
   const price = product.discountPrice || product.basePrice;
+  const inStock = (product.totalStock ?? 0) > 0;
+
   const { addItem: addWish, removeItem: removeWish, hasItem } = useWishlistStore();
   const isWishlisted = hasItem(product.id);
+  const { items: cartItems, addItem: addToCart } = useCartStore();
+
+  const stop = (e: React.SyntheticEvent) => { e.preventDefault(); e.stopPropagation(); };
 
   const handleWishlist = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (isWishlisted) {
-      removeWish(product.id);
-      toast('Removed from wishlist');
-    } else {
-      addWish({ id: `w-${product.id}`, productId: product.id, product, createdAt: new Date().toISOString() });
-      toast.success('Added to wishlist!');
-    }
+    stop(e);
+    if (isWishlisted) { removeWish(product.id); toast('Removed from wishlist'); }
+    else { addWish({ id: `w-${product.id}`, productId: product.id, product, createdAt: new Date().toISOString() }); toast.success('Added to wishlist!'); }
   };
+
+  const handleAdd = (e: React.MouseEvent) => {
+    stop(e);
+    if (!inStock) return;
+    if (cartItems.some((i) => i.productId === product.id)) { cartAddedToast(`${productDisplayName(product)} is already in your bag`); return; }
+    // 1 metre to start (or the minimum, if higher); the quantity can be changed in the bag
+    const qty = Math.min(Math.max(1, product.minOrderQty || 0), product.totalStock || 1);
+    addToCart({ id: product.id, productId: product.id, product: product as any, quantity: qty });
+    cartAddedToast(`${qty} m of ${productDisplayName(product)} added to your bag`);
+  };
+
+  const onScroll = () => {
+    const el = track.current;
+    if (!el) return;
+    setActive(Math.round(el.scrollLeft / Math.max(1, el.clientWidth)));
+  };
+  const goTo = (e: React.MouseEvent, i: number) => {
+    stop(e);
+    track.current?.scrollTo({ left: i * (track.current?.clientWidth || 0), behavior: 'smooth' });
+  };
+
+  // One colour per card (each colour is its own product); fall back to the colour list
+  const colours = (product.colors?.length ? product.colors : product.color ? [{ name: product.color, hexCode: product.color }] : [])
+    .slice(0, 1).map((c: any) => ({ name: product.color || c.name, hex: validHex(c.hexCode) }));
 
   return (
     <Link
       href={`/fabrics/${product.slug}`}
       prefetch
       onClick={() => queryClient.setQueryData(['product-preview', product.slug], product)}
-      className="block cursor-pointer rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+      className="block h-full cursor-pointer rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
     >
-      <div
-        onMouseEnter={() => { setHovered(true); setEverHovered(true); }}
-        onMouseLeave={() => setHovered(false)}
-        className="group relative flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all duration-300 sm:hover:-translate-y-1 sm:hover:shadow-product dark:border-dark-700 dark:bg-dark-800"
-      >
-        {/* Image — 4:3 box close to the photos' own 3:2 shape, so little is cropped */}
-        <div className="relative overflow-hidden bg-gray-50 dark:bg-dark-700" style={{ aspectRatio: '4/3' }}>
-          {/* Pulse skeleton shown until image loads */}
-          {!imgLoaded && <div className="absolute inset-0 animate-pulse bg-gray-100 dark:bg-dark-700"/>}
-          {mainImage ? (
-            <Image
-              src={supabaseImg(mainImage.url, 400)}
-              alt={productDisplayName(product)}
-              fill
-              priority={priority}
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 25vw"
-              placeholder="blur"
-              blurDataURL={BLUR_PLACEHOLDER}
-              onLoad={() => setImgLoaded(true)}
-              className={`object-cover object-center transition-opacity duration-500 ${!imgLoaded || (hovered && secondImage) ? 'opacity-0' : 'opacity-100'}`}
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 dark:from-dark-600 dark:to-dark-700">
-              <span className="text-4xl">🧵</span>
+      <div className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-shadow duration-300 sm:hover:shadow-product dark:border-dark-700 dark:bg-dark-800">
+        {/* Photos — 4:3, close to the photos' own 3:2 shape, so the fabric is barely cropped */}
+        <div className="relative m-2 overflow-hidden rounded-xl bg-[#f4efe7] dark:bg-dark-700" style={{ aspectRatio: '4/3' }}>
+          {!loaded && ordered.length > 0 && <div className="absolute inset-0 animate-pulse bg-gray-100 dark:bg-dark-700" />}
+          {ordered.length ? (
+            <div ref={track} onScroll={onScroll}
+              className="flex h-full w-full snap-x snap-mandatory overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {ordered.map((img, i) => (
+                <div key={img.id || i} className="relative h-full w-full shrink-0 snap-center">
+                  <Image
+                    src={supabaseImg(img.url, 400)}
+                    alt={i === 0 ? productDisplayName(product) : ''}
+                    fill
+                    priority={priority && i === 0}
+                    loading={priority && i === 0 ? undefined : 'lazy'}
+                    sizes={SIZES}
+                    placeholder="blur"
+                    blurDataURL={BLUR_PLACEHOLDER}
+                    onLoad={i === 0 ? () => setLoaded(true) : undefined}
+                    className="object-cover object-center"
+                  />
+                </div>
+              ))}
             </div>
+          ) : (
+            <div className="flex h-full w-full items-center justify-center"><span className="text-4xl">🧵</span></div>
           )}
-          {secondImage && everHovered && (
-            <Image
-              src={supabaseImg(secondImage.url, 400)}
-              alt={productDisplayName(product)}
-              fill
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 25vw"
-              placeholder="blur"
-              blurDataURL={BLUR_PLACEHOLDER}
-              className={`object-cover object-center transition-opacity duration-500 ${hovered ? 'opacity-100' : 'opacity-0'}`}
-            />
-          )}
-          <div className="absolute left-3 top-3 flex flex-col gap-1.5">
-            {discountPercent > 0 && <span className="badge-sale">{discountPercent}% OFF</span>}
+
+          {/* Badges */}
+          <div className="pointer-events-none absolute left-2 top-2 flex flex-col items-start gap-1">
             {product.isNew && <span className="badge-new">New</span>}
-            {product.isFeatured && !product.isNew && <span className="badge-featured">Featured</span>}
+            {discountPercent > 0 && <span className="badge-sale">{discountPercent}% OFF</span>}
           </div>
+
+          {/* Wishlist — always visible (phones have no hover) */}
           <button
             onClick={handleWishlist}
-            className={`absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full border transition-all duration-200 ${isWishlisted ? 'border-red-200 bg-red-50 text-red-500 dark:border-red-900 dark:bg-red-950' : 'border-white/60 bg-white/80 text-gray-500 opacity-0 backdrop-blur-sm group-hover:opacity-100 dark:border-dark-600 dark:bg-dark-700/80 dark:text-gray-300'}`}
-            aria-label="Wishlist"
+            className={`absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full shadow-sm backdrop-blur-sm transition-colors ${isWishlisted ? 'bg-white text-primary-700' : 'bg-white/85 text-gray-600 hover:text-primary-700 dark:bg-dark-800/85 dark:text-gray-300'}`}
+            aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'} aria-pressed={isWishlisted}
           >
-            <svg className="h-4 w-4" fill={isWishlisted ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="h-[18px] w-[18px]" fill={isWishlisted ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
             </svg>
           </button>
+
+          {/* Photo dots */}
+          {ordered.length > 1 && (
+            <div className="absolute inset-x-0 bottom-1.5 flex justify-center gap-1">
+              {ordered.map((_, i) => (
+                <button key={i} type="button" onClick={(e) => goTo(e, i)} aria-label={`Photo ${i + 1}`}
+                  className="flex h-4 w-4 items-center justify-center">
+                  <span className={`block rounded-full transition-all ${i === active ? 'h-1.5 w-3 bg-white' : 'h-1.5 w-1.5 bg-white/60'}`} />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-        {/* Content */}
-        <div className="flex flex-1 flex-col p-4">
-          <p className="text-xs font-medium uppercase tracking-wider text-primary-600 dark:text-primary-400">
+
+        {/* Details */}
+        <div className="flex flex-1 flex-col px-3 pb-3 pt-1 sm:px-4 sm:pb-4">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-700 sm:text-[11px] dark:text-primary-400">
             {product.category?.name || 'Fabric'}
           </p>
-          <h3 className="mt-1 line-clamp-2 font-semibold text-gray-900 dark:text-white">{productBaseName(product)}</h3>
-          {(() => {
-            // Show a swatch only for real hex codes; otherwise the colour's name
-            const list = product.colors?.length ? product.colors : product.color ? [{ name: product.color, hexCode: product.color }] : [];
-            const hex = (v?: string) => {
-              const h = (v || '').replace('#', '').trim();
-              return /^([0-9a-f]{3}|[0-9a-f]{6})$/i.test(h) ? `#${h}` : null;
-            };
-            const swatches = list.map((c: any) => ({ name: c.name, hex: hex(c.hexCode) }));
-            if (!swatches.length) return null;
-            return (
-              <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-                {swatches.slice(0, 5).map((c: any, idx: number) => (
-                  <span key={idx} className="flex min-w-0 items-center gap-1.5 text-sm capitalize text-gray-600 dark:text-gray-300">
-                    {c.hex && <span className="h-3.5 w-3.5 shrink-0 rounded-full border border-black/10" style={{ backgroundColor: c.hex }} aria-hidden="true" />}
-                    <span className="truncate">{c.name}{!c.hex && idx < Math.min(swatches.length, 5) - 1 ? ',' : ''}</span>
-                  </span>
-                ))}
-              </div>
-            );
-          })()}
-          <div className="mt-auto pt-3">
-{product.ratingCount > 0 && (
-            <div className="flex items-center gap-1.5">
-              <div className="flex">{[...Array(5)].map((_, i) => (
-                <svg key={i} className={`h-3.5 w-3.5 ${i < Math.round(product.rating) ? 'stars-filled' : 'stars-empty'}`} fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                </svg>
-              ))}</div>
-              <span className="text-xs text-gray-500 dark:text-gray-400">({product.ratingCount})</span>
+          <h3 className="mt-0.5 line-clamp-1 font-bold text-gray-900 sm:text-[17px] dark:text-white">{productBaseName(product)}</h3>
+          {colours.map((c, idx) => (
+            <p key={idx} className="mt-1 flex min-w-0 items-center gap-1.5 text-sm text-gray-600 dark:text-gray-300">
+              {c.hex && <span className="h-3.5 w-3.5 shrink-0 rounded-full border border-black/10" style={{ backgroundColor: c.hex }} aria-hidden="true" />}
+              <span className="truncate capitalize">{c.name}</span>
+            </p>
+          ))}
+          {product.ratingCount > 0 && (
+            <div className="mt-1 flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+              <svg className="h-3.5 w-3.5 stars-filled" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <span className="font-medium text-gray-700 dark:text-gray-200">{Number(product.rating).toFixed(1)}</span>
+              <span>({product.ratingCount})</span>
             </div>
-            )}
-            <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-lg font-bold text-primary-700 dark:text-primary-400 whitespace-nowrap">
-                {formatPrice(price)}
-                <span className="text-xs font-normal text-gray-400">/m</span>
+          )}
+
+          <div className="mt-auto pt-2">
+            <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+              <span className="whitespace-nowrap text-base font-bold text-primary-700 sm:text-lg dark:text-primary-400">
+                {formatPrice(price)}<span className="text-xs font-normal text-gray-400">/m</span>
               </span>
-              {product.discountPrice && <span className="text-sm text-gray-400 line-through">{formatPrice(product.basePrice)}</span>}
+              {product.discountPrice && product.discountPrice < product.basePrice && (
+                <span className="text-xs text-gray-400 line-through sm:text-sm">{formatPrice(product.basePrice)}</span>
+              )}
+              {discountPercent > 0 && <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">{discountPercent}% off</span>}
             </div>
+            <button type="button" onClick={handleAdd} disabled={!inStock}
+              className={`mt-2.5 flex h-10 w-full items-center justify-center gap-1.5 rounded-xl text-sm font-semibold transition-colors ${inStock ? 'bg-primary-700 text-white hover:bg-primary-800 active:bg-primary-900' : 'cursor-not-allowed bg-gray-100 text-gray-400 dark:bg-dark-700'}`}>
+              {inStock ? (
+                <>
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
+                  Add to Cart
+                </>
+              ) : 'Out of stock'}
+            </button>
           </div>
         </div>
       </div>

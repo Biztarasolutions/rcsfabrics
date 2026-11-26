@@ -54,7 +54,7 @@ export const getProducts = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { category, search, page, limit, sort, color, pattern, stretch, minPrice, maxPrice } = req.query;
+    const { category, search, page, limit, sort, color, pattern, stretch, minPrice, maxPrice, inStock } = req.query;
 
     const { page: parsedPage, limit: parsedLimit, skip } = parsePagination(
       page as string,
@@ -100,6 +100,8 @@ export const getProducts = async (
       if (Number.isFinite(max)) range.lte = max;
       and.push({ OR: [{ discountPrice: { not: null, ...range } }, { discountPrice: null, basePrice: range }] });
     }
+    // Availability: only fabrics with stock left
+    if (inStock === '1' || inStock === 'true') and.push({ totalStock: { gt: 0 } });
     if (and.length) where.AND = and;
 
     // Build sort

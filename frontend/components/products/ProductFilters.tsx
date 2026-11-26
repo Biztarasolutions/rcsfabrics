@@ -8,6 +8,7 @@ export interface FilterValues {
   pattern: string[];
   stretch: string[];
   maxPrice: number | null;
+  inStock: boolean;
 }
 
 export interface Facets {
@@ -28,7 +29,7 @@ export default function ProductFilters({
 }: {
   values: FilterValues;
   facets?: Facets;
-  onChange: (patch: Partial<Record<'category' | 'color' | 'pattern' | 'stretch' | 'maxPrice', string>>) => void;
+  onChange: (patch: Partial<Record<'category' | 'color' | 'pattern' | 'stretch' | 'maxPrice' | 'inStock', string>>) => void;
 }) {
   const { data: homepageData } = useHomepageData();
   const categories = [{ name: 'All fabrics', slug: '' }, ...(homepageData?.categories || [])];
@@ -51,7 +52,7 @@ export default function ProductFilters({
     onChange({ [key]: next.join(',') });
   };
 
-  const active = !!values.category || values.color.length + values.pattern.length + values.stretch.length > 0 || values.maxPrice !== null;
+  const active = !!values.category || values.color.length + values.pattern.length + values.stretch.length > 0 || values.maxPrice !== null || values.inStock;
 
   const Chips = ({ title, keyName, options }: { title: string; keyName: 'color' | 'pattern' | 'stretch'; options: string[] }) =>
     options.length ? (
@@ -97,9 +98,18 @@ export default function ProductFilters({
           className="w-full accent-primary-600" />
       </div>
 
+      <div className="border-t border-gray-100 pt-6 dark:border-dark-700">
+        <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-gray-900 dark:text-white">Availability</h3>
+        <label className="flex cursor-pointer items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
+          <input type="checkbox" checked={values.inStock} onChange={(e) => onChange({ inStock: e.target.checked ? '1' : '' })}
+            className="h-5 w-5 rounded border-gray-300 accent-primary-700" />
+          In stock only
+        </label>
+      </div>
+
       {active && (
         <div className="border-t border-gray-100 pt-4 dark:border-dark-700">
-          <button type="button" onClick={() => onChange({ category: '', color: '', pattern: '', stretch: '', maxPrice: '' })}
+          <button type="button" onClick={() => onChange({ category: '', color: '', pattern: '', stretch: '', maxPrice: '', inStock: '' })}
             className="w-full rounded-xl border border-red-200 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-400">
             Clear all filters
           </button>
