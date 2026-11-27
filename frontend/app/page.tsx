@@ -48,7 +48,6 @@ export default function HomePage() {
           </div>
         </div>
       </div>
-{sectionToggles.whyChoose && <WhyChoose />}
 
       {/* 3. Featured Products (hidden when nothing is marked featured) */}
       <FeaturedProducts
@@ -64,6 +63,9 @@ export default function HomePage() {
 
       {/* 4. New Arrivals */}
       <NewArrivals />
+
+      {/* The RCS promise — after the fabrics, so products are seen first */}
+      {sectionToggles.whyChoose && <WhyChoose />}
 
       {/* 5. Promo Banner */}
       <section className="py-12 lg:py-16">
