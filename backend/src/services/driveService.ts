@@ -113,11 +113,18 @@ export const syncImagesForProduct = async (productId: string, productName: strin
 };
 
 /** Sort key for a synced photo URL (file name after the upload timestamp) */
-export function photoRank(url: string): number {
-  const file = decodeURIComponent(String(url).split('?')[0].split('/').pop() || '').replace(/^\d{10,}-/, '').toLowerCase();
+/**
+ * Photo order everywhere (sync, cards, product page):
+ *   Fabric-1 (or, without one, any photo with a "1" in its name) → Close-up → Fabric-2 → Fabric-3
+ *   → customer photos → anything else. Raw photos are never shown to customers.
+ */
+export function photoRank(url?: string | null): number {
+  const file = decodeURIComponent(String(url || '').split('?')[0].split('/').pop() || '').replace(/^\d{10,}-/, '').toLowerCase();
   const n = Number((file.match(/(\d+)/) || [])[1] || 0);
-  if (/^customer/.test(file)) return 300 + n;
+  if (/close[\s_-]*up/.test(file)) return 200;
   const fab = file.match(/^fabric[\s_-]*(\d+)/);
-  if (fab) return Number(fab[1]) >= 3 ? 400 + Number(fab[1]) : 100 + Number(fab[1]);
-  return 500 + n;
+  if (fab) { const k = Number(fab[1]); return k === 1 ? 100 : k === 2 ? 300 : k === 3 ? 400 : 450 + k; }
+  if (/^customer/.test(file)) return 500 + n;
+  if (n === 1) return 150; // no Fabric-1? a photo named with "1" leads
+  return 600 + n;
 }

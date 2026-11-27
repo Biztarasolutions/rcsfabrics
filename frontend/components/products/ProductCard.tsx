@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
-import { customerImages } from '@/lib/rawPhoto';
+import { customerImages, isCloseupPhoto, photoRank } from '@/lib/rawPhoto';
 import { Product } from '@/types';
 import { formatPrice, calculateDiscount, productDisplayName, productBaseName } from '@/lib/utils';
 import { useCartStore, useWishlistStore } from '@/lib/store';
@@ -23,11 +23,10 @@ const validHex = (v?: string | null) => {
 /** Product card: photos (swipe) · fabric type · name · colour · rating · price · Add to Cart */
 const ProductCard = React.memo(function ProductCard({ product, priority = false }: ProductCardProps) {
   const queryClient = useQueryClient();
-  const photos = customerImages(product.images);
-  const ordered = (() => {
-    const main = photos.find((img) => img.isMain) || photos[0];
-    return main ? [main, ...photos.filter((p) => p !== main)].slice(0, 5) : [];
-  })();
+  // Fabric-1 → Close-up → Fabric-2 → Fabric-3 → …  (no Raw photos)
+  const ordered = [...customerImages(product.images)].sort((a, b) => photoRank(a.url) - photoRank(b.url)).slice(0, 5);
+  const closeup = ordered.find((img, i) => i > 0 && isCloseupPhoto(img.url));
+  const [hovering, setHovering] = useState(false);
   const [active, setActive] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const track = useRef<HTMLDivElement>(null);
@@ -81,7 +80,8 @@ const ProductCard = React.memo(function ProductCard({ product, priority = false 
     >
       <div className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-shadow duration-300 sm:hover:shadow-product dark:border-dark-700 dark:bg-dark-800">
         {/* Photos — 4:3, close to the photos' own 3:2 shape, so the fabric is barely cropped */}
-        <div className="relative m-2 overflow-hidden rounded-xl bg-[#f4efe7] dark:bg-dark-700" style={{ aspectRatio: '4/3' }}>
+        <div className="relative m-2 overflow-hidden rounded-xl bg-[#f4efe7] dark:bg-dark-700" style={{ aspectRatio: '4/3' }}
+          onMouseEnter={() => setHovering(true)} onMouseLeave={() => setHovering(false)}>
           {!loaded && ordered.length > 0 && <div className="absolute inset-0 animate-pulse bg-gray-100 dark:bg-dark-700" />}
           {ordered.length ? (
             <div ref={track} onScroll={onScroll}
@@ -105,6 +105,14 @@ const ProductCard = React.memo(function ProductCard({ product, priority = false 
             </div>
           ) : (
             <div className="flex h-full w-full items-center justify-center"><span className="text-4xl">🧵</span></div>
+          )}
+
+          {/* Close-up on hover (mouse users); on phones it is the 2nd photo when swiping */}
+          {closeup && hovering && active === 0 && (
+            <div className="pointer-events-none absolute inset-0 hidden sm:block">
+              <Image src={supabaseImg(closeup.url, 400)} alt="" fill sizes={SIZES} className="object-cover object-center animate-fadeIn" />
+              <span className="absolute bottom-2 right-2 rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white">Close-up</span>
+            </div>
           )}
 
           {/* Badges */}
