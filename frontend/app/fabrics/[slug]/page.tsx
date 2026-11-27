@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import { customerImages, isCustomerPhoto, photoRank } from '@/lib/rawPhoto';
+import { customerImages, isCustomerPhoto, plannedPhotos } from '@/lib/rawPhoto';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { productApi, adminApi } from '@/lib/api';
 import { useCartStore, useWishlistStore, useAuthStore, useStoresHydrated } from '@/lib/store';
@@ -303,7 +303,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
 
   const PRODUCT = selectedVariant || initialProduct;
   // never the admin-only Raw photo; customer photos sit just before the design poster (Fabric-3)
-  const images = [...customerImages(PRODUCT.images)].sort((a: any, b: any) => photoRank(a.url) - photoRank(b.url));
+  const images = plannedPhotos(customerImages(PRODUCT.images), (i: any) => i.url);
   const isWishlisted = hasItem(PRODUCT.id);
   const price = PRODUCT.discountPrice ?? PRODUCT.basePrice;
   const minQty = PRODUCT.minOrderQty || 0.5;

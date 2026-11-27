@@ -86,7 +86,9 @@ export const syncImagesForProduct = async (productId: string, productName: strin
     }
 
     // Photo order on the site: Fabric-1 (flat-lay), Fabric-2 (roll), customer photos, then Fabric-3 (design poster)
-    allPublicUrls.sort((a, b) => photoRank(a) - photoRank(b));
+    // keep only the planned photos (Fabric-1, Close-up, Fabric-2, Fabric-3, customer photos), in that order
+    const planned = plannedPhotos(allPublicUrls, (u) => u);
+    allPublicUrls.splice(0, allPublicUrls.length, ...planned);
 
     if (allPublicUrls.length > 0) {
       await prisma.$transaction([
@@ -127,4 +129,23 @@ export function photoRank(url?: string | null): number {
   if (/^customer/.test(file)) return 500 + n;
   if (n === 1) return 150; // no Fabric-1? a photo named with "1" leads
   return 600 + n;
+}
+
+/**
+ * Only the planned photos, in order: Fabric-1 (or, without one, one photo with a "1" in its name),
+ * Close-up, Fabric-2, Fabric-3, then customer photos. Anything else in the folder is not shown.
+ * If a folder has none of these names at all, its photos are shown as they are.
+ */
+export function plannedPhotos<T>(items: T[], urlOf: (t: T) => string | null | undefined): T[] {
+  const ranked = items.map((t) => ({ t, r: photoRank(urlOf(t)), u: String(urlOf(t) || '') }))
+    .sort((a, b) => a.r - b.r);
+  const hasFabric1 = ranked.some((x) => x.r === 100);
+  let usedOne = false;
+  const keep = ranked.filter((x) => {
+    if (x.r === 100 || x.r === 200 || x.r === 300 || x.r === 400) return true;
+    if (x.r >= 500 && x.r < 600) return true; // customer photos
+    if (x.r === 150 && !hasFabric1 && !usedOne) { usedOne = true; return true; }
+    return false;
+  });
+  return (keep.length ? keep : ranked).map((x) => x.t);
 }

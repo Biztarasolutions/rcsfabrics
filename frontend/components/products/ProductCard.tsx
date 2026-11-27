@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
-import { customerImages, isCloseupPhoto, photoRank } from '@/lib/rawPhoto';
+import { customerImages, isCloseupPhoto, plannedPhotos } from '@/lib/rawPhoto';
 import { Product } from '@/types';
 import { formatPrice, calculateDiscount, productDisplayName, productBaseName } from '@/lib/utils';
 import { useCartStore, useWishlistStore } from '@/lib/store';
@@ -32,7 +32,7 @@ const ProductCard = React.memo(function ProductCard({ product: base, priority = 
     return v ? ({ ...base, ...v, name: base.name, category: base.category, colors: v.hexCode ? [{ name: v.color, hexCode: v.hexCode }] : base.colors } as any) : base;
   })();
   // Fabric-1 → Close-up → Fabric-2 → Fabric-3 → …  (no Raw photos)
-  const ordered = [...customerImages(product.images)].sort((a, b) => photoRank(a.url) - photoRank(b.url)).slice(0, 5);
+  const ordered = plannedPhotos(customerImages(product.images), (i) => i.url).slice(0, 6);
   const closeup = ordered.find((img, i) => i > 0 && isCloseupPhoto(img.url));
   const [hovering, setHovering] = useState(false);
   const [active, setActive] = useState(0);
