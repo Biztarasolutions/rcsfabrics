@@ -35,10 +35,10 @@ function buildDefaultSlides(data: any): Slide[] {
 
   const slides: Slide[] = [{
     id: 'heritage',
-    tag: '',
-    headline: 'Fabrics chosen\nby a family',
-    sub: '',
-    cta: { label: 'Shop all fabrics', href: '/fabrics' },
+    tag: 'Since 1962 · Dimapur',
+    headline: 'Fine fabrics,\ncut to your length',
+    sub: 'Hand-picked by three generations of one family.',
+    cta: { label: 'Shop fabrics', href: '/fabrics' },
     ctaSecondary: { label: 'Our story', href: '/about' },
     image: firstPhoto,
     accent: ACCENTS[0],
@@ -113,7 +113,7 @@ export default function HeroBanner() {
   // While API is still loading, show a gradient placeholder — no flash of old default slides
   if (!slides || slides.length === 0) {
     return (
-      <section className="relative h-[90vh] min-h-[600px] max-h-[900px] overflow-hidden bg-gradient-to-r from-[#1d150e] via-[#2b2118] to-[#3d2f23] flex items-end">
+      <section className="relative h-[72svh] min-h-[480px] max-h-[860px] sm:h-[86vh] sm:min-h-[600px] overflow-hidden bg-gradient-to-r from-[#1d150e] via-[#2b2118] to-[#3d2f23] flex items-end">
         <div className="absolute inset-0 opacity-5"
           style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23fff' fill-opacity='1'%3E%3Cpath d='M0 0h1v1H0V0zm2 0h1v1H2V0zm2 0h1v1H4V0zm2 0h1v1H6V0zm2 0h1v1H8V0zm2 0h1v1h-1V0zm2 0h1v1h-1V0zm2 0h1v1h-1V0zm2 0h1v1h-1V0zm2 0h1v1h-1V0z'/%3E%3C/g%3E%3C/svg%3E\")" }}/>
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"/>
@@ -136,7 +136,7 @@ export default function HeroBanner() {
   const slide = slides[current] ?? slides[0];
 
   return (
-    <section className="relative h-[90vh] min-h-[600px] max-h-[900px] overflow-hidden">
+    <section className="relative h-[72svh] min-h-[480px] max-h-[860px] sm:h-[86vh] sm:min-h-[600px] overflow-hidden">
       {/* Background images */}
       {slides.map((s, i: number) => {
         const isActive = i === current;

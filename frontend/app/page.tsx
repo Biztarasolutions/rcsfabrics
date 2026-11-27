@@ -13,6 +13,8 @@ import Testimonials from '@/components/common/Testimonials';
 import NewsletterSignup from '@/components/common/NewsletterSignup';
 import Image from 'next/image';
 import WhyChoose from '@/components/home/WhyChoose';
+import HeritageBand from '@/components/home/HeritageBand';
+import RealReviews from '@/components/home/RealReviews';
 import sectionToggles from '@/config/sectionToggles.json';
 import { useHomepageData } from '@/hooks/useHomepageData';
 import { supabaseImg } from '@/lib/image';
@@ -50,11 +52,14 @@ export default function HomePage() {
       </div>
 
       {/* 3. Featured Products (hidden when nothing is marked featured) */}
+      {/* Shop by category — first thing after the hero */}
+      <CategoryShowcase />
+
       <FeaturedProducts
         header={
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }} className="text-center">
-            <span className="section-tag">Editor's Picks</span>
+            <span className="section-tag">Editor&apos;s Picks</span>
             <h2 className="section-title mt-3 font-display">Featured Fabrics</h2>
             <p className="section-subtitle">Hand-selected for exceptional quality and beauty</p>
           </motion.div>
@@ -64,8 +69,17 @@ export default function HomePage() {
       {/* 4. New Arrivals */}
       <NewArrivals />
 
+      {/* Best Sellers (real sales) */}
+      <BestSellers />
+
+      {/* Heritage */}
+      <HeritageBand />
+
       {/* The RCS promise — after the fabrics, so products are seen first */}
       {sectionToggles.whyChoose && <WhyChoose />}
+
+      {/* Real customer reviews (shown once there are 3+) */}
+      <RealReviews />
 
       {/* 5. Promo Banner */}
       <section className="py-12 lg:py-16">
@@ -99,11 +113,9 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 6. Best Sellers */}
-      <BestSellers />
 
-      {/* 7. Category Showcase */}
-      <CategoryShowcase />
+
+
 
 
 

@@ -12,7 +12,7 @@ export default function CategoryShowcase() {
   // Hide categories with nothing on sale (backend also filters; this covers older API responses)
   const categories = (homepageData?.categories || []).filter((c: any) => c.productCount !== 0);
   return (
-    <section className="py-16 lg:py-24 bg-gray-50 dark:bg-dark-900/50">
+    <section className="py-12 lg:py-20">
       <div className="container-main">
         <div className="text-center">
           <span className="section-tag">Browse by Type</span>
@@ -20,25 +20,25 @@ export default function CategoryShowcase() {
           <p className="section-subtitle">Pick a fabric type — every piece is cut to your length</p>
         </div>
 
-        <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="-mx-4 mt-8 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] sm:mx-0 sm:mt-10 sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:px-0 lg:grid-cols-3 [&::-webkit-scrollbar]:hidden">
           {isLoading ? (
             <>
               {[...Array(6)].map((_, i) => (
-                <div key={i} className="h-52 animate-pulse rounded-2xl bg-gray-100 dark:bg-dark-800" />
+                <div key={i} className="h-52 w-[70%] shrink-0 animate-pulse rounded-2xl bg-gray-100 sm:w-auto dark:bg-dark-800" />
               ))}
             </>
           ) : (
             <>
               {categories.map((cat: any, i: number) => (
-                <motion.div key={cat.id}
+                <motion.div key={cat.id} className="w-[70%] shrink-0 snap-start sm:w-auto"
                   initial={{ opacity: 0, y: 8 }} whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }} transition={{ duration: 0.25, delay: i * 0.04 }}>
                   <Link href={`/fabrics?category=${cat.slug}`}
                     className="group relative block overflow-hidden rounded-2xl">
                     {/* Image */}
-                    <div className="relative h-64 overflow-hidden bg-[#efe7da] dark:bg-dark-800">
+                    <div className="relative h-52 overflow-hidden bg-[#efe7da] sm:h-64 dark:bg-dark-800">
                       {(cat.imageUrl || cat.image || cat.coverImage) && <Image src={supabaseImg(cat.imageUrl || cat.image || cat.coverImage, 800, 75, 'cover')} alt={cat.name}
-                        fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        fill sizes="(max-width: 640px) 70vw, (max-width: 1024px) 50vw, 33vw"
                         placeholder="blur" blurDataURL={BLUR_PLACEHOLDER}
                         className="object-cover transition-transform duration-500 group-hover:scale-105"/>}
                       <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/80 via-black/30 to-transparent"/>

@@ -63,8 +63,13 @@ export default function CartPage() {
                         <div>
                           <p className="text-xs font-medium uppercase tracking-wider text-primary-600 dark:text-primary-400">{item.product.category?.name || 'Fabric'}</p>
                           <h3 className="font-semibold text-gray-900 dark:text-white leading-tight">{productBaseName(item.product)}</h3>
-                          {productColorName(item.product) && <p className="text-sm text-gray-600 dark:text-gray-300">{productColorName(item.product)}</p>}
-                          <p className="text-sm text-gray-500 dark:text-gray-400">{formatPrice(price)}/m</p>
+                          {productColorName(item.product) && (
+                            <p className="mt-0.5 flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-300">
+                              {(() => { const h = String(item.product.colors?.[0]?.hexCode || '').replace('#', ''); return /^([0-9a-f]{3}|[0-9a-f]{6})$/i.test(h) ? <span className="h-3.5 w-3.5 rounded-full border border-black/10" style={{ backgroundColor: `#${h}` }} aria-hidden="true" /> : null; })()}
+                              Colour: <span className="font-medium">{productColorName(item.product)}</span>
+                            </p>
+                          )}
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{item.quantity} m × {formatPrice(price)}/m</p>
                         </div>
                         <button onClick={() => { removeItem(item.id); toast('Item removed'); }}
                           className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-gray-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/30 dark:hover:text-red-400 transition-colors">
@@ -113,11 +118,16 @@ export default function CartPage() {
                     {shipping === 0 ? '🎁 Free' : formatPrice(shipping)}
                   </span>
                 </div>
-                {subtotal < 2000 && (
-                  <p className="rounded-lg bg-primary-50 px-3 py-2 text-xs text-primary-700 dark:bg-primary-950/30 dark:text-primary-400">
-                    Add {formatPrice(2000 - subtotal)} more for free shipping!
+                <div className="rounded-xl bg-[#faf6ee] px-3 py-2.5 dark:bg-dark-900">
+                  <p className="text-xs text-gray-700 dark:text-gray-300">
+                    {subtotal < 2000
+                      ? <>Add <strong className="text-primary-700 dark:text-primary-300">{formatPrice(2000 - subtotal)}</strong> more for free shipping</>
+                      : <>You&apos;ve unlocked <strong className="text-emerald-700 dark:text-emerald-400">free shipping</strong></>}
                   </p>
-                )}
+                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#eadfcc] dark:bg-dark-700" role="progressbar" aria-valuemin={0} aria-valuemax={2000} aria-valuenow={Math.min(subtotal, 2000)}>
+                    <div className="h-full rounded-full bg-primary-700 transition-all" style={{ width: `${Math.min(100, (subtotal / 2000) * 100)}%` }} />
+                  </div>
+                </div>
                 <div className="flex justify-between border-t border-gray-100 pt-4 dark:border-dark-700">
                   <span className="text-base font-bold text-gray-900 dark:text-white">Total</span>
                   <span className="text-xl font-bold text-primary-700 dark:text-primary-400">{formatPrice(total)}</span>

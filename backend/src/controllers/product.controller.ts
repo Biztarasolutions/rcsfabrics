@@ -49,6 +49,71 @@ const CACHE_LIMIT = 200;
 // (a product whose Google Drive photos haven't synced yet stays hidden).
 const VISIBLE = { isActive: true, images: { some: {} } } as const;
 
+/**
+ * Adds every live colour of the same design to each product (for the colour dots on cards),
+ * plus a best-seller flag from real orders.
+ */
+async function withVariants<T extends { id: string; styleCode: string | null }>(products: T[]) {
+  if (!products.length) return products;
+  const styles = [...new Set(products.map((p) => p.styleCode).filter(Boolean))] as string[];
+  const ids = products.map((p) => p.id);
+  const [siblings, sold] = await Promise.all([
+    styles.length
+      ? prisma.product.findMany({
+          where: { ...VISIBLE, styleCode: { in: styles } },
+          orderBy: { createdAt: 'asc' },
+          select: {
+            id: true, slug: true, styleCode: true, color: true, basePrice: true, discountPrice: true,
+            totalStock: true, isNew: true, minOrderQty: true,
+            colors: { select: { hexCode: true }, take: 1 },
+            images: { orderBy: [{ isMain: 'desc' }, { order: 'asc' }], take: 6, select: { id: true, url: true, isMain: true, order: true } },
+          },
+        })
+      : [],
+    prisma.orderItem.groupBy({ by: ['productId'], where: { productId: { in: ids } }, _count: { productId: true } }),
+  ]);
+  const byStyle = new Map<string, typeof siblings>();
+  for (const v of siblings) {
+    const list = byStyle.get(v.styleCode!) || [];
+    list.push(v);
+    byStyle.set(v.styleCode!, list);
+  }
+  const soldCount = new Map(sold.map((r) => [r.productId, r._count.productId]));
+  return products.map((p) => ({
+    ...p,
+    variants: p.styleCode ? (byStyle.get(p.styleCode) || []).map((v) => ({ ...v, hexCode: v.colors[0]?.hexCode || null, colors: undefined })) : [],
+    isBestSeller: (soldCount.get(p.id) || 0) >= 2,
+  }));
+}
+
+/** Latest happy reviews with a comment, for the home page (shown only when there are enough) */
+export const getLatestReviews = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const reviews = await prisma.review.findMany({
+      where: { rating: { gte: 4 }, comment: { not: null }, product: { isActive: true } },
+      orderBy: { createdAt: 'desc' },
+      take: 6,
+      select: {
+        id: true, rating: true, title: true, comment: true, createdAt: true,
+        user: { select: { firstName: true, lastName: true } },
+        product: { select: { name: true, slug: true, color: true, images: { where: { isMain: true }, take: 1, select: { url: true } } } },
+      },
+    });
+    res.json({
+      success: true,
+      data: reviews
+        .filter((r) => (r.comment || '').trim().length >= 10)
+        .map((r) => ({
+          id: r.id, rating: r.rating, title: r.title, comment: r.comment, createdAt: r.createdAt,
+          name: [r.user?.firstName, r.user?.lastName ? `${r.user.lastName[0]}.` : ''].filter(Boolean).join(' ') || 'Customer',
+          product: { name: r.product.name, slug: r.product.slug, color: r.product.color, image: r.product.images[0]?.url || null },
+        })),
+    });
+  } catch {
+    res.json({ success: true, data: [] });
+  }
+};
+
 export const getProducts = async (
   req: AuthRequest,
   res: Response
@@ -157,7 +222,7 @@ export const getProducts = async (
       success: true,
       message: 'Products retrieved successfully',
       data: {
-        products,
+        products: await withVariants(products),
         ...meta,
         facets,
       },
@@ -434,9 +499,9 @@ export const getHomepageData = async (
       success: true,
       message: 'Homepage data retrieved',
       data: {
-        featured,
-        newArrivals,
-        bestSellers,
+        featured: await withVariants(featured),
+        newArrivals: await withVariants(newArrivals),
+        bestSellers: await withVariants(bestSellers),
         categories: categories.map(({ products, _count, ...c }) => ({
           ...c,
           productCount: _count.products,

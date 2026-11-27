@@ -21,8 +21,16 @@ const validHex = (v?: string | null) => {
 };
 
 /** Product card: photos (swipe) · fabric type · name · colour · rating · price · Add to Cart */
-const ProductCard = React.memo(function ProductCard({ product, priority = false }: ProductCardProps) {
+const ProductCard = React.memo(function ProductCard({ product: base, priority = false }: ProductCardProps) {
   const queryClient = useQueryClient();
+  // Colour dots: every live colour of this design (from the API); tapping one shows that colour here
+  const variants: any[] = (base as any).variants || [];
+  const [selId, setSelId] = useState(base.id);
+  const product: Product = (() => {
+    if (selId === base.id) return base;
+    const v = variants.find((x) => x.id === selId);
+    return v ? ({ ...base, ...v, name: base.name, category: base.category, colors: v.hexCode ? [{ name: v.color, hexCode: v.hexCode }] : base.colors } as any) : base;
+  })();
   // Fabric-1 → Close-up → Fabric-2 → Fabric-3 → …  (no Raw photos)
   const ordered = [...customerImages(product.images)].sort((a, b) => photoRank(a.url) - photoRank(b.url)).slice(0, 5);
   const closeup = ordered.find((img, i) => i > 0 && isCloseupPhoto(img.url));
@@ -61,6 +69,12 @@ const ProductCard = React.memo(function ProductCard({ product, priority = false 
     const el = track.current;
     if (!el) return;
     setActive(Math.round(el.scrollLeft / Math.max(1, el.clientWidth)));
+  };
+  const pickColour = (e: React.MouseEvent, id: string) => {
+    stop(e);
+    setSelId(id);
+    setActive(0);
+    track.current?.scrollTo({ left: 0 });
   };
   const goTo = (e: React.MouseEvent, i: number) => {
     stop(e);
@@ -118,6 +132,7 @@ const ProductCard = React.memo(function ProductCard({ product, priority = false 
           {/* Badges */}
           <div className="pointer-events-none absolute left-2 top-2 flex flex-col items-start gap-1">
             {product.isNew && <span className="badge-new">New</span>}
+            {(base as any).isBestSeller && <span className="rounded-full bg-[#c9a24e] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white">Best seller</span>}
             {discountPercent > 0 && <span className="badge-sale">{discountPercent}% OFF</span>}
           </div>
 
@@ -171,6 +186,21 @@ const ProductCard = React.memo(function ProductCard({ product, priority = false 
               <span className="truncate capitalize">{c.name}</span>
             </p>
           ))}
+          {variants.length > 1 && (
+            <div className="mt-1.5 flex flex-wrap items-center gap-1" aria-label={`${variants.length} colours`}>
+              {variants.slice(0, 7).map((v) => {
+                const hex = validHex(v.hexCode) || '#d8d2c8';
+                const on = v.id === product.id;
+                return (
+                  <button key={v.id} type="button" onClick={(e) => pickColour(e, v.id)} title={v.color} aria-label={`Show ${v.color}`} aria-pressed={on}
+                    className={`flex h-6 w-6 items-center justify-center rounded-full ${on ? 'ring-1 ring-primary-700 ring-offset-1 dark:ring-primary-400 dark:ring-offset-dark-800' : ''}`}>
+                    <span className="h-4 w-4 rounded-full border border-black/10" style={{ backgroundColor: hex }} />
+                  </button>
+                );
+              })}
+              {variants.length > 7 && <span className="text-[11px] text-gray-500">+{variants.length - 7}</span>}
+            </div>
+          )}
           {product.ratingCount > 0 && (
             <div className="mt-1 flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
               <svg className="h-3.5 w-3.5 stars-filled" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">

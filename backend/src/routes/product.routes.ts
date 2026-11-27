@@ -6,6 +6,7 @@ import {
   getFeaturedProducts,
   getNewArrivals,
   getHomepageData,
+  getLatestReviews,
   proxyProductImage,
   createReview,
 } from '@/controllers/product.controller';
@@ -16,6 +17,7 @@ const router = Router();
 
 // Batch endpoint for homepage - should be called before individual endpoints
 router.get('/batch/homepage', getHomepageData);
+router.get('/reviews/latest', getLatestReviews);
 
 router.get('/', getProducts);
 router.get('/featured', getFeaturedProducts);
