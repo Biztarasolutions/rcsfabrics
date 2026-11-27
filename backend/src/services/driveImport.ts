@@ -1,5 +1,5 @@
 import { prisma } from '@/index';
-import { listAllFolders, folderHasFabricPhotos, folderUrlFromId } from '@/utils/googleDrive.util';
+import { listAllFolders, folderHasFabricPhotos, folderUrlFromId, extractFolderId } from '@/utils/googleDrive.util';
 import { buildProductCode, buildStyleCode, cleanDesignName, generateSlug } from '@/utils/string.util';
 import { properCase } from '@/services/rcsCode';
 
@@ -44,6 +44,10 @@ export const parseCodedFolder = (folderName: string, categories: Cat[]): ParsedF
 
 export interface ImportResult {
   created: string[];
+  /** fabrics that already existed: linked to their Drive folder so the photo refresh picks up new pictures */
+  updated: string[];
+  /** product ids of those, for the photo refresh */
+  updatedIds: string[];
   waitingForPhotos: string[];
   notUnderstood: string[];
 }
@@ -59,7 +63,10 @@ export const importFabricsFromDrive = async (limit = 40): Promise<ImportResult> 
     listAllFolders(),
     prisma.category.findMany({ select: { id: true, name: true, description: true, bestFor: true, properties: true } }),
     // archived products (removed by the admin) don't block a fresh import
-    prisma.product.findMany({ where: { OR: [{ sku: null }, { NOT: { sku: { startsWith: 'ARCHIVED-' } } }] }, select: { productCode: true, slug: true, name: true, categoryId: true, color: true } }),
+    prisma.product.findMany({
+      where: { OR: [{ sku: null }, { NOT: { sku: { startsWith: 'ARCHIVED-' } } }] },
+      select: { id: true, productCode: true, slug: true, name: true, categoryId: true, color: true, folderUrl: true, colors: { select: { id: true, folderUrl: true } } },
+    }),
   ]);
 
   const catByName = new Map(categories.map((c) => [norm(c.name), c]));
@@ -69,22 +76,31 @@ export const importFabricsFromDrive = async (limit = 40): Promise<ImportResult> 
     if (c) catFolders.set(f.id, c);
   }
 
-  // The same fabric = same name + category + colour (any code, any spelling of spaces/case)
-  const keyOf = (name: string, categoryId: string, color: string) => [norm(name), categoryId, norm(color)].join('|');
-  // "Polka Dot Poplin" in Poplin is the same design as a folder named "Polka Dot"
+  // ---- Does this fabric already exist? -------------------------------------------------
+  // 1) a product already linked to this very Drive folder, or
+  // 2) same category + same name + same colour, compared loosely: letter case, spaces, hyphens,
+  //    old P-numbers, a repeated category word ("Polka Dot Poplin" in Poplin = "Polka Dot"), grey/gray.
   const catName = new Map(categories.map((c) => [c.id, norm(c.name)]));
-  const withoutCategory = (name: string, categoryId: string) => {
-    const n = norm(name); const c = catName.get(categoryId) || '';
-    return c && n.endsWith(` ${c}`) ? n.slice(0, -c.length - 1) : n;
+  const compact = (s: string) => norm(s).replace(/\bgrey\b/g, 'gray').replace(/[^a-z0-9]+/g, '');
+  const baseName = (name: string, categoryId: string) => {
+    const c = catName.get(categoryId) || '';
+    let n = norm(cleanDesignName(name, c));
+    if (c && n.endsWith(` ${c}`)) n = n.slice(0, -c.length - 1);
+    return compact(n);
   };
-  const have = new Set<string>();
+  const keyOf = (name: string, categoryId: string, color: string) => `${categoryId}|${baseName(name, categoryId)}|${compact(color)}`;
+  const byKey = new Map<string, (typeof products)[number]>();
+  const byFolder = new Map<string, (typeof products)[number]>();
   for (const p of products) {
-    have.add(keyOf(p.name, p.categoryId, p.color));
-    have.add(keyOf(withoutCategory(p.name, p.categoryId), p.categoryId, p.color));
+    byKey.set(keyOf(p.name, p.categoryId, p.color), p);
+    for (const u of [p.folderUrl, ...p.colors.map((c) => c.folderUrl)]) {
+      const fid = u ? extractFolderId(u) : null;
+      if (fid) byFolder.set(fid, p);
+    }
   }
-  const codes = new Set(products.map((p) => norm(p.productCode)));
   const slugs = new Set(products.map((p) => p.slug));
-  const result: ImportResult = { created: [], waitingForPhotos: [], notUnderstood: [] };
+  const result: ImportResult = { created: [], updated: [], updatedIds: [], waitingForPhotos: [], notUnderstood: [] };
+  const seenKeys = new Set<string>();
 
   for (const f of folders) {
     if (result.created.length >= limit) break;
@@ -100,20 +116,32 @@ export const importFabricsFromDrive = async (limit = 40): Promise<ImportResult> 
 
     const key = keyOf(parsed.name, parsed.categoryId, parsed.color);
     const productCode = buildProductCode(parsed.name, parsed.categoryName, parsed.color, parsed.code);
-    if (have.has(key) || codes.has(norm(productCode))) continue;
-    if (!(await folderHasFabricPhotos(f.id))) { result.waitingForPhotos.push(f.name); continue; }
+    if (seenKeys.has(key)) continue; // the same fabric twice in Drive: only the first folder counts
+    seenKeys.add(key);
 
-    // Last check straight against the database, so a wrong in-memory list can never create a copy
-    const twin = await prisma.product.findFirst({
+    // Already in the shop → don't add it again; just link this folder so its new photos are pulled
+    const existing = byFolder.get(f.id) || byKey.get(key) || (await prisma.product.findFirst({
       where: {
         categoryId: parsed.categoryId,
-        name: { equals: parsed.name, mode: 'insensitive' },
         color: { equals: parsed.color, mode: 'insensitive' },
+        name: { in: [parsed.name, `${parsed.name} ${parsed.categoryName}`], mode: 'insensitive' },
         OR: [{ sku: null }, { NOT: { sku: { startsWith: 'ARCHIVED-' } } }],
       },
-      select: { id: true },
-    });
-    if (twin) { have.add(key); continue; }
+      select: { id: true, productCode: true, slug: true, name: true, categoryId: true, color: true, folderUrl: true, colors: { select: { id: true, folderUrl: true } } },
+    }));
+    if (existing) {
+      const url = folderUrlFromId(f.id);
+      const linked = [existing.folderUrl, ...existing.colors.map((c) => c.folderUrl)].some((u) => u && extractFolderId(u) === f.id);
+      if (!linked) {
+        await prisma.product.update({ where: { id: existing.id }, data: { folderUrl: url } });
+        if (existing.colors[0]) await prisma.productColor.update({ where: { id: existing.colors[0].id }, data: { folderUrl: url } });
+      }
+      result.updated.push(`${existing.name} (${existing.color})`);
+      result.updatedIds.push(existing.id);
+      continue;
+    }
+
+    if (!(await folderHasFabricPhotos(f.id))) { result.waitingForPhotos.push(f.name); continue; }
 
     const slug = generateSlug(productCode);
     if (slugs.has(slug)) continue;
@@ -145,8 +173,6 @@ export const importFabricsFromDrive = async (limit = 40): Promise<ImportResult> 
       },
     });
     slugs.add(slug);
-    have.add(key);
-    codes.add(norm(productCode));
     result.created.push(`${parsed.name} (${parsed.color}) · ${parsed.categoryName}`);
   }
   return result;

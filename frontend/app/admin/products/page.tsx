@@ -73,7 +73,11 @@ export default function AdminProductsPage() {
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
       const d = res?.data?.data || {};
       const n = d.created?.length || 0;
-      toast.success(n ? `Imported ${n} new ${n === 1 ? 'fabric' : 'fabrics'} as drafts and refreshed all photos.` : 'No new fabrics — photos refreshed.', { duration: 7000 });
+      const u = d.updated?.length || 0;
+      toast.success(
+        `${n ? `Added ${n} new ${n === 1 ? 'fabric' : 'fabrics'} as drafts. ` : 'No new fabrics. '}${u ? `${u} already in the shop — photos updated, not added again.` : 'Photos refreshed.'}`,
+        { duration: 8000 },
+      );
       if (d.created?.length) setStatus('draft');
       if (d.notUnderstood?.length) toast(`Could not read the colour from: ${d.notUnderstood.slice(0, 5).join(', ')}${d.notUnderstood.length > 5 ? '…' : ''} — name the folder like "Polka Dot-White".`, { duration: 10000, icon: '⚠️' });
       if (d.waitingForPhotos?.length) toast(`${d.waitingForPhotos.length} folder(s) skipped — no Fabric photos in them yet.`, { duration: 7000, icon: 'ℹ️' });
