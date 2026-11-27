@@ -74,8 +74,9 @@ export default function AdminProductsPage() {
       const d = res?.data?.data || {};
       const n = d.created?.length || 0;
       const u = d.updated?.length || 0;
+      const c = d.newColours?.length || 0;
       toast.success(
-        `${n ? `Added ${n} new ${n === 1 ? 'fabric' : 'fabrics'} as drafts. ` : 'No new fabrics. '}${u ? `${u} already in the shop — photos updated, not added again.` : 'Photos refreshed.'}`,
+        `${n ? `Added ${n} new ${n === 1 ? 'fabric' : 'fabrics'} as drafts. ` : 'No new fabrics. '}${c ? `${c} new ${c === 1 ? 'colour' : 'colours'} added to existing fabrics (price and details copied — set the stock). ` : ''}${u ? `${u} already in the shop — photos updated.` : 'Photos refreshed.'}`,
         { duration: 8000 },
       );
       if (d.created?.length) setStatus('draft');

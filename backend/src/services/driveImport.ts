@@ -44,6 +44,8 @@ export const parseCodedFolder = (folderName: string, categories: Cat[]): ParsedF
 
 export interface ImportResult {
   created: string[];
+  /** new colours of a design already in the shop: added with that design's details (price, width …) */
+  newColours: string[];
   /** fabrics that already existed: linked to their Drive folder so the photo refresh picks up new pictures */
   updated: string[];
   /** product ids of those, for the photo refresh */
@@ -65,7 +67,7 @@ export const importFabricsFromDrive = async (limit = 40): Promise<ImportResult> 
     // archived products (removed by the admin) don't block a fresh import
     prisma.product.findMany({
       where: { OR: [{ sku: null }, { NOT: { sku: { startsWith: 'ARCHIVED-' } } }] },
-      select: { id: true, productCode: true, slug: true, name: true, categoryId: true, color: true, folderUrl: true, colors: { select: { id: true, folderUrl: true } } },
+      select: { id: true, productCode: true, slug: true, name: true, categoryId: true, color: true, folderUrl: true, isActive: true, colors: { select: { id: true, folderUrl: true } } },
     }),
   ]);
 
@@ -99,7 +101,14 @@ export const importFabricsFromDrive = async (limit = 40): Promise<ImportResult> 
     }
   }
   const slugs = new Set(products.map((p) => p.slug));
-  const result: ImportResult = { created: [], updated: [], updatedIds: [], waitingForPhotos: [], notUnderstood: [] };
+  // Same design (category + name), any colour — a live one first — to copy details from
+  const byDesign = new Map<string, (typeof products)[number]>();
+  for (const p of products) {
+    const k = `${p.categoryId}|${baseName(p.name, p.categoryId)}`;
+    const cur = byDesign.get(k);
+    if (!cur || (!cur.isActive && p.isActive)) byDesign.set(k, p);
+  }
+  const result: ImportResult = { created: [], newColours: [], updated: [], updatedIds: [], waitingForPhotos: [], notUnderstood: [] };
   const seenKeys = new Set<string>();
 
   for (const f of folders) {
@@ -143,10 +152,55 @@ export const importFabricsFromDrive = async (limit = 40): Promise<ImportResult> 
 
     if (!(await folderHasFabricPhotos(f.id))) { result.waitingForPhotos.push(f.name); continue; }
 
+    const folderUrl = folderUrlFromId(f.id);
+    const sibling = byDesign.get(`${parsed.categoryId}|${baseName(parsed.name, parsed.categoryId)}`);
+
+    if (sibling) {
+      // A new colour of a design that is already in the shop: copy its details and add it straight away
+      const src = await prisma.product.findUnique({ where: { id: sibling.id } });
+      if (src) {
+        const code = buildProductCode(src.name, parsed.categoryName, parsed.color, null);
+        let slug = generateSlug(code);
+        if (slugs.has(slug)) slug = `${slug}-${Date.now().toString(36)}`;
+        const live = src.isActive && !src.isDraft;
+        await prisma.product.create({
+          data: {
+            name: src.name,                 // same name → grouped with its other colours
+            styleCode: src.styleCode,
+            slug,
+            categoryId: src.categoryId,
+            productCode: code,
+            color: parsed.color,
+            description: src.description,
+            basePrice: src.basePrice,
+            discountPrice: src.discountPrice,
+            discountPercent: src.discountPercent,
+            discountType: src.discountType,
+            discountValue: src.discountValue,
+            width: src.width,
+            pattern: src.pattern,
+            occasion: src.occasion,
+            stretchability: src.stretchability,
+            minOrderQty: src.minOrderQty,
+            bestFor: src.bestFor,
+            properties: src.properties,
+            totalStock: 0,                  // stock is per colour: set it in Admin
+            isActive: live,
+            isDraft: src.isDraft,
+            isNew: true,
+            folderUrl,
+            colors: { create: [{ name: parsed.color, hexCode: '#cccccc', productCode: code, folderUrl }] },
+          },
+        });
+        slugs.add(slug);
+        result.newColours.push(`${src.name} (${parsed.color}) · ${parsed.categoryName}${live ? ' — live' : ''}`);
+        continue;
+      }
+    }
+
     const slug = generateSlug(productCode);
     if (slugs.has(slug)) continue;
     const cat = categories.find((c) => c.id === parsed!.categoryId)!;
-    const folderUrl = folderUrlFromId(f.id);
     await prisma.product.create({
       data: {
         name: parsed.name,
